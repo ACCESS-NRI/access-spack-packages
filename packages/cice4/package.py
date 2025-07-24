@@ -4,6 +4,7 @@
 
 # Based on packages/cice5/package.py and other sources noted below.
 
+from spack_repo.builtin.build_systems.makefile import MakefilePackage
 from spack.package import *
 
 
