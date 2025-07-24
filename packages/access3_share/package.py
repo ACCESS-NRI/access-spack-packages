@@ -4,7 +4,7 @@
 
 from spack_repo.builtin.build_systems.cmake import CMakePackage
 from spack.package import *
-from spack.pkg.access.nri.access3 import ACCESS3_VERSIONS
+from spack_repo.access.nri.packages.access3.package import ACCESS3_VERSIONS
 
 class Access3Share(CMakePackage):
     """Shared coupler/mediator libraries used by the ACCESS version 3 climate
