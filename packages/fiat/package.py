@@ -5,6 +5,7 @@
 
 # Based on spack/var/spack/repos/builtin/packages/fiat/package.py
 
+from spack_repo.builtin.build_systems.cmake import CMakePackage
 from spack.package import *
 
 
