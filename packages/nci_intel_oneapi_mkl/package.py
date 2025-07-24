@@ -5,7 +5,7 @@
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-from spack.pkg.builtin.intel_oneapi_mkl import IntelOneapiMkl
+from spack_repo.builtin.packages.intel_oneapi_mkl.package import IntelOneapiMkl
 
 class NciIntelOneapiMkl(IntelOneapiMkl):
     @property
