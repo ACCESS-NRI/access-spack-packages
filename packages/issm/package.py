@@ -71,6 +71,7 @@ class Issm(AutotoolsPackage):
     # Dependencies
     # --------------------------------------------------------------------
     # Build-time tools
+    depends_on("cxx", type="build")
     depends_on("autoconf", type="build")
     depends_on("automake", type="build")
     depends_on("libtool", type="build")

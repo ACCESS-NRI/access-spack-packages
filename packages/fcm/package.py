@@ -19,6 +19,9 @@ class Fcm(Package):
     variant("site", default="none", description="Site to use for keyword configuration",
         values=("none", "nci-gadi"), multi=False)
 
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
     def url_for_version(self, version):
         return "https://github.com/metomi/fcm/archive/refs/tags/{0}.tar.gz".format(version)
 

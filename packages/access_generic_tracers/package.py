@@ -44,6 +44,8 @@ class AccessGenericTracers(CMakePackage):
         description="If True, depend on access-fms, otherwise depend on fms"
     )
 
+    depends_on("fortran", type="build")
+
     depends_on("mpi")
     depends_on("access-mocsy@2025.07.001:")  # >= 2025.07.001 for CMake BS with "mocsy" target name
     # TODO: Make conditional once Spack v0.23 or newer is used. The newer

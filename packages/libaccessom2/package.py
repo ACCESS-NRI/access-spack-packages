@@ -26,6 +26,8 @@ class Libaccessom2(CMakePackage):
             values=('Debug', 'Release')
     )
 
+    depends_on("fortran", type="build")
+
     depends_on("cmake@3.20:", type="build")
     depends_on("pkgconfig", type="build")
     # Depend on virtual package "mpi".

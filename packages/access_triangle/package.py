@@ -26,6 +26,8 @@ class AccessTriangle(MakefilePackage):
     variant("showme", default=False,
             description="Build the showme utility (requires libX11).")
 
+    depends_on("c", type="build")
+
     # Make libX11 conditional on +showme
     depends_on("libx11", when="+showme", type="link")
     

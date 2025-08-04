@@ -26,6 +26,9 @@ class Um7(Package):
 
     maintainers("penguian", "Whyborn")
 
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
     depends_on("fcm", type="build")
     depends_on("dummygrib", type=("build", "link"))
     depends_on("gcom4+mpi", type=("build", "link"))
