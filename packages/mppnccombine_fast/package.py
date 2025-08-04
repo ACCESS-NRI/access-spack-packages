@@ -23,6 +23,9 @@ class MppnccombineFast(CMakePackage):
 
     version("2025.07.000", sha256="d74ef9b47aa6a6aac2d2f802f146b59d585104a780b65571fe7fda78e69af553")
 
+    depends_on("c", type="build")
+    depends_on("cxx", type="build")
+
     depends_on("cmake@3.10:", type="build")
     depends_on("mpi")
     depends_on("hdf5")

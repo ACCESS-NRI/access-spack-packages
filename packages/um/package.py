@@ -120,6 +120,9 @@ class Um(Package):
     for var in _str_variants:
         variant(var, default="none", description=var, values="*", multi=False)
 
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
     # The 'site=nci-gadi' variant of fcm defines the keywords
     # used by the FCM configuration of UM.
     depends_on("fcm site=nci-gadi", type="build")
