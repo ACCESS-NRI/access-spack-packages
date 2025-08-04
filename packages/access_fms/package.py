@@ -38,6 +38,10 @@ class AccessFms(CMakePackage):
     # To build a shared/dynamic library, both `pic` and `shared` are required:
     requires("+pic", when="+shared", msg="The +shared variant requires +pic")
 
+    depends_on("c", type="build")
+    depends_on("cxx", type="build")
+    depends_on("fortran", type="build")
+
     depends_on("netcdf-c")
     depends_on("netcdf-fortran")
     depends_on("mpi")
