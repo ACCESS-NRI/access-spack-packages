@@ -22,6 +22,7 @@ class Dummygrib(MakefilePackage):
 
     version("1.0", branch="master")
 
+    depends_on("fortran", type="build")
 
     def install(self, spec, prefix):
 

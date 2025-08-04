@@ -53,6 +53,9 @@ class AccessMocsy(CMakePackage, MakefilePackage):
             values=("1", "2"),
         )
 
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
     depends_on("mpi")
 
 

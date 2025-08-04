@@ -79,6 +79,9 @@ class Cice5(CMakePackage, MakefilePackage):
         variant("blcky", default="none", values=_int_validator, description="Size of computational blocks in y")
         variant("mxblcks", default="none", values=_int_validator, description="Max number of blocks per task")
 
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
     # Depend on virtual package "mpi".
     depends_on("mpi")
     depends_on("netcdf-fortran@4.5.2:")

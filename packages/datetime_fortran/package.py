@@ -40,6 +40,8 @@ class DatetimeFortran(AutotoolsPackage):
     version('1.4.2', sha256='5b70c6e5d38032951e879b437e9ac7c5d483860ce8a9f6bbe6f1d6cd777e737f')
     version('1.4.1', sha256='4a178b63301f0016b7634625062278742a44026f4c37cafcb9e8ba9649db85e0')
 
+    depends_on("fortran", type="build")
+
     patch("0001-Enable-deterministic-builds-using-D-flag-for-ar.patch", when="@1.7.0")
 
     def url_for_version(self, version):
