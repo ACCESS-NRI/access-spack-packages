@@ -31,6 +31,9 @@ class Cice4(MakefilePackage):
         description="Directly inject LDFLAGS into the Makefile",
      )
 
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
     depends_on("netcdf-fortran@4.5.1:")
     depends_on("openmpi")
     depends_on("oasis3-mct")

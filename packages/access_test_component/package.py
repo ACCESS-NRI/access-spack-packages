@@ -25,6 +25,8 @@ class AccessTestComponent(CMakePackage):
 
     variant("mpi", default=True, description="Use MPI")
 
+    depends_on("fortran", type="build")
+
     depends_on("mpi", when="+mpi")
 
     root_cmakelists_dir = "stub"

@@ -54,6 +54,9 @@ class AncomsRoms(MakefilePackage):
     depends_on("curl")
     depends_on("amdlibm", when="%aocc")
 
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
     # Note: you cannot set USE_OpenMP and USE_MPI at the same time
     conflicts("+mpi+openmp")
 
