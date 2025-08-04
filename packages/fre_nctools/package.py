@@ -40,6 +40,9 @@ class FreNctools(AutotoolsPackage):
 
     variant("mpi", default=False, description="Builds with MPI support")
 
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
     depends_on("autoconf", type="build")
     depends_on("automake", type="build")
     depends_on("libtool", type="build")

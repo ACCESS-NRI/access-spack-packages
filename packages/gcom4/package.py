@@ -25,6 +25,10 @@ class Gcom4(Package):
     version("access-esm1.5", branch="access-esm1.5")
 
     variant("mpi", default=True, description="Build with MPI")
+
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
     depends_on("fcm", type="build")
     depends_on("mpi", when="+mpi")
 

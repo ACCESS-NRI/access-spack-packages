@@ -17,6 +17,8 @@ class M1qn3(MakefilePackage):
 
     version("3.3", sha256="27c6a8f56a4080420c25ffb0743e3dece7c57cc1740776936f220b4ed28b89d9")
 
+    depends_on("fortran", type="build")
+
     patch("m1qn3.patch")
 
     def url_for_version(self, version):

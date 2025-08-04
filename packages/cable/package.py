@@ -45,6 +45,9 @@ class Cable(CMakePackage):
         values=("Debug", "Release"),
     )
 
+    depends_on("cxx", type="build")
+    depends_on("fortran", type="build")
+
     depends_on("netcdf-fortran@4.5.2:")
     depends_on("mpi", when="+mpi")
 

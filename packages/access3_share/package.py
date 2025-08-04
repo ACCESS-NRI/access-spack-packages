@@ -26,6 +26,9 @@ class Access3Share(CMakePackage):
 
     variant("openmp", default=False, description="Enable OpenMP")
 
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
     depends_on("cmake@3.18:", type="build")
     depends_on("mpi")
     depends_on("netcdf-fortran@4.6.0:")
