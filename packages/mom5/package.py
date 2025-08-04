@@ -29,6 +29,9 @@ class Mom5(CMakePackage, MakefilePackage):
     version("access-esm1.5", branch="access-esm1.5")
     version("access-esm1.6", branch="master")
 
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
     # NOTE: @mom matches both mom_solo and mom_sis
     build_system(
         conditional("makefile", when="@access-om2,legacy-access-om2-bgc,access-esm1.5"),

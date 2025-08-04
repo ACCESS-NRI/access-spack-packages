@@ -49,6 +49,9 @@ class Cice5(MakefilePackage):
      )
     variant("optimisation_report", default=False, description="Generate optimisation reports.")
 
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
     # Depend on virtual package "mpi".
     depends_on("mpi")
     depends_on("netcdf-fortran@4.5.2:")

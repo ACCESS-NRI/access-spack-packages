@@ -22,6 +22,9 @@ class Gcom(Package):
 
     variant("mpi", default=True, description="Build with MPI")
 
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
     depends_on("fcm", type="build")
     depends_on("mpi", when="+mpi", type=("build", "link", "run"))
     # For the default MPI version for NCI, see (e.g.)

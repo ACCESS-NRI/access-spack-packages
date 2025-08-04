@@ -62,6 +62,9 @@ class Access3(CMakePackage):
         msg=f"A configurations variant must be set, can be one or many of {KNOWN_CONF}"
     )
 
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
     depends_on("cmake@3.18:", type="build")
     depends_on("mpi")
     depends_on("access3-share")
