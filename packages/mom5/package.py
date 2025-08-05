@@ -423,6 +423,9 @@ LDFLAGS += $(LIBS)
         # icx: error: unsupported argument 'source' to option '-ffp-model='
         # The `.replace()` apparently doesn't modify the object.
         config["oneapi"] = config["intel"].replace("CFLAGS_REPRO := -fp-model precise -fp-model source", "CFLAGS_REPRO := -fp-model precise")
+        # Add support for Spack v1.0
+        config["intel-oneapi-compilers"] = config["oneapi"]
+        config["intel-oneapi-compilers-classic"] = config["oneapi"]
 
         if self.__version == "access-esm1.5":
             config["post"] = """
