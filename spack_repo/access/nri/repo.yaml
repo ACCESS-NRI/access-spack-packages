@@ -1,2 +1,3 @@
 repo:
   namespace: 'access.nri'
+  api: v2.0
