@@ -186,6 +186,9 @@ endif
 
         # Add support for the ifx compiler
         config["oneapi"] = config["intel"]
+        # Add support for Spack v1.0
+        config["intel-oneapi-compilers"] = config["intel"]
+        config["intel-oneapi-compilers-classic"] = config["intel"]
 
         config["post"] = """
 f90FLAGS_1  = $(F90FLAGS_1)
