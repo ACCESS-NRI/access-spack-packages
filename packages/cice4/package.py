@@ -116,6 +116,9 @@ LDFLAGS    := $(FFLAGS) -v -static-intel {LDFLAGS}
 
         # Add support for the ifx compiler
         config["oneapi"] = config["intel"]
+        # Add support for Spack v1.0
+        config["intel-oneapi-compilers"] = config["intel"]
+        config["intel-oneapi-compilers-classic"] = config["intel"]
 
         # Based on https://github.com/ACCESS-NRI/cice4/blob/access-esm1.5/bld/Macros.nci
         config["post"] = """
