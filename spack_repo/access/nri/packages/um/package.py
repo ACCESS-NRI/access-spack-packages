@@ -9,7 +9,7 @@
 import configparser
 from spack_repo.builtin.build_systems.generic import Package
 from spack.package import *
-import llnl.util.tty as tty
+import spack.llnl.util.tty as tty
 import spack.util.git
 
 class Um(Package):
