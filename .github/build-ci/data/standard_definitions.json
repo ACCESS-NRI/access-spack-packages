@@ -1,5 +1,6 @@
 {
     "target": "x86_64",
-    "intel_compiler": "intel@2021.10.0",
-    "gcc_compiler": "gcc@13.2.0"
+    "intel_compiler": "@2021.10.0",
+    "oneapi_compiler": "@2025.2.0",
+    "gcc_compiler": "@13.2.0"
 }
