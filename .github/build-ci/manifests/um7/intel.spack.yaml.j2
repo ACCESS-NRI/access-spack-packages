@@ -3,12 +3,19 @@
 # gcc compiler from occuring, due to https://github.com/ACCESS-NRI/access-spack-packages/issues/342
 spack:
   specs:
-  - '{{ package }}@access-esm1.5 %{{ intel_compiler }}'
-  - '{{ package }}@access-esm1.6 %{{ intel_compiler }}'
+  - '{{ package }}@access-esm1.5'
+  - '{{ package }}@access-esm1.6'
   packages:
+    intel-oneapi-compilers-classic:
+      require:
+        - '{{ intel_compiler_ver }}'
+    python:
+      require:
+        - '@3.11.14'
     all:
       require:
-      - '%{{ intel_compiler }}'
+        - '%access_intel'
+        - 'target={{ target }}'
   concretizer:
     unify: false
   view: false
