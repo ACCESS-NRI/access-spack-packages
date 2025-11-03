@@ -2,7 +2,7 @@ name: CI
 on:
   pull_request:
     paths:
-      - packages/**
+      - spack_repo/access/nri/packages/**
   workflow_dispatch:
     inputs:
       packages-to-test:
@@ -28,9 +28,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # These defaults can be overridden by the inputs (if the trigger is a workflow_dispatch)
-      DEFAULT_SPACK_REF: 'releases/v0.22'
+      DEFAULT_SPACK_REF: 'releases/v1.0'
       DEFAULT_SPACK_CONFIG_REF: 'main'
       DEFAULT_SPACK_PACKAGES_REF: ${{ github.event.pull_request.head.sha }}
+      PACKAGES_ROOT_DIR: spack_repo/access/nri/packages
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       spack-packages-ref: ${{ steps.set-refs.outputs.spack-packages-ref }}
@@ -45,10 +46,10 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c  # v46.0.5
         with:
-          # We only care about the directory names under packages/ - since they are also the package names
+          # We only care about the directory names under the env.PACKAGES_ROOT_DIR - since they are also the package names
           # and we want to find changes to the package.py files in those directories
           dir_names: true
-          path: ./packages
+          path: ./${{ env.PACKAGES_ROOT_DIR }}
           files: '*/package.py'
 
       - name: Dispatch - Get packages
@@ -57,7 +58,7 @@ jobs:
         # Either get all packages defined (all subfolders under packages/) or use the input
         run: |
           if [[ "${{ inputs.packages-to-test }}" == "ALL" ]]; then
-            pkgs=$(find packages/ -mindepth 1 -maxdepth 1 -type d -printf '%P ')
+            pkgs=$(find ${{ env.PACKAGES_ROOT_DIR }}/ -mindepth 1 -maxdepth 1 -type d -printf '%P ')
           else
             pkgs="${{ inputs.packages-to-test }}"
           fi
@@ -66,7 +67,7 @@ jobs:
           # Validate that all packages exist
           error=false
           for pkg in $pkgs; do
-            if [ ! -f "packages/$pkg/package.py" ]; then
+            if [ ! -f "${{ env.PACKAGES_ROOT_DIR }}/$pkg/package.py" ]; then
               echo "::error::packages/$pkg/package.py does not exist. Check spelling or if the package is defined."
               error=true
             fi
@@ -84,9 +85,9 @@ jobs:
         # Get file paths to manifests for each package, and a template, then finally
         # Convert into a JSON array for the matrix, one of the form:
         # [
-        #   {"filepath": ".github/build-ci/manifests/mom5/intel.spack.yaml.j2", "template_value": "mom5"},
-        #   {"filepath": ".github/build-ci/manifests/mom5/amd.spack.yaml.j2", "template_value": "mom5"},
-        #   {"filepath": ".github/build-ci/manifests/cice5/spack.yaml.j2", "template_value": "cice5"},
+        #   {"template_value": "mom5", "filepath": ".github/build-ci/manifests/mom5/intel.spack.yaml.j2"},
+        #   {"template_value": "mom5", "filepath": ".github/build-ci/manifests/mom5/amd.spack.yaml.j2"},
+        #   {"template_value": "cice5", "filepath": ".github/build-ci/manifests/cice5/spack.yaml.j2"},
         #   ...
         # ]
         run: |
@@ -94,7 +95,8 @@ jobs:
 
           for pkg in $pkgs; do
             # We want each manifest to have an associated injection of {{ package }} to $pkg
-            template_value="$pkg"
+            # Replace underscores with hyphens for the template value, as spack converts directory underscores to package name hyphens
+            template_value="${pkg//_/-}"
 
             if [ -d ".github/build-ci/manifests/$pkg" ]; then  # Look for specific manifests for the package
               # We space-separate the paths as we later use them in a for loop
@@ -107,7 +109,7 @@ jobs:
             fi
 
             for manifest_path in $manifest_paths; do
-              json_entry=$(printf '{"filepath": "%s", "template_value": "%s"}' "$manifest_path" "$template_value")
+              json_entry=$(printf '{"template_value": "%s", "filepath": "%s"}' "$template_value" "$manifest_path")
               json_entries+="${json_entry},"
             done
             unset manifest_paths
@@ -131,9 +133,20 @@ jobs:
       - setup-ci
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 7
       matrix:
         package: ${{ fromJson(needs.setup-ci.outputs.matrix) }}
+        exclude:
+          - package: {template_value: "access-om2"}
+          - package: {template_value: "access-om2-bgc"}
+          - package: {template_value: "access-om3"}
+          - package: {template_value: "access-esm1p5"}
+          - package: {template_value: "access-esm1p6"}
+          - package: {template_value: "access-am3"}
+          - package: {template_value: "access-ram3"}
+          - package: {template_value: "access-issm"}
+          - package: {template_value: "access-test"}
+          - package: {template_value: "coastri-roms"}
     uses: access-nri/build-ci/.github/workflows/ci.yml@v2
     with:
       spack-manifest-path: ${{ matrix.package.filepath }}
@@ -143,5 +156,6 @@ jobs:
       spack-packages-ref: ${{ needs.setup-ci.outputs.spack-packages-ref }}
       spack-config-ref: ${{ needs.setup-ci.outputs.spack-config-ref }}
       spack-ref: ${{ needs.setup-ci.outputs.spack-ref }}
+      container-image-version: :rocky-v1.0-2025.11.000
     secrets:
       spack-install-command-pat: ${{ secrets.SPACK_INSTALL_COMMAND_PAT }}
