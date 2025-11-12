@@ -156,6 +156,6 @@ jobs:
       spack-packages-ref: ${{ needs.setup-ci.outputs.spack-packages-ref }}
       spack-config-ref: ${{ needs.setup-ci.outputs.spack-config-ref }}
       spack-ref: ${{ needs.setup-ci.outputs.spack-ref }}
-      container-image-version: :rocky-v1.0-2025.11.000
+      container-image-version: :rocky-v1.0-test-2
     secrets:
       spack-install-command-pat: ${{ secrets.SPACK_INSTALL_COMMAND_PAT }}
