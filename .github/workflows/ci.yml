@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # These defaults can be overridden by the inputs (if the trigger is a workflow_dispatch)
-      DEFAULT_SPACK_REF: 'releases/v1.0'
+      DEFAULT_SPACK_REF: 'releases/v1.1'
       DEFAULT_SPACK_CONFIG_REF: 'main'
       DEFAULT_SPACK_PACKAGES_REF: ${{ github.event.pull_request.head.sha }}
       PACKAGES_ROOT_DIR: spack_repo/access/nri/packages
@@ -156,6 +156,6 @@ jobs:
       spack-packages-ref: ${{ needs.setup-ci.outputs.spack-packages-ref }}
       spack-config-ref: ${{ needs.setup-ci.outputs.spack-config-ref }}
       spack-ref: ${{ needs.setup-ci.outputs.spack-ref }}
-      container-image-version: :rocky-v1.0-2025.11.000
+      container-image-version: :rocky-v1.1-2025.12.000-test
     secrets:
       spack-install-command-pat: ${{ secrets.SPACK_INSTALL_COMMAND_PAT }}
