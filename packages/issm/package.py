@@ -23,19 +23,15 @@ class Issm(AutotoolsPackage):
     homepage = "https://issm.jpl.nasa.gov/"
     git = "https://github.com/ACCESS-NRI/ISSM.git"
 
-    maintainers("justinh2002")
+    maintainers("justinh2002", "lawrenceabird")
 
     # --------------------------------------------------------------------
     # Versions
     # --------------------------------------------------------------------
     version("upstream", branch="main", git="https://github.com/ISSMteam/ISSM.git")
     version("main", branch="main")
-    version("access-release", branch="access-release")
-    version(
-        "access-development",
-        branch="access-development",
-        preferred=True,
-    )
+    version("access-release", branch="access-release", preferred=True)
+    version("access-development", branch="access-development")
 
     # --------------------------------------------------------------------
     # Variants
@@ -82,28 +78,32 @@ class Issm(AutotoolsPackage):
     # Core build + runtime deps
     depends_on("mpi")
 
-    # Linear-algebra stack - only for the *non-AD* flavour
-    depends_on("petsc~examples+metis+mumps+scalapack", when="~ad")
-    depends_on("parmetis")
+    # Conditional dependencies
+    # --------------------------------------------------------------------
+    # When building "default" ISSM, use Petsc (with metis [incl. parmetis], mumps, and scalapack variants)
+    with when("~ad"):
+        depends_on("petsc~examples+metis+mumps+scalapack")
+
+    # When building with AD support, do not use Petsc; instead use CoDiPack + MeDiPack.
+    with when("+ad"):
+        depends_on("codipack")
+        depends_on("medipack")
+
+    # When building with Python wrappers, need access-triangle, Python, and NumPy
+    with when("+wrappers"):
+        depends_on("access-triangle")
+        depends_on("python", type=("build", "run"))
+        depends_on("py-numpy", type=("build", "run"))
+
+    # Unconditional dependencies
+    # --------------------------------------------------------------------
     depends_on("metis")
+    depends_on("parmetis")
     depends_on("mumps~openmp", when="~openmp")
     depends_on("mumps+openmp", when="+openmp")
     depends_on("scalapack")
-    # Note: ISSM's MUMPS support is not compatible with the Spack-provided
-    # MUMPS, so we use the one provided by the ISSM team.
-
-    # Optimiser
     depends_on("m1qn3")
 
-    # Automatic-differentiation libraries
-    depends_on("codipack", when="+ad")
-    depends_on("medipack", when="+ad")
-
-    # Optional extras controlled by +wrappers
-    depends_on("access-triangle", when="+wrappers")
-    depends_on("python@3.9.2:", when="+wrappers", type=("build", "run"))
-    depends_on("py-numpy", when="+wrappers", type=("build", "run"))
-    
     # --------------------------------------------------------------------
     # Conflicts
     # --------------------------------------------------------------------
@@ -176,6 +176,7 @@ class Issm(AutotoolsPackage):
         args.append(f"--with-parmetis-dir={self.spec['parmetis'].prefix}")
         args.append(f"--with-metis-dir={self.spec['metis'].prefix}")
         args.append(f"--with-mumps-dir={self.spec['mumps'].prefix}")
+
         # Optimiser
         args.append(f"--with-m1qn3-dir={self.spec['m1qn3'].prefix.lib}")
         args.append(f"--with-scalapack-dir={self.spec['scalapack'].prefix}")
@@ -193,7 +194,6 @@ class Issm(AutotoolsPackage):
         # Optional wrappers
         if "+wrappers" in self.spec:
             args.append("--with-wrappers=yes")
-            args.append(f"--with-parmetis-dir={self.spec['parmetis'].prefix}")
             args.append(f"--with-triangle-dir={self.spec['access-triangle'].prefix}")
 
             py_ver = self.spec["python"].version.up_to(2)
@@ -224,7 +224,7 @@ class Issm(AutotoolsPackage):
             install_tree(examples_src, examples_dst)
 
         # Optionally install Python (.py) files as a zip archive
-        if "+py-tools" in spec:
+        if "+py-tools" in self.spec:
             py_src = join_path(self.stage.source_path, "src", "m")
             py_dst = join_path(prefix, "python-tools.zip")
             
