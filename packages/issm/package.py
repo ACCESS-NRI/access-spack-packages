@@ -69,15 +69,13 @@ class Issm(AutotoolsPackage):
     # --------------------------------------------------------------------
     # Dependencies
     # --------------------------------------------------------------------
-
-    # Build-time & runtime dependencies
-    # --------------------------------------------------------------------
+    # Build-time tools
     depends_on("autoconf", type="build")
     depends_on("automake", type="build")
     depends_on("libtool", type="build")
     depends_on("m4", type="build")
 
-    # Runtime MPI dependency
+    # Core build + runtime deps
     depends_on("mpi")
 
     # Conditional dependencies
