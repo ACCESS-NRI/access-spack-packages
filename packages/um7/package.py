@@ -136,7 +136,7 @@ class Um7(Package):
             FARCH = ""
             FOBLANK = "-O0"
         else:
-            FO = "-O2 -unroll"
+            FO = "-O2 -unroll -qopt-zmm-usage=high"
             FTRACEBACK = ""
             FDEBUG = ""
             FG = ""
