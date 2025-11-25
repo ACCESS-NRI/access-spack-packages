@@ -1,0 +1,10 @@
+spack:
+  specs:
+    - 'access-om2@=stable +deterministic %{{ intel_compiler }}'
+  packages:
+    all:
+      require:
+      - '%{{ intel_compiler }}'
+  concretizer:
+    unify: false
+  view: false

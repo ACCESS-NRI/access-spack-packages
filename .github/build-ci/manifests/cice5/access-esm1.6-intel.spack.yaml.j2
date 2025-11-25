@@ -1,0 +1,13 @@
+spack:
+  specs:
+    - 'access-esm1p6@=stable %{{ intel_compiler }}'
+  packages:
+    cice5:
+      require:
+        '@git.access-esm1.6=stable'
+    all:
+      require:
+      - '%{{ intel_compiler }}'
+  concretizer:
+    unify: false
+  view: false
