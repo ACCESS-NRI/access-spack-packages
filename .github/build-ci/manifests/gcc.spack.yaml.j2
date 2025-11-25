@@ -5,9 +5,15 @@ spack:
   # And the gcc_compilers are defined in the standard_definitions.json data file
   - '{{ package }} %{{ gcc_compiler }}'
   packages:
-    all:
+    c:
       require:
-      - '%{{ gcc_compiler }}'
+        - '{{ gcc_compiler }}'
+    cxx:
+      require:
+        - '{{ gcc_compiler }}'
+    fortran:
+      require:
+        - '{{ gcc_compiler }}'
   concretizer:
     unify: false
   view: false
