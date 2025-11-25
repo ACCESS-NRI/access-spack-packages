@@ -136,9 +136,9 @@ class Um7(Package):
             FARCH = ""
             FOBLANK = "-O0"
         else:
-            FO = "-O2 -qopt-zmm-usage=high"
+            FO = "-O2 -unroll -flto"
             FTRACEBACK = ""
-            FDEBUG = ""
+            FDEBUG = "-g3 -grecord-gcc-switches -fno-omit-frame-pointer"
             FG = ""
             FARCH = "-march=cascadelake -mtune=sapphirerapids"
             FOBLANK = ""
@@ -248,7 +248,7 @@ tool::fppkeys                                      {CPPKEYS}
 
 tool::geninterface                                 none
 tool::ld                                           mpif90
-tool::ldflags                                      {FOBLANK} -g -traceback {FDEBUG} -static-intel {libs}
+tool::ldflags                                      {FO} {FARCH} -traceback {FDEBUG} -static-intel {libs} -fuse-ld=lld
         """
         with open(self._bld_cfg_path, "w") as bld_cfg_file:
             bld_cfg_file.write(config)
