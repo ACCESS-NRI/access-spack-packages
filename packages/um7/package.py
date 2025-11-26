@@ -136,7 +136,7 @@ class Um7(Package):
             FARCH = ""
             FOBLANK = "-O0"
         else:
-            FO = "-O2 -unroll -qopt-prefetch=5"
+            FO = "-O2 -qopt-zmm-usage=high -vec-threshold0"
             FTRACEBACK = ""
             FDEBUG = "-g3 -grecord-gcc-switches -fno-omit-frame-pointer"
             FG = ""
