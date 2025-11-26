@@ -230,18 +230,18 @@ pp                                                 1
 target                                             {EXE_NAME}
 tool::ar                                           ar
 tool::cc                                           mpicc
-tool::cflags                                       {FO} -g {FTRACEBACK} {FDEBUG} {FARCH}
+tool::cflags                                       {FO} -g {FTRACEBACK} {FDEBUG} {FARCH} -fp-model precise
 tool::cpp                                          cpp
 tool::cppflags
 tool::cppkeys                                      {CPPKEYS}
 tool::fc                                           mpif90
-tool::fflags                                       {FO}  -g   -traceback  {FDEBUG} -i8 -r8       {FFLAGS}
-tool::fflags::control::coupling::dump_received     {FO} {FG} {FTRACEBACK} {FDEBUG}         -mp1   {FFLAGS}
-tool::fflags::control::coupling::dump_sent         {FO} {FG} {FTRACEBACK} {FDEBUG}         -mp1   {FFLAGS}
-tool::fflags::control::coupling::oasis3_atmos_init {FO} {FG} {FTRACEBACK} {FDEBUG} -i4 -r8 -mp1   {FFLAGS}
-tool::fflags::control::top_level::atm_step         {FO}   -g {FTRACEBACK} {FDEBUG} -i8 -r8 -mp1   {FFLAGS}
-tool::fflags::control::top_level::set_atm_pointers {FO}   -g  -traceback  {FDEBUG} -i8 -r8       -ftz -std95
-tool::fflags::control::top_level::u_model          {FO}   -g {FTRACEBACK} {FDEBUG} -i8 -r8 -mp1   {FFLAGS}
+tool::fflags                                       {FO}  -g   -traceback  {FDEBUG} -i8 -r8       -fp-model precise {FFLAGS}
+tool::fflags::control::coupling::dump_received     {FO} {FG} {FTRACEBACK} {FDEBUG}         -mp1  -fp-model precise {FFLAGS}
+tool::fflags::control::coupling::dump_sent         {FO} {FG} {FTRACEBACK} {FDEBUG}         -mp1  -fp-model precise {FFLAGS}
+tool::fflags::control::coupling::oasis3_atmos_init {FO} {FG} {FTRACEBACK} {FDEBUG} -i4 -r8 -mp1  -fp-model precise {FFLAGS}
+tool::fflags::control::top_level::atm_step         {FO}   -g {FTRACEBACK} {FDEBUG} -i8 -r8 -mp1  -fp-model precise {FFLAGS}
+tool::fflags::control::top_level::set_atm_pointers {FO}   -g  -traceback  {FDEBUG} -i8 -r8       -fp-model precise -ftz -std95
+tool::fflags::control::top_level::u_model          {FO}   -g {FTRACEBACK} {FDEBUG} -i8 -r8 -mp1  -fp-model precise {FFLAGS}
 tool::fpp                                          cpp
 tool::fppflags                                     -P -traditional
 tool::fppkeys                                      {CPPKEYS}
