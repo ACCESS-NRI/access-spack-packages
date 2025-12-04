@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # These defaults can be overridden by the inputs (if the trigger is a workflow_dispatch)
-      DEFAULT_SPACK_REF: 'releases/v1.0'
+      DEFAULT_SPACK_REF: 'releases/v1.1'
       DEFAULT_SPACK_CONFIG_REF: 'main'
       DEFAULT_BUILTIN_SPACK_PACKAGES_REF: 'main'
       DEFAULT_ACCESS_SPACK_PACKAGES_REF: ${{ github.event.pull_request.head.sha }}
