@@ -2,10 +2,21 @@
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+from spack.build_systems import cmake, makefile
 from spack.package import *
 
-class Cice5(MakefilePackage):
-    """The Los Alamos sea ice model (CICE) is the result of an effort to develop a computationally efficient sea ice component for a fully coupled atmosphere-land global climate model."""
+def int_validator(s):
+    """Test a string variant is a valid integer """
+    if (s.isdigit() and int(s) > 0):
+        return True
+    else:
+        print(f"ERROR: {s} not a valid integer")
+        return False
+
+class Cice5(CMakePackage, MakefilePackage):
+    """The Los Alamos sea ice model (CICE) is the result of an effort to develop 
+    a computationally efficient sea ice component for a fully coupled 
+    atmosphere-land global climate model."""
 
     homepage = "https://www.access-nri.org.au"
     git = "https://github.com/ACCESS-NRI/cice5.git"
@@ -16,6 +27,15 @@ class Cice5(MakefilePackage):
     version("stable", branch="master", preferred=True)
     version("access-om2", branch="master")
     version("access-esm1.6", branch="access-esm1.6")
+
+    build_system("makefile", "cmake", default="makefile")
+
+    # TODO: for first numerical release:
+    # conflicts(
+    #     "build_system=cmake",
+    #     when="@:2025.12",
+    #     msg="cmake build not included in this version"
+    # )
 
     variant(
         "model",
@@ -37,16 +57,33 @@ class Cice5(MakefilePackage):
     )
 
     variant("deterministic", default=False, description="Deterministic build.")
-    # Support -fuse-ld=lld
-    # https://github.com/ACCESS-NRI/spack-packages/issues/255
-    variant(
-        "direct_ldflags",
-        default="none",
-        values="*",
-        multi=False,
-        description="Directly inject LDFLAGS into the Makefile",
-     )
-    variant("optimisation_report", default=False, description="Generate optimisation reports.")
+
+    conflicts(
+        "+deterministic",
+        when="build_system=cmake",
+        msg="+deterministic not available with build_system=cmake"
+    )
+
+    with when("build_system=makefile"):
+        # Support -fuse-ld=lld
+        # https://github.com/ACCESS-NRI/spack-packages/issues/255
+        variant(
+            "direct_ldflags",
+            default="none",
+            values="*",
+            multi=False,
+            description="Directly inject LDFLAGS into the Makefile",
+        )
+        variant("optimisation_report", default=False, description="Generate optimisation reports.")
+
+    with when("build_system=cmake"):
+        variant("io_type", default="NetCDF", values=("NetCDF", "PIO"), description="CICE IO Method")
+        # User set integer cmake options:
+        variant("nxglob", default="none", values=int_validator, description="Size of model grid in x")
+        variant("nyglob", default="none", values=int_validator, description="Size of model grid in y")
+        variant("blckx", default="none", values=int_validator, description="Size of computational blocks in x")
+        variant("blcky", default="none", values=int_validator, description="Size of computational blocks in y")
+        variant("mxblcks", default="none", values=int_validator, description="Max number of blocks per task")
 
     # Depend on virtual package "mpi".
     depends_on("mpi")
@@ -64,6 +101,28 @@ class Cice5(MakefilePackage):
         depends_on("libaccessom2+deterministic", when="+deterministic")
         depends_on("libaccessom2~deterministic", when="~deterministic")
 
+class CMakeBuilder(cmake.CMakeBuilder):
+
+    def cmake_args(self):
+        if self.spec.variants["model"].value == "access-esm1.6":
+            args = [self.define("CICE_DRIVER", "access")]
+        else:  # access-om2
+            args = [self.define("CICE_DRIVER", "auscom")]
+
+        args.extend([
+            self.define_from_variant("CICE_IO", "io_type"),
+            self.define_from_variant("CICE_NXGLOB", "nxglob"),
+            self.define_from_variant("CICE_NYGLOB", "nyglob"),
+            self.define_from_variant("CICE_BLCKX", "blckx"),
+            self.define_from_variant("CICE_BLCKY", "blcky"),
+            self.define_from_variant("CICE_MXBLCKS", "mxblcks"),
+        ])
+
+        return args
+
+
+class MakefileBuilder(makefile.MakefileBuilder):
+
     phases = ["set_deps_targets", "edit", "build", "install"]
 
     __buildscript = "spack-build.sh"
@@ -71,9 +130,6 @@ class Cice5(MakefilePackage):
 
     __deps = {"includes": "", "ldflags": ""}
     __targets = {}
-
-    def url_for_version(self, version):
-        return "https://github.com/ACCESS-NRI/cice5/tarball/{0}".format(version)
 
     # The reason for the explicit -rpath is:
     # https://github.com/ACCESS-NRI/spack-packages/issues/14#issuecomment-1653651447
@@ -103,8 +159,7 @@ class Cice5(MakefilePackage):
         self.__targets[ntask]["grid"] = grid
         self.__targets[ntask]["blocks"] = blocks
 
-    def set_deps_targets(self, spec, prefix):
-
+    def set_deps_targets(self, pkg, spec, prefix):
         if self.spec.variants["model"].value == "access-esm1.6":
             # The integer represents environment variable NTASK
             # esm1.5 used 12 (cice4), cm2 used 16 (cice5), build both for testing
@@ -149,13 +204,12 @@ class Cice5(MakefilePackage):
         self.__deps["ldflags"] = " ".join([lstr] + [self.get_linker_args(spec, d) for d in ldeps])
 
 
-    def edit(self, spec, prefix):
-
+    def edit(self, pkg, spec, prefix):
         srcdir = self.stage.source_path
         buildscript_dest = join_path(srcdir, self.__buildscript_path)
         makeinc_path = join_path(srcdir, "bld", "Macros.spack")
 
-        copy(join_path(self.package_dir, self.__buildscript), buildscript_dest)
+        copy(join_path(pkg.package_dir, self.__buildscript), buildscript_dest)
 
         config = {}
         incs = self.__deps["includes"]
@@ -272,12 +326,12 @@ ifeq ($(OASIS3_MCT), yes)
    CPPDEFS := $(CPPDEFS) -DOASIS3_MCT
 endif
 """
-        fullconfig = config["pre"] + config[self.compiler.name] + config["post"]
+        fullconfig = config["pre"] + config[pkg.compiler.name] + config["post"]
         print(fullconfig)
         with open(makeinc_path, "w") as makeinc:
             makeinc.write(fullconfig)
 
-    def build(self, spec, prefix):
+    def build(self, pkg, spec, prefix):
 
         build = Executable(
                     join_path(self.stage.source_path, self.__buildscript_path)
@@ -289,7 +343,7 @@ endif
                     self.__targets[k]["blocks"],
                     str(k))
 
-    def install(self, spec, prefix):
+    def install(self, pkg, spec, prefix):
 
         mkdirp(prefix.bin)
         for k in self.__targets:
