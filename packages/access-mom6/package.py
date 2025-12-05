@@ -35,6 +35,12 @@ class AccessMom6(CMakePackage):
         default=True,
         description="Install MOM6 as library for Access3 models"
     )
+    variant(
+        "mom6_solo",
+        default=False,
+        description="Install MOM6 solo executable",
+        when="@2025.07.001:"
+    )
 
     depends_on("access3-share", when="+access3")
     depends_on("cmake@3.18:", type="build")
@@ -51,6 +57,7 @@ class AccessMom6(CMakePackage):
             self.define_from_variant("MOM6_OPENMP", "openmp"),
             self.define_from_variant("MOM6_ASYMMETRIC", "asymmetric_mem"),
             self.define_from_variant("MOM6_ACCESS3", "access3"),
+            self.define_from_variant("MOM6_SOLO"),
         ]
 
         return args
