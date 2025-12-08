@@ -147,7 +147,7 @@ jobs:
           - package: {template_value: "access-issm"}
           - package: {template_value: "access-test"}
           - package: {template_value: "coastri-roms"}
-    uses: access-nri/build-ci/.github/workflows/ci.yml@spack-config-81-git-based-spack-packages-repo_TEST
+    uses: access-nri/build-ci/.github/workflows/ci.yml@spack-config-81-git-based-spack-packages-repo_TEST_no_load_compilers
     with:
       spack-manifest-path: ${{ matrix.package.filepath }}
       spack-manifest-data-path: .github/build-ci/data/standard_definitions.json
