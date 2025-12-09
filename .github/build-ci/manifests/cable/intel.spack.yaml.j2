@@ -5,12 +5,12 @@ spack:
   - '{{ package }} +mpi'
   - '{{ package }} ~mpi'
   packages:
-    intel-oneapi-compilers:
+    intel-oneapi-compilers-classic:
       require:
-        - '{{ oneapi_compiler }}'
+        - '{{ intel_compiler }}'
     all:
       require:
-        - '%access_oneapi'
+        - '%access_intel'
         - 'target={{ target }}'
   concretizer:
     unify: false
