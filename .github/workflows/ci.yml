@@ -34,8 +34,6 @@ jobs:
       # These defaults can be overridden by the inputs (if the trigger is a workflow_dispatch)
       DEFAULT_SPACK_REF: 'releases/v1.1'
       DEFAULT_SPACK_CONFIG_REF: 'main'
-      # fix intel_oneapi_compilers_classic@:2021.10 (#2176)
-      DEFAULT_BUILTIN_SPACK_PACKAGES_REF: '39aeb9dbcc13b6a53e40c77b672c397e1f4c93ec'
       DEFAULT_ACCESS_SPACK_PACKAGES_REF: ${{ github.event.pull_request.head.sha }}
       PACKAGES_ROOT_DIR: spack_repo/access/nri/packages
     outputs:
@@ -130,7 +128,7 @@ jobs:
       - name: Set refs
         id: set-refs
         run: |
-          echo "builtin-spack-packages-ref=${{  inputs.builtin-spack-packages-ref || env.DEFAULT_BUILTIN_SPACK_PACKAGES_REF }}" >> $GITHUB_OUTPUT
+          echo "builtin-spack-packages-ref=${{  inputs.builtin-spack-packages-ref }}" >> $GITHUB_OUTPUT
           echo "access-spack-packages-ref=${{  inputs.access-spack-packages-ref || env.DEFAULT_ACCESS_SPACK_PACKAGES_REF }}" >> $GITHUB_OUTPUT
           echo "spack-config-ref=${{ inputs.spack-config-ref || env.DEFAULT_SPACK_CONFIG_REF }}" >> $GITHUB_OUTPUT
           echo "spack-ref=${{ inputs.spack-ref || env.DEFAULT_SPACK_REF }}" >> $GITHUB_OUTPUT
