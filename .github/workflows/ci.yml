@@ -32,9 +32,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # These defaults can be overridden by the inputs (if the trigger is a workflow_dispatch)
-      DEFAULT_SPACK_REF: 'releases/v1.1'
-      DEFAULT_SPACK_CONFIG_REF: 'main'
-      DEFAULT_ACCESS_SPACK_PACKAGES_REF: ${{ github.event.pull_request.head.sha }}
+      OVERRIDE_SPACK_REF: 'releases/v1.1'
+      OVERRIDE_SPACK_CONFIG_REF: 'main'
+      OVERRIDE_ACCESS_SPACK_PACKAGES_REF: ${{ github.event.pull_request.head.sha }}
       PACKAGES_ROOT_DIR: spack_repo/access/nri/packages
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -128,10 +128,10 @@ jobs:
       - name: Set refs
         id: set-refs
         run: |
-          echo "builtin-spack-packages-ref=${{  inputs.builtin-spack-packages-ref }}" >> $GITHUB_OUTPUT
-          echo "access-spack-packages-ref=${{  inputs.access-spack-packages-ref || env.DEFAULT_ACCESS_SPACK_PACKAGES_REF }}" >> $GITHUB_OUTPUT
-          echo "spack-config-ref=${{ inputs.spack-config-ref || env.DEFAULT_SPACK_CONFIG_REF }}" >> $GITHUB_OUTPUT
-          echo "spack-ref=${{ inputs.spack-ref || env.DEFAULT_SPACK_REF }}" >> $GITHUB_OUTPUT
+          echo "builtin-spack-packages-ref=${{ inputs.builtin-spack-packages-ref }}" >> $GITHUB_OUTPUT
+          echo "access-spack-packages-ref=${{ inputs.access-spack-packages-ref || env.OVERRIDE_ACCESS_SPACK_PACKAGES_REF }}" >> $GITHUB_OUTPUT
+          echo "spack-config-ref=${{ inputs.spack-config-ref || env.OVERRIDE_SPACK_CONFIG_REF }}" >> $GITHUB_OUTPUT
+          echo "spack-ref=${{ inputs.spack-ref || env.OVERRIDE_SPACK_REF }}" >> $GITHUB_OUTPUT
 
   ci:
     name: CI
@@ -139,7 +139,7 @@ jobs:
       - setup-ci
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 7
       matrix:
         package: ${{ fromJson(needs.setup-ci.outputs.matrix) }}
         exclude:
