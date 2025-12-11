@@ -31,10 +31,8 @@ jobs:
     name: Setup CI
     runs-on: ubuntu-latest
     env:
-      # These defaults can be overridden by the inputs (if the trigger is a workflow_dispatch)
-      OVERRIDE_SPACK_REF: 'releases/v1.1'
-      OVERRIDE_SPACK_CONFIG_REF: 'main'
-      OVERRIDE_ACCESS_SPACK_PACKAGES_REF: ${{ github.event.pull_request.head.sha }}
+      # Note, this needs to be updated in line with refs in the ci job below
+      BUILD_CI_WORKFLOW_VERSION: v3
       PACKAGES_ROOT_DIR: spack_repo/access/nri/packages
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -125,13 +123,32 @@ jobs:
           # Remove the trailing comma and wrap in square brackets
           echo "matrix=[${json_entries%,}]" >> $GITHUB_OUTPUT
 
+      - name: Checkout build-ci
+        uses: actions/checkout@v4
+        with:
+          repository: access-nri/build-ci
+          ref: ${{ env.BUILD_CI_WORKFLOW_VERSION }}
+
+      - name: Get default refs from build-ci workflow
+        id: defaults
+        # GitHub does not treat empty-string inputs as eligible for substitution with a default
+        # Since we are supporting both workflow_dispatch and pull_request triggers, the entrypoint inputs need to be filled in
+        # So we are getting the default values from the workflow file itself, and passing them back into the workflow
+        # builtin-spack-packages-ref does not need this as the input handles the empty string default.
+        run: |
+          default_spack_ref=$(yq '.on.workflow_call.inputs."spack-ref".default' .github/build-ci/workflows/ci.yml)
+          spack_config_ref=$(yq '.on.workflow_call.inputs."spack-config-ref".default' .github/build-ci/workflows/ci.yml)
+
+          echo "Default refs from ${{ env.BUILD_CI_WORKFLOW_VERSION }}: spack-ref=$default_spack_ref, spack-config=$spack_config_ref"
+
+
       - name: Set refs
         id: set-refs
         run: |
           echo "builtin-spack-packages-ref=${{ inputs.builtin-spack-packages-ref }}" >> $GITHUB_OUTPUT
-          echo "access-spack-packages-ref=${{ inputs.access-spack-packages-ref || env.OVERRIDE_ACCESS_SPACK_PACKAGES_REF }}" >> $GITHUB_OUTPUT
-          echo "spack-config-ref=${{ inputs.spack-config-ref || env.OVERRIDE_SPACK_CONFIG_REF }}" >> $GITHUB_OUTPUT
-          echo "spack-ref=${{ inputs.spack-ref || env.OVERRIDE_SPACK_REF }}" >> $GITHUB_OUTPUT
+          echo "access-spack-packages-ref=${{ inputs.access-spack-packages-ref || github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+          echo "spack-config-ref=${{ inputs.spack-config-ref || steps.defaults.outputs.spack-config-ref }}" >> $GITHUB_OUTPUT
+          echo "spack-ref=${{ inputs.spack-ref || steps.defaults.outputs.spack-ref }}" >> $GITHUB_OUTPUT
 
   ci:
     name: CI
