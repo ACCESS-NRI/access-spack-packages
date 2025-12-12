@@ -18,6 +18,7 @@ class Gcom(Package):
     version("8.1", revision=1215)
     version("8.2", revision=1251)
     version("8.3", revision=1288)
+    version("8.4", revision=1386)
 
     variant("mpi", default=True, description="Build with MPI")
 
