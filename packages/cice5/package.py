@@ -5,7 +5,7 @@
 from spack.build_systems import cmake, makefile
 from spack.package import *
 
-def int_validator(s):
+def _int_validator(s):
     """Test a string variant is a valid integer """
     if (s.isdigit() and int(s) > 0):
         return True
@@ -58,12 +58,6 @@ class Cice5(CMakePackage, MakefilePackage):
 
     variant("deterministic", default=False, description="Deterministic build.")
 
-    conflicts(
-        "+deterministic",
-        when="build_system=cmake",
-        msg="+deterministic not available with build_system=cmake"
-    )
-
     with when("build_system=makefile"):
         # Support -fuse-ld=lld
         # https://github.com/ACCESS-NRI/spack-packages/issues/255
@@ -79,11 +73,11 @@ class Cice5(CMakePackage, MakefilePackage):
     with when("build_system=cmake"):
         variant("io_type", default="NetCDF", values=("NetCDF", "PIO"), description="CICE IO Method")
         # User set integer cmake options:
-        variant("nxglob", default="none", values=int_validator, description="Size of model grid in x")
-        variant("nyglob", default="none", values=int_validator, description="Size of model grid in y")
-        variant("blckx", default="none", values=int_validator, description="Size of computational blocks in x")
-        variant("blcky", default="none", values=int_validator, description="Size of computational blocks in y")
-        variant("mxblcks", default="none", values=int_validator, description="Max number of blocks per task")
+        variant("nxglob", default="none", values=_int_validator, description="Size of model grid in x")
+        variant("nyglob", default="none", values=_int_validator, description="Size of model grid in y")
+        variant("blckx", default="none", values=_int_validator, description="Size of computational blocks in x")
+        variant("blcky", default="none", values=_int_validator, description="Size of computational blocks in y")
+        variant("mxblcks", default="none", values=_int_validator, description="Max number of blocks per task")
 
     # Depend on virtual package "mpi".
     depends_on("mpi")
@@ -101,6 +95,7 @@ class Cice5(CMakePackage, MakefilePackage):
         depends_on("libaccessom2+deterministic", when="+deterministic")
         depends_on("libaccessom2~deterministic", when="~deterministic")
 
+
 class CMakeBuilder(cmake.CMakeBuilder):
 
     def cmake_args(self):
@@ -116,6 +111,7 @@ class CMakeBuilder(cmake.CMakeBuilder):
             self.define_from_variant("CICE_BLCKX", "blckx"),
             self.define_from_variant("CICE_BLCKY", "blcky"),
             self.define_from_variant("CICE_MXBLCKS", "mxblcks"),
+            self.define_from_variant("CICE_DETERMINISTIC", "deterministic"),
         ])
 
         return args
@@ -160,6 +156,7 @@ class MakefileBuilder(makefile.MakefileBuilder):
         self.__targets[ntask]["blocks"] = blocks
 
     def set_deps_targets(self, pkg, spec, prefix):
+
         if self.spec.variants["model"].value == "access-esm1.6":
             # The integer represents environment variable NTASK
             # esm1.5 used 12 (cice4), cm2 used 16 (cice5), build both for testing
@@ -205,6 +202,7 @@ class MakefileBuilder(makefile.MakefileBuilder):
 
 
     def edit(self, pkg, spec, prefix):
+
         srcdir = self.stage.source_path
         buildscript_dest = join_path(srcdir, self.__buildscript_path)
         makeinc_path = join_path(srcdir, "bld", "Macros.spack")

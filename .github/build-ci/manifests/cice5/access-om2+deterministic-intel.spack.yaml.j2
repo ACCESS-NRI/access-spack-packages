@@ -1,6 +1,7 @@
 spack:
   specs:
-    - 'access-om2@=stable +deterministic %{{ intel_compiler }}'
+    - 'access-om2@=stable +deterministic %{{ intel_compiler }} ^cice5 build_system=cmake'
+    - 'access-om2@=stable +deterministic %{{ intel_compiler }} ^cice5 build_system=makefile'
   packages:
     all:
       require:
