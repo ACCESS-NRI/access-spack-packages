@@ -5,6 +5,14 @@
 from spack.build_systems import cmake, makefile
 from spack.package import *
 
+def _int_validator(s):
+    """Test a string variant is a valid integer """
+    if (s.isdigit() and int(s) > 0):
+        return True
+    else:
+        print(f"ERROR: {s} not a valid integer")
+        return False
+
 class Cice5(CMakePackage, MakefilePackage):
     """The Los Alamos sea ice model (CICE) is the result of an effort to develop 
     a computationally efficient sea ice component for a fully coupled 
@@ -61,14 +69,6 @@ class Cice5(CMakePackage, MakefilePackage):
             description="Directly inject LDFLAGS into the Makefile",
         )
         variant("optimisation_report", default=False, description="Generate optimisation reports.")
-
-    def _int_validator(s):
-        """Test a string variant is a valid integer """
-        if (s.isdigit() and int(s) > 0):
-            return True
-        else:
-            print(f"ERROR: {s} not a valid integer")
-            return False
 
     with when("build_system=cmake"):
         variant("io_type", default="NetCDF", values=("NetCDF", "PIO"), description="CICE IO Method")
