@@ -251,7 +251,7 @@ class Issm(AutotoolsPackage):
                         py_files.append(join_path(root, file))
 
             # Create the ZIP archive
-            with zipfile.ZipFile(py_dst, "w", zipfile.ZIP_DEFLATED) as zf:
+            with zipfile.ZipFile(py_dst, "w", zipfile.ZIP_DEFLATED, strict_timestamps=False) as zf:
                 for src_path in py_files:
                     # Use only the filename inside the archive
                     arcname = src_path.split("/")[-1]
