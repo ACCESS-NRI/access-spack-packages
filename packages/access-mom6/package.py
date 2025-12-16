@@ -24,6 +24,7 @@ class AccessMom6(CMakePackage):
     version("stable", branch="2025.07", preferred=True)   # need to update branch for new major versions
     # NOTE: 2025.08.000 has been deprecated due to a bug: https://github.com/ACCESS-NRI/MOM6/issues/26
     version("2025.08.000", tag="2025.08.000", commit="bc51c1ba407f5ae669b5bbc94b027e852e2c6ac4", deprecated=True)
+    version("2025.07.001", tag="2025.07.001", commit="b440191286683b2b8f041baf21e6414418035bcc")
     version("2025.07.000", tag="2025.07.000", commit="7d90a4b1a574b651da30f23777af2481f4ed8022")
     version("2025.02.001", tag="2025.02.001", commit="a5f4397b953f749acecf06f21129c2a20aa578fe")
     version("2025.02.000", tag="2025.02.000", commit="e088c8b7f6c2b18b72edd568aa009e13396ec0c3")
