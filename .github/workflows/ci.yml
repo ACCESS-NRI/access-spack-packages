@@ -136,11 +136,13 @@ jobs:
         # So we are getting the default values from the workflow file itself, and passing them back into the workflow
         # builtin-spack-packages-ref does not need this as the input handles the empty string default.
         run: |
-          default_spack_ref=$(yq '.on.workflow_call.inputs."spack-ref".default' .github/build-ci/workflows/ci.yml)
-          spack_config_ref=$(yq '.on.workflow_call.inputs."spack-config-ref".default' .github/build-ci/workflows/ci.yml)
+          default_spack_ref=$(yq '.on.workflow_call.inputs."spack-ref".default' .github/workflows/ci.yml)
+          default_spack_config_ref=$(yq '.on.workflow_call.inputs."spack-config-ref".default' .github/workflows/ci.yml)
 
-          echo "Default refs from ${{ env.BUILD_CI_WORKFLOW_VERSION }}: spack-ref=$default_spack_ref, spack-config=$spack_config_ref"
+          echo "Default refs from ${{ env.BUILD_CI_WORKFLOW_VERSION }}: spack-ref=$default_spack_ref, spack-config=$default_spack_config_ref"
 
+          echo "spack-ref=$default_spack_ref" >> $GITHUB_OUTPUT
+          echo "spack-config-ref=$default_spack_config_ref" >> $GITHUB_OUTPUT
 
       - name: Set refs
         id: set-refs
