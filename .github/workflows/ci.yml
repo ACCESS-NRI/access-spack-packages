@@ -36,10 +36,10 @@ jobs:
       PACKAGES_ROOT_DIR: spack_repo/access/nri/packages
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
-      builtin-spack-packages-ref: ${{ steps.set-refs.outputs.builtin-spack-packages-ref }}
-      access-spack-packages-ref: ${{ steps.set-refs.outputs.access-spack-packages-ref }}
-      spack-config-ref: ${{ steps.set-refs.outputs.spack-config-ref }}
-      spack-ref: ${{ steps.set-refs.outputs.spack-ref }}
+      builtin-spack-packages-ref: ${{ inputs.builtin-spack-packages-ref }}
+      access-spack-packages-ref: ${{ inputs.access-spack-packages-ref || github.event.pull_request.head.sha }}
+      spack-config-ref: ${{ inputs.spack-config-ref || steps.defaults.outputs.spack-config-ref }}
+      spack-ref: ${{ inputs.spack-ref || steps.defaults.outputs.spack-ref }}
     steps:
       - name: Checkout spack-packages
         uses: actions/checkout@v4
@@ -143,14 +143,6 @@ jobs:
 
           echo "spack-ref=$default_spack_ref" >> $GITHUB_OUTPUT
           echo "spack-config-ref=$default_spack_config_ref" >> $GITHUB_OUTPUT
-
-      - name: Set refs
-        id: set-refs
-        run: |
-          echo "builtin-spack-packages-ref=${{ inputs.builtin-spack-packages-ref }}" >> $GITHUB_OUTPUT
-          echo "access-spack-packages-ref=${{ inputs.access-spack-packages-ref || github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
-          echo "spack-config-ref=${{ inputs.spack-config-ref || steps.defaults.outputs.spack-config-ref }}" >> $GITHUB_OUTPUT
-          echo "spack-ref=${{ inputs.spack-ref || steps.defaults.outputs.spack-ref }}" >> $GITHUB_OUTPUT
 
   ci:
     name: CI
