@@ -27,8 +27,12 @@ class Um(Package):
         "13.3": 118802,
         "13.4": 120750,
         "13.5": 123226,
-        "13.6": 124981}
-    _max_minor = 6
+        "13.6": 124981,
+        "13.7": 127030,
+        "13.8": 128625,
+        "13.9": 130128,
+    }
+    _max_minor = 9
     version("13.0", revision=_revision["13.0"], preferred=True)
     for v in range(1, 1 + _max_minor):
         _version = f"13.{v}"
@@ -130,7 +134,9 @@ class Um(Package):
     depends_on("gcom@8.0", when="@13.2", type=("build", "link"))
     depends_on("gcom@8.1", when="@13.3", type=("build", "link"))
     depends_on("gcom@8.2", when="@13.4", type=("build", "link"))
-    depends_on("gcom@8.3:", when="@13.5:", type=("build", "link"))
+    depends_on("gcom@8.3", when="@13.5:13.7", type=("build", "link"))
+    depends_on("gcom@8.4", when="@13.8", type=("build", "link"))
+    depends_on("gcom@8.4:", when="@13.9:", type=("build", "link"))
     depends_on("fiat@um", type=("build", "link", "run"),
         when="+DR_HOOK")
     depends_on("eccodes +fortran +netcdf", type=("build", "link", "run"),
