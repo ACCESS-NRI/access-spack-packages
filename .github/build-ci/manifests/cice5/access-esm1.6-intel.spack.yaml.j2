@@ -1,13 +1,20 @@
 spack:
   specs:
-    - 'access-esm1p6 %{{ intel_compiler }}'
+    - 'access-esm1p6'
   packages:
     cice5:
       require:
-        '@git.access-esm1.6=stable'
+      - '@git.access-esm1.6=stable'
+    python:
+      require:
+      - '@3.11.14'
+    intel-oneapi-compilers-classic:
+      require:
+      - '{{ intel_compiler_ver }}'
     all:
       require:
-      - '%{{ intel_compiler }}'
+      - '%access_intel'
+      - 'target={{ target }}'
   concretizer:
     unify: false
   view: false
