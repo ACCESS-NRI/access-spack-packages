@@ -316,8 +316,7 @@ class Um(Package):
                 tty.warn(f"The spec sets {root_path_var}={root_path_value}.")
             tty.info(
                 f"The value {resource_path} will be used for {root_path_var}.")
-            tty.info(
-                f"The config_revision will be set to the empty string.")
+            tty.info("The config_revision will be set to the empty string.")
 
 
         spec = self.spec
