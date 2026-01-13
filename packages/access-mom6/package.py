@@ -22,6 +22,7 @@ class AccessMom6(CMakePackage):
     license("LGPL-3.0-only", checked_by="minghangli-uni")
 
     version("stable", branch="2025.07", preferred=True)   # need to update branch for new major versions
+    version("2026.01.000", tag="2026.01.000", commit="3a82c07a999d51cf1cc645edd593d35871c2fba8")
     # NOTE: 2025.08.000 has been deprecated due to a bug: https://github.com/ACCESS-NRI/MOM6/issues/26
     version("2025.08.000", tag="2025.08.000", commit="bc51c1ba407f5ae669b5bbc94b027e852e2c6ac4", deprecated=True)
     version("2025.07.001", tag="2025.07.001", commit="b440191286683b2b8f041baf21e6414418035bcc")
