@@ -18,6 +18,7 @@ class Oasis3Mct(MakefilePackage):
     maintainers("harshula", "penguian")
 
     version("stable", branch="master", preferred=True)
+    version("5.2", tag="5.2", commit="fadc2145cfbd89261aa418e8dd4f754ba273735e")
     version(
         "upstream",
         branch="OASIS3-MCT_5.0",
