@@ -73,7 +73,7 @@ class Oasis3Mct(MakefilePackage):
     def __create_pkgconfig(self, spec, prefix):
 
         oasis_version = "2.0"
-        if self.spec.satisfies("@upstream,OASIS3-MCT_5.2"):
+        if self.spec.satisfies("@upstream,OASIS3-MCT_5.2,5:"):
             oasis_version = "5"
 
         mkdirp(self.__pkgdir)
