@@ -23,12 +23,12 @@ class Gcom(Package):
     variant("mpi", default=True, description="Build with MPI")
 
     depends_on("fcm", type="build")
-    depends_on("mpi", when="+mpi", type=("build", "link", "run"))
+    depends_on("mpi", type=("build", "link", "run"))
     # For the default MPI version for NCI, see (e.g.)
     # https://code.metoffice.gov.uk/trac/gcom/browser/main/trunk/rose-stem/site/nci/suite.rc
     # For cherry picking virtual dependencies, see
     # https://github.com/spack/spack/releases/tag/v0.21.0 Feature 4
-    depends_on("openmpi@4.1.3:", when="+mpi^[virtuals=mpi] openmpi", type=("build", "link", "run"))
+    depends_on("openmpi@4.1.3:", when="^[virtuals=mpi] openmpi", type=("build", "link", "run"))
 
     def install(self, spec, prefix):
         fcm = which("fcm")
