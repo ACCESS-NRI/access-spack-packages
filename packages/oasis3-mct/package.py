@@ -24,11 +24,6 @@ class Oasis3Mct(MakefilePackage):
         branch="OASIS3-MCT_5.0",
         git="https://gitlab.com/cerfacs/oasis3-mct.git",
     )
-    version(
-        "OASIS3-MCT_5.2",
-        tag="OASIS3-MCT_5.2",
-        git="https://gitlab.com/cerfacs/oasis3-mct.git",
-    )
     # TODO: Remove the "access-om2" once it is no longer being used anywhere
     version("access-om2", branch="master")
     version("access-esm1.5", branch="access-esm1.5")
@@ -73,7 +68,7 @@ class Oasis3Mct(MakefilePackage):
     def __create_pkgconfig(self, spec, prefix):
 
         oasis_version = "2.0"
-        if self.spec.satisfies("@upstream,OASIS3-MCT_5.2,5:"):
+        if self.spec.satisfies("@upstream,5:"):
             oasis_version = "5"
 
         mkdirp(self.__pkgdir)
