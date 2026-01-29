@@ -60,7 +60,7 @@ class Oasis3Mct(MakefilePackage):
 
     # TODO: Remove this function when it is no longer required
     def url_for_version(self, version):
-        if self.spec.satisfies("@upstream,OASIS3-MCT_5.2"):
+        if self.spec.satisfies("@upstream"):
             raise ValueError("url_for_version() called for version @upstream")
 
         return "https://github.com/ACCESS-NRI/oasis3-mct/tarball/{0}".format(version)
