@@ -143,5 +143,6 @@ jobs:
       spack-packages-ref: ${{ needs.setup-ci.outputs.spack-packages-ref }}
       spack-config-ref: ${{ needs.setup-ci.outputs.spack-config-ref }}
       spack-ref: ${{ needs.setup-ci.outputs.spack-ref }}
+      allow-ssh-into-spack-install: false
     secrets:
       spack-install-command-pat: ${{ secrets.SPACK_INSTALL_COMMAND_PAT }}
