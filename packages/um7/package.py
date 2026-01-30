@@ -56,7 +56,7 @@ class Um7(Package):
                 join_path(self.spec["oasis3-mct"].prefix.include, subdir)
                 for subdir in ["psmile.MPI1", "mct"]]
         ideps = ["gcom4", "netcdf-fortran"]
-        with when("@access-esm1.6"):
+        if self.spec.satisfies("@access-esm1.6"):
             ideps.append("cable")
         incs = [self.spec[d].prefix.include for d in ideps] + oasis3_incs
         for ipath in incs:
@@ -102,7 +102,7 @@ class Um7(Package):
         """
 
         ldeps = ["oasis3-mct", "netcdf-fortran", "dummygrib"]
-        with when("@access-esm1.6"):
+        if self.spec.satisfies("@access-esm1.6"):
             ldeps.append("cable")
         libs = " ".join([self._get_linker_args(spec, d) for d in ldeps] + ["-lgcom"])
 
@@ -151,7 +151,7 @@ class Um7(Package):
         # string for older versions of UM7 which include CABLE as
         # source code.
         CABLE_excl_deps = ""
-        with when("@access-esm1.6"):
+        if self.spec.satisfies("@access-esm1.6"):
             CABLE_excl_deps = """
 excl_dep                                           USE::cable_def_types_mod
 excl_dep                                           USE::cbl_masks_mod

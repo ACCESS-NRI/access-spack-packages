@@ -3,8 +3,7 @@
 # gcc compiler from occuring, due to https://github.com/ACCESS-NRI/access-spack-packages/issues/342
 spack:
   specs:
-  - '{{ package }}@access-esm1.5 %{{ intel_compiler }}'
-  - '{{ package }}@access-esm1.6 %{{ intel_compiler }}'
+  - '{{ package }} %{{ intel_compiler }}'
   packages:
     all:
       require:
