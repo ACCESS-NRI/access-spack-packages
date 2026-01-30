@@ -15,7 +15,7 @@ class AccessEsm1p6(BundlePackage):
     * The CABLE land surface model with biogeochemistry (CASA-CNP) (CABLE2.4)
     * The GFDL MOM5 ocean model at 1 degree resolution
     * The WOMBATlite ocean BGC model (generic tracer version)
-    * The LANL CICE5 sea ice model. CICE4 for early development (before 2025.08)
+    * The LANL CICE5 sea ice model with UM/ACCESS modifications for coupling
     * The OASIS-MCT coupler
     """
 
@@ -29,9 +29,9 @@ class AccessEsm1p6(BundlePackage):
 
     variant(
         "cice",
-        default="4",
-        description="Choose the version of the CICE sea-ice model.",
-        values=("4", "5"),
+        default="5",
+        description="(Deprecated) choose the version of the CICE sea-ice model.",
+        values=("5"),
         multi=False,
     )
     variant(
@@ -42,8 +42,7 @@ class AccessEsm1p6(BundlePackage):
         multi=False,
     )
 
-    depends_on("cice4", type="run", when="cice=4")
-    depends_on("cice5 model=access-esm1.6", type="run", when="cice=5")
+    depends_on("cice5 model=access-esm1.6", type="run")
     depends_on("mom5@access-esm1.6", type="run")
     # um7 is in a private repository
     depends_on("um7@access-esm1.5", type="run", when="um=access-esm1.5")
