@@ -10,7 +10,6 @@ import configparser
 from spack.package import *
 import llnl.util.tty as tty
 import spack.util.git
-from spack.util.environment import EnvironmentModifications
 
 class UmCreatebc(Package):
     """
@@ -121,7 +120,7 @@ class UmCreatebc(Package):
         variant(var, default="none", description=var, values="*", multi=False)
 
     # The 'site=nci-gadi' variant of fcm defines the keywords
-    # used by the FCM configuration of UMCreateBC.
+    # used by the FCM configuration of UmCreatebc.
     depends_on("fcm site=nci-gadi", type="build")
 
     # For GCOM versions, see
@@ -426,14 +425,11 @@ class UmCreatebc(Package):
         """
         Use FCM to build the executables.
         """
+        config_file = join_path(self.package_dir, "fcm-make.cfg")
         build_dir = self._build_dir()
         mkdirp(build_dir)
         fcm = which("fcm")
-        config_file = join_path(
-            self.package_dir,
-            "fcm-make.cfg")
         fcm("make",
-            "-vv",
             "--new",
             f"--config-file={config_file}",
             f"--directory={build_dir}",
