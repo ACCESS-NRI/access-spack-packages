@@ -2,8 +2,14 @@ spack:
   specs:
   # package is defined in the workflows inputs.spack-manifest-data-pairs
   # And the gcc_compilers are defined in the standard_definitions.json data file
+  # Test default (stable) and 5.2 (latest)
   - '{{ package }} %{{ gcc_compiler }}'
+  - '{{ package }}@5.2 %{{ gcc_compiler }}'
   packages:
+    {{ package }}:
+      require:
+      # Add following flags if breaks for gfortran > v10: -fdefault-real-8 -fdefault-double-8 
+      - fflags="-ffree-line-length-0" 
     all:
       require:
       - '%{{ gcc_compiler }} target={{ target }}'
