@@ -25,17 +25,20 @@ class Cice5(CMakePackage, MakefilePackage):
     license("BSD-3-Clause", checked_by="anton-seaice")
 
     version("stable", branch="master", preferred=True)
+    version("2026.01.000", tag="2026.01.000", commit="cf5df9d4d26265dc5c79e558e5a67834b51fd38d")
+    # TODO: the versions below can be removed once we are convinced they are not in use anywhere
     version("access-om2", branch="master")
     version("access-esm1.6", branch="access-esm1.6")
 
+    # by default, keep existing processor layout defined in makefile
+    # if nxglob, nyglob, blckx, blcky, mxblcks are supplied, then spack will switch to cmake
     build_system("makefile", "cmake", default="makefile")
 
-    # TODO: for first numerical release:
-    # conflicts(
-    #     "build_system=cmake",
-    #     when="@:2025.12",
-    #     msg="cmake build not included in this version"
-    # )
+    conflicts(
+        "build_system=cmake",
+        when="@:2025.12",
+        msg="cmake build not included in this version, use makefile"
+    )
 
     variant(
         "model",
@@ -87,14 +90,23 @@ class Cice5(CMakePackage, MakefilePackage):
     depends_on("oasis3-mct+deterministic", when="+deterministic")
     depends_on("oasis3-mct~deterministic", when="~deterministic")
 
-    with when("model=access-om2"):
-        # TODO: For initial verification we are going to use static pio.
-        #       Eventually we plan to move to shared pio
-        # ~shared requires: https://github.com/spack/spack/pull/34837
+    # With access-om2 and makefile, always use PIO
+    # With cmake, can be configued to use NetCDF or PIO
+    # For release 2026.01 and later, needs parallelio 2.6.8
+    # TODO: For initial verification we are going to use static pio.
+    #       Eventually we plan to move to shared pio
+    #       ~shared requires: https://github.com/spack/spack/pull/34837
+    with when("model=access-om2 build_system=makefile"):
         depends_on("parallelio~pnetcdf~timing~shared")
+        depends_on("parallelio@2.6.8:", when="@2026.01:")
+
+    with when("io_type=PIO"):
+        depends_on("parallelio~pnetcdf~timing~shared")
+        depends_on("parallelio@2.6.8:", when="@2026.01:")
+
+    with when("model=access-om2"):
         depends_on("libaccessom2+deterministic", when="+deterministic")
         depends_on("libaccessom2~deterministic", when="~deterministic")
-
 
 class CMakeBuilder(cmake.CMakeBuilder):
 
