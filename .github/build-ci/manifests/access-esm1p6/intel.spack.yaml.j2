@@ -1,8 +1,8 @@
-# This manifest is used by default for packages without a specific manifest under .github/build-ci/manifests/PACKAGE/*.j2
+# This manifest is the same as the default for the intel compiler. 
+# We provide a manifest in this folder to suppress the default build using the 
+# gcc compiler from occuring, due to https://github.com/ACCESS-NRI/access-spack-packages/issues/342
 spack:
   specs:
-  # package is defined in the workflows inputs.spack-manifest-data-pairs
-  # And the intel_compilers are defined in the standard_definitions.json data file
   - '{{ package }} %{{ intel_compiler }}'
   packages:
     all:
