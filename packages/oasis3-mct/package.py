@@ -18,14 +18,10 @@ class Oasis3Mct(MakefilePackage):
     maintainers("harshula", "penguian")
 
     version("stable", branch="master", preferred=True)
+    version("5.2", tag="5.2", commit="fadc2145cfbd89261aa418e8dd4f754ba273735e")
     version(
         "upstream",
         branch="OASIS3-MCT_5.0",
-        git="https://gitlab.com/cerfacs/oasis3-mct.git",
-    )
-    version(
-        "OASIS3-MCT_5.2",
-        tag="OASIS3-MCT_5.2",
         git="https://gitlab.com/cerfacs/oasis3-mct.git",
     )
     # TODO: Remove the "access-om2" once it is no longer being used anywhere
@@ -64,7 +60,7 @@ class Oasis3Mct(MakefilePackage):
 
     # TODO: Remove this function when it is no longer required
     def url_for_version(self, version):
-        if self.spec.satisfies("@upstream,OASIS3-MCT_5.2"):
+        if self.spec.satisfies("@upstream"):
             raise ValueError("url_for_version() called for version @upstream")
 
         return "https://github.com/ACCESS-NRI/oasis3-mct/tarball/{0}".format(version)
@@ -72,7 +68,7 @@ class Oasis3Mct(MakefilePackage):
     def __create_pkgconfig(self, spec, prefix):
 
         oasis_version = "2.0"
-        if self.spec.satisfies("@upstream,OASIS3-MCT_5.2"):
+        if self.spec.satisfies("@upstream,5:"):
             oasis_version = "5"
 
         mkdirp(self.__pkgdir)
@@ -148,7 +144,8 @@ f           = $(F90)
         config["gcc"] = """
 # Compiling and other commands
 MAKE        = make
-F90         = mpif90 -Wall -fallow-argument-mismatch
+# Consider adding following flags if breaks for gfortran > v10: -fdefault-real-8 -fdefault-double-8
+F90         = mpif90 -Wall -fallow-argument-mismatch -ffree-line-length-0
 CC          = gcc
 LD          = mpif90
 MCT_FCFLAGS =
