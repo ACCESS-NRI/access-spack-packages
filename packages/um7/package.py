@@ -136,11 +136,11 @@ class Um7(Package):
             FARCH = ""
             FOBLANK = "-O0"
         else:
-            FO = "-O2 -unroll"
+            FO = "-O2"
             FTRACEBACK = ""
             FDEBUG = ""
             FG = ""
-            FARCH = "-march=cascadelake -mtune=sapphirerapids"
+            FARCH = "-xCORE-AVX512"
             FOBLANK = ""
 
         # FCM tries to find all instances of USE and include them as
@@ -236,12 +236,12 @@ tool::cppflags
 tool::cppkeys                                      {CPPKEYS}
 tool::fc                                           mpif90
 tool::fflags                                       {FO}  -g   -traceback  {FDEBUG} -i8 -r8      -fp-model precise {FFLAGS}
-tool::fflags::control::coupling::dump_received     {FO} {FG} {FTRACEBACK} {FDEBUG}         -mp1 -fp-model precise  {FFLAGS}
-tool::fflags::control::coupling::dump_sent         {FO} {FG} {FTRACEBACK} {FDEBUG}         -mp1 -fp-model precise  {FFLAGS}
-tool::fflags::control::coupling::oasis3_atmos_init {FO} {FG} {FTRACEBACK} {FDEBUG} -i4 -r8 -mp1 -fp-model precise  {FFLAGS}
-tool::fflags::control::top_level::atm_step         {FO}   -g {FTRACEBACK} {FDEBUG} -i8 -r8 -mp1 -fp-model precise  {FFLAGS}
-tool::fflags::control::top_level::set_atm_pointers {FO}   -g  -traceback  {FDEBUG} -i8 -r8      -fp-model precise -ftz -std95
-tool::fflags::control::top_level::u_model          {FO}   -g {FTRACEBACK} {FDEBUG} -i8 -r8 -mp1 -fp-model precise  {FFLAGS}
+tool::fflags::control::coupling::dump_received     {FO} {FG} {FTRACEBACK} {FDEBUG}         -mp1 -fp-model strict  {FFLAGS}
+tool::fflags::control::coupling::dump_sent         {FO} {FG} {FTRACEBACK} {FDEBUG}         -mp1 -fp-model strict  {FFLAGS}
+tool::fflags::control::coupling::oasis3_atmos_init {FO} {FG} {FTRACEBACK} {FDEBUG} -i4 -r8 -mp1 -fp-model strict  {FFLAGS}
+tool::fflags::control::top_level::atm_step         -O0   -g  {FTRACEBACK} {FDEBUG} -i8 -r8 -mp1 -fp-model strict  {FFLAGS}
+tool::fflags::control::top_level::set_atm_pointers -O0   -g   -traceback  {FDEBUG} -i8 -r8      -fp-model strict -ftz -std95
+tool::fflags::control::top_level::u_model          -O0   -g  {FTRACEBACK} {FDEBUG} -i8 -r8 -mp1 -fp-model strict  {FFLAGS}
 tool::fpp                                          cpp
 tool::fppflags                                     -P -traditional
 tool::fppkeys                                      {CPPKEYS}
