@@ -3,11 +3,15 @@
 # gcc compiler from occuring, due to https://github.com/ACCESS-NRI/access-spack-packages/issues/342
 spack:
   specs:
-  - '{{ package }} %{{ intel_compiler }}'
+  - '{{ package }}'
   packages:
+    intel-oneapi-compilers-classic:
+      require:
+        - '{{ intel_compiler_ver }}'
     all:
       require:
-      - '%{{ intel_compiler }}'
+        - '%access_intel'
+        - 'target={{ target }}'
   concretizer:
     unify: false
   view: false
