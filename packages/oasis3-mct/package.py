@@ -144,8 +144,7 @@ f           = $(F90)
         config["gcc"] = """
 # Compiling and other commands
 MAKE        = make
-# Consider adding following flags if breaks for gfortran > v10: -fdefault-real-8 -fdefault-double-8
-F90         = mpif90 -Wall -fallow-argument-mismatch -ffree-line-length-0
+F90         = mpif90 -Wall -fallow-argument-mismatch -ffree-line-length-0 -fdefault-real-8
 CC          = gcc
 LD          = mpif90
 MCT_FCFLAGS =
