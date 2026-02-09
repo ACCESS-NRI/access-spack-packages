@@ -1,13 +1,20 @@
 spack:
   specs:
   # package is defined in the workflows inputs.spack-manifest-data-pairs
-  # And the intel_compilers are defined in the standard_definitions.json data file
-  - '{{ package }} +mpi %{{ intel_compiler }}'
-  - '{{ package }} ~mpi %{{ intel_compiler }}'
+  # intel_compiler_ver is defined in the standard_definitions.json data file
+  - '{{ package }} +mpi'
+  - '{{ package }} ~mpi'
   packages:
+    python:
+      require:
+        - '@3.11.14'
+    intel-oneapi-compilers-classic:
+      require:
+        - '{{ intel_compiler_ver }}'
     all:
       require:
-      - '%{{ intel_compiler }} target={{ target }}'
+        - '%access_intel'
+        - 'target={{ target }}'
   concretizer:
     unify: false
   view: false
