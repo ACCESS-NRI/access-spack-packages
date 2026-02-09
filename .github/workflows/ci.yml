@@ -134,6 +134,20 @@ jobs:
       max-parallel: 3
       matrix:
         package: ${{ fromJson(needs.setup-ci.outputs.matrix) }}
+        exclude:
+          - package: {template_value: "access-om2"}
+          - package: {template_value: "access-om2-bgc"}
+          - package: {template_value: "access-om3"}
+          - package: {template_value: "access-esm1p5"}
+          - package: {template_value: "access-esm1p6"}
+          - package: {template_value: "access-am3"}
+          - package: {template_value: "access-ram3"}
+          - package: {template_value: "access-issm"}
+          - package: {template_value: "access-test"}
+          - package: {template_value: "coastri-roms"}
+          - package: {template_value: "gcom"}
+          - package: {template_value: "gcom4"}
+          - package: {template_value: "um"}
     uses: access-nri/build-ci/.github/workflows/ci.yml@v2
     with:
       spack-manifest-path: ${{ matrix.package.filepath }}
