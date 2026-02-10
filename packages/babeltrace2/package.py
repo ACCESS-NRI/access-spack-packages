@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-
 from spack.package import *
 
 
@@ -15,7 +14,6 @@ class Babeltrace2(AutotoolsPackage):
     git = "https://github.com/efficios/babeltrace.git"
     url = "https://github.com/efficios/babeltrace/archive/refs/tags/v2.1.2.tar.gz"
 
-    # Maintaining this package; not the original author of Babeltrace2
     maintainers("minghangli-uni")
 
     license("MIT")
@@ -51,8 +49,6 @@ class Babeltrace2(AutotoolsPackage):
     def setup_build_environment(self, env):
         if self.spec.satisfies("+python"):
             env.set("PYTHON", self.spec["python"].command.path)
-            env.append_flags("CPPFLAGS", self.spec["python"].headers.cpp_flags)
-            env.append_flags("LDFLAGS", self.spec["python"].libs.ld_flags)
 
     def setup_run_environment(self, env):
         if self.spec.satisfies("+python"):
