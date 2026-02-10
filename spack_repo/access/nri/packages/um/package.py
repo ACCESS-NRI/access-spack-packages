@@ -69,13 +69,13 @@ class Um(Package):
         "casim_rev",
         "jules_rev",
         "shumlib_rev",
-        "socrates_rev",
-        "ukca_rev")
+        "socrates_rev")
 
     # Git reference variants.
     _ref_variants = (
         "jules_ref",
-        "um_ref")
+        "um_ref",
+        "ukca_ref")
 
     # Other string variants.
     _other_variants = (
@@ -181,8 +181,12 @@ class Um(Package):
         "um_ref": {
             "sources_var": "um_sources",
             "git_url": "https://github.com/ACCESS-NRI/UM.git",
-            "subdir": "um"}}
-
+            "subdir": "um"},
+        "ukca": {
+            "sources_var": "ukca_sources",
+            "git_url": "https://github.com/ACCESS-NRI/ukca.git",
+            "subdir": "ukca"
+            }
 
     def _config_file_path(self, model):
         """
