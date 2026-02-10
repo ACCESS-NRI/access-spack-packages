@@ -49,6 +49,8 @@ class Babeltrace2(AutotoolsPackage):
     def setup_build_environment(self, env):
         if self.spec.satisfies("+python"):
             env.set("PYTHON", self.spec["python"].command.path)
+            include = self.spec["python"].headers.directories[0]
+            env.append_flags("CPPFLAGS", f"-I{include}")
 
     def setup_run_environment(self, env):
         if self.spec.satisfies("+python"):
