@@ -6,7 +6,7 @@
 from spack.package import *
 
 
-class Babeltrace2_test(AutotoolsPackage):
+class Babeltrace2(AutotoolsPackage):
     """
     Babeltrace 2: CTF trace processing library, CLI, and Python3 bindings (bt2).
     """
