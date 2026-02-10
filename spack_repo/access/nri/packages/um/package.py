@@ -182,7 +182,7 @@ class Um(Package):
             "sources_var": "um_sources",
             "git_url": "https://github.com/ACCESS-NRI/UM.git",
             "subdir": "um"},
-        "ukca": {
+        "ukca_ref": {
             "sources_var": "ukca_sources",
             "git_url": "https://github.com/ACCESS-NRI/ukca.git",
             "subdir": "ukca"
