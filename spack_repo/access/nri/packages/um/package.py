@@ -187,6 +187,7 @@ class Um(Package):
             "git_url": "https://github.com/ACCESS-NRI/ukca.git",
             "subdir": "ukca"
             }
+        }
 
     def _config_file_path(self, model):
         """
