@@ -39,7 +39,7 @@ class Um7(Package):
         description="Full (fresh) build. Disable for incremental build"
     )
     variant("optim", default="high", description="Optimization level",
-            values=("high", "debug"), multi=False)
+            values=("high", "debug", "rigorous"), multi=False)
 
     with when("@access-esm1.6"):
         depends_on("cable library='access-esm1.6'", type=("build", "link"))
@@ -79,6 +79,8 @@ class Um7(Package):
         """
         if optim_value == "debug":
             return "um_hg3_dbg.exe"
+        elif optim_value == "rigorous":
+            return "um_hg3_rigorous.exe"
         else:
             return "um_hg3.exe"
 
@@ -131,13 +133,29 @@ class Um7(Package):
         if opt_value == "debug":
             FO = "-O0"
             FTRACEBACK = "-traceback"
+            CDEBUG = "-debug all"
             FDEBUG = "-debug all"
+            FG = "-g"
+            FARCH = ""
+            FOBLANK = "-O0"
+        elif opt_value == "rigorous":
+            FO = "-O0"
+            FTRACEBACK = "-traceback"
+            CDEBUG = "-debug all"
+            FDEBUG = "-fp-model strict -check all -check noarg_temp_created -init=snan -init=array -init=huge"
+            # Exclude bounds checking
+            FDEBUG_XB = "-fp-model strict -check all -check nobounds -check noarg_temp_created -init=snan -init=array -init=huge"
+            # Exclude pointer checking (also unallocated arrays)
+            FDEBUG_XP = "-fp-model strict -check all -check nopointers -check noarg_temp_created -init=snan -init=array -init=huge"
+            # Exclude both
+            FDEBUG_X = "-fp-model strict -check all -check nobounds -check nopointers -check noarg_temp_created -init=snan -init=array -init=huge"
             FG = "-g"
             FARCH = ""
             FOBLANK = "-O0"
         else:
             FO = "-O2"
             FTRACEBACK = ""
+            CDEBUG = ""
             FDEBUG = ""
             FG = ""
             FARCH = "-xCORE-AVX512"
@@ -230,7 +248,7 @@ pp                                                 1
 target                                             {EXE_NAME}
 tool::ar                                           ar
 tool::cc                                           mpicc
-tool::cflags                                       {FO} -g {FTRACEBACK} {FDEBUG} {FARCH} -fp-model precise
+tool::cflags                                       {FO} -g {FTRACEBACK} {CDEBUG} {FARCH} -fp-model precise
 tool::cpp                                          cpp
 tool::cppflags
 tool::cppkeys                                      {CPPKEYS}
@@ -248,10 +266,27 @@ tool::fppkeys                                      {CPPKEYS}
 
 tool::geninterface                                 none
 tool::ld                                           mpif90
-tool::ldflags                                      {FOBLANK} -g -traceback {FDEBUG} -static-intel {libs}
+tool::ldflags                                      {FOBLANK} -g -traceback {CDEBUG} -static-intel {libs}
         """
+
+        if opt_value == "rigorous":
+            # Exclude checking for some known issues. See https://github.com/ACCESS-NRI/UM7/issues/37
+            rigorous_exclusions = f"""
+tool::fflags::control::top_level::atm_step                            {FO} -g -traceback {FDEBUG_X} -i8 -r8 {FFLAGS}
+tool::fflags::control::top_level::setcona_ctl                         {FO} -g -traceback {FDEBUG_XB} -i8 -r8 {FFLAGS}
+tool::fflags::control::top_level::glue_rad-rad_ctl2                   {FO} -g -traceback {FDEBUG_XB} -i8 -r8 {FFLAGS}
+tool::fflags::control::top_level::ni_conv_ctl                         {FO} -g -traceback {FDEBUG_XP} -i8 -r8 {FFLAGS}
+tool::fflags::control::top_level::ni_gwd_ctl                          {FO} -g -traceback {FDEBUG_XP} -i8 -r8 {FFLAGS}
+tool::fflags::atmosphere::dynamics_advection::tri_linear              {FO} -g -traceback {FDEBUG_XB} -i8 -r8 {FFLAGS}
+tool::fflags::atmosphere::dynamics_advection::ecmwf_quasi_cubic       {FO} -g -traceback {FDEBUG_XB} -i8 -r8 {FFLAGS}
+tool::fflags::atmosphere::dynamics_advection::h_quasi_cubic_v_quintic {FO} -g -traceback {FDEBUG_XB} -i8 -r8 {FFLAGS}
+tool::fflags::atmosphere::dynamics_advection::update_rho              {FO} -g -traceback {FDEBUG_XB} -i8 -r8 {FFLAGS}
+            """
+
         with open(self._bld_cfg_path, "w") as bld_cfg_file:
             bld_cfg_file.write(config)
+            if opt_value == "rigorous":
+                bld_cfg_file.write(rigorous_exclusions)
 
 
     def build(self, spec, prefix):
