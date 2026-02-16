@@ -130,9 +130,31 @@ class Cice5(CMakePackage, MakefilePackage):
 
 class CMakeBuilder(cmake.CMakeBuilder):
 
-    phases = ["set_layouts", "cmake_build_install"]
+    phases = ["set_layouts", "cmake", "build", "install"]
+
+    def cmake_args(self):
+        """List of the arguments that must be passed to cmake"""
+        # set cmake args based on the values in _layout, cmake_args is called during super().cmake()
+        if self.spec.variants["model"].value == "access-esm1.6":
+            args = [self.define("CICE_DRIVER", "access")]
+        else:  # access-om2
+            args = [self.define("CICE_DRIVER", "auscom")]
+
+        args.extend([
+            self.define("CICE_NXGLOB", self._layout['nxglob']),
+            self.define("CICE_NYGLOB", self._layout['nyglob']),
+            self.define("CICE_BLCKX", self._layout['blckx']),
+            self.define("CICE_BLCKY", self._layout['blcky']),
+            self.define("CICE_MXBLCKS", self._layout['mxblcks']),
+            self.define_from_variant("CICE_IO", "io_type"),
+            self.define_from_variant("CICE_DETERMINISTIC", "deterministic"),
+        ])
+
+        return args
 
     def set_layouts(self, pkg, spec, prefix):
+        """Layout of cice processors to use. If variants are set, use those. 
+        Otherwise, use defaults."""
         layout_variants = OM2_LAYOUTS[0].keys()
 
         # if all 5 layouts variants are available, set the layouts dict
@@ -157,31 +179,30 @@ class CMakeBuilder(cmake.CMakeBuilder):
 
         self._all_layouts = layouts
 
-    def cmake_args(self):
-        # combine the normal cmake build phases, so its easier to produce multiple builds
-        # cmake_args is called during super().cmake()
-        if self.spec.variants["model"].value == "access-esm1.6":
-            args = [self.define("CICE_DRIVER", "access")]
-        else:  # access-om2
-            args = [self.define("CICE_DRIVER", "auscom")]
+    @property
+    def build_dirname(self) -> str:
+        """Directory name to use when building the package. """
+        # We modify this to ensure uniqueness with multiple builds
+        build = (
+            f"{self._layout['nxglob']}x{self._layout['nyglob']}_"
+            f"{self._layout['blckx']}x{self._layout['blcky']}_"
+            f"{self._layout['mxblcks']}"
+        )
+        return f"{super().build_dirname}/{build}"
 
-        args.extend([
-            self.define("CICE_NXGLOB", self._layout['nxglob']),
-            self.define("CICE_NYGLOB", self._layout['nyglob']),
-            self.define("CICE_BLCKX", self._layout['blckx']),
-            self.define("CICE_BLCKY", self._layout['blcky']),
-            self.define("CICE_MXBLCKS", self._layout['mxblcks']),
-            self.define_from_variant("CICE_IO", "io_type"),
-            self.define_from_variant("CICE_DETERMINISTIC", "deterministic"),
-        ])
-
-        return args
-
-    def cmake_build_install(self, pkg, spec, prefix):
+    def cmake(self, pkg, spec, prefix):
         for layout in self._all_layouts:
             self._layout = layout
             super().cmake(pkg, spec, prefix)
+
+    def build(self, pkg, spec, prefix):
+        for layout in self._all_layouts:
+            self._layout = layout
             super().build(pkg, spec, prefix)
+
+    def install(self, pkg, spec, prefix):
+        for layout in self._all_layouts:
+            self._layout = layout
             super().install(pkg, spec, prefix)
 
 
