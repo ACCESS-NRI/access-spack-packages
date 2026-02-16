@@ -72,9 +72,12 @@ class Um(Package):
 
     # Git reference variants.
     _ref_variants = (
+        "casim_ref",
         "jules_ref",
-        "um_ref",
-        "ukca_ref")
+        "shumlib_ref",
+        "socrates_ref",
+        "ukca_ref",
+        "um_ref")
 
     # Other string variants.
     _other_variants = (
