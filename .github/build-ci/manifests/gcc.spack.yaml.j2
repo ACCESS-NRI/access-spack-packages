@@ -2,16 +2,12 @@
 spack:
   specs:
   # package is defined in the workflows inputs.spack-manifest-data-pairs
-  # gcc_compiler_ver is defined in the standard_definitions.json data file
-  - '{{ package }}'
+  # And the gcc_compilers are defined in the standard_definitions.json data file
+  - '{{ package }} %{{ gcc_compiler }}'
   packages:
-    gcc:
-      require:
-        - '{{ gcc_compiler_ver }}'
     all:
       require:
-        - '%access_gcc'
-        - 'target={{ target }}'
+      - '%{{ gcc_compiler }}'
   concretizer:
     unify: false
   view: false

@@ -1,17 +1,13 @@
 spack:
   specs:
   # package is defined in the workflows inputs.spack-manifest-data-pairs
-  # intel_compiler_ver is defined in the standard_definitions.json data file
-  - '{{ package }} +mpi library=access-esm1.6'
-  - '{{ package }} ~mpi library=access-esm1.6'
+  # And the intel_compilers are defined in the standard_definitions.json data file
+  - '{{ package }} +mpi library=access-esm1.6 %{{ intel_compiler }}'
+  - '{{ package }} ~mpi library=access-esm1.6 %{{ intel_compiler }}'  
   packages:
-    intel-oneapi-compilers-classic:
-      require:
-        - '{{ intel_compiler_ver }}'
     all:
       require:
-        - '%access_intel'
-        - 'target={{ target }}'
+      - '%{{ intel_compiler }} target={{ target }}'
   concretizer:
     unify: false
   view: false

@@ -5,14 +5,7 @@ spack:
     - ['issm']
     - ['+ad', '~ad']
     - ['+wrappers']
-  packages:
-    gcc:
-      require:
-        - '{{ gcc_compiler_ver }}'
-    all:
-      require:
-        - '%access_gcc'
-        - 'target={{ target }}'
+    - ['%{{ gcc_compiler }}']
   concretizer:
     unify: false
   view: false
