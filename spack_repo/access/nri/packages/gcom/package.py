@@ -13,21 +13,12 @@ class Gcom(Package):
     maintainers("scottwales", "paulleopardi")
 
     version("7.8", tag="vn7.8", commit="65c857cc3201833360ff62b285e49082378dae42")
-    version("7.9", tag="vn7.9", commit= "6319ae016dcadc192842a06178f3dbd21a8af64f")
-    version("8.0", tag="vn8.0", commit= "5a122e9e2147c9a7486a00b9588356eb65324af9")
-    version("8.1", tag="vn8.1", commit= "e061e2787bd643d9a65679f153fb8e3ffd9d3186")
-    version("8.2", tag="vn8.2", commit= "fd143bb38e21fe03c7150c0754852c80e15df3d4")
-    version("8.3", tag="vn8.3", commit= "b7b890a181d8e31e4e80b731b9f8ad9a6e1a8bed")
-    version("8.4", tag="vn8.4", commit= "f4fa92eb4af4f1e4cf9d608b441e3c96f77b6a6d")
-
-    # See 'fcm kp fcm:gcom.xm' for release versions
-    # version("7.8", revision=1147)
-    # version("7.9", revision=1166)
-    # version("8.0", revision=1181)
-    # version("8.1", revision=1215)
-    # version("8.2", revision=1251)
-    # version("8.3", revision=1288)
-    # version("8.4", revision=1386)
+    version("7.9", tag="vn7.9", commit="6319ae016dcadc192842a06178f3dbd21a8af64f")
+    version("8.0", tag="vn8.0", commit="5a122e9e2147c9a7486a00b9588356eb65324af9")
+    version("8.1", tag="vn8.1", commit="e061e2787bd643d9a65679f153fb8e3ffd9d3186")
+    version("8.2", tag="vn8.2", commit="fd143bb38e21fe03c7150c0754852c80e15df3d4")
+    version("8.3", tag="vn8.3", commit="b7b890a181d8e31e4e80b731b9f8ad9a6e1a8bed")
+    version("8.4", tag="vn8.4", commit="f4fa92eb4af4f1e4cf9d608b441e3c96f77b6a6d")
 
     variant("mpi", default=True, description="Build with MPI")
 

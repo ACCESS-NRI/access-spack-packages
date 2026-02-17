@@ -64,13 +64,6 @@ class Um(Package):
     # String variants have their default values set to "none" here.
     # The real default is set by the model.
 
-    # Revision variants.
-    _rev_variants = (
-        "casim_rev",
-        "jules_rev",
-        "shumlib_rev",
-        "socrates_rev")
-
     # Git reference variants.
     _ref_variants = (
         "casim_ref",
@@ -177,10 +170,22 @@ class Um(Package):
 
     # Optional Github sources to be used in build (i.e. AM3)
     _resource_cfg = {
+        "casim_ref": {
+            "sources_var": "casim_sources",
+            "git_url": "https://github.com/ACCESS-NRI/casim.git",
+            "subdir": "casim"},
         "jules_ref": {
             "sources_var": "jules_sources",
             "git_url": "https://github.com/ACCESS-NRI/JULES.git",
             "subdir": "jules"},
+        "shumlib_ref": {
+            "sources_var": "shumlib_sources",
+            "git_url": "https://github.com/ACCESS-NRI/shumlib.git",
+            "subdir": "shumlib"},
+        "socrates_ref": {
+            "sources_var": "socrates_sources",
+            "git_url": "https://github.com/ACCESS-NRI/socrates.git",
+            "subdir": "socrates"},
         "um_ref": {
             "sources_var": "um_sources",
             "git_url": "https://github.com/ACCESS-NRI/UM.git",
