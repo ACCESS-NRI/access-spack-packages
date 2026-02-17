@@ -327,13 +327,13 @@ class Um(Package):
         # Override those environment variables where a revision variant is specified.
         # If the variant is left unspecified, and the model does not specify a revision,
         # then use a component revision based on the spec UM version.
-        for var in self._rev_variants:
-            spec_value = spec.variants[var].value
-            if spec_value != "none":
-                check_model_vs_spec(model, config_env, var, spec_value)
-                config_env[var] = spec_value
-            elif var not in config_env or config_env[var] == "":
-                config_env[var] = f"um{spec.version}"
+        # for var in self._rev_variants:
+            # spec_value = spec.variants[var].value
+            # if spec_value != "none":
+                # check_model_vs_spec(model, config_env, var, spec_value)
+                # config_env[var] = spec_value
+            # elif var not in config_env or config_env[var] == "":
+                # config_env[var] = f"um{spec.version}"
 
         # Override those environment variables where any other string variant is specified.
         for var in self._other_variants:
