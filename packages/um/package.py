@@ -64,11 +64,11 @@ class Um(Package):
     # The real default is set by the model.
 
     # Revision variants.
-    _rev_variants = (
-        "casim_rev",
-        "jules_rev",
-        "shumlib_rev",
-        "socrates_rev")
+    # _rev_variants = (
+        # "casim_rev",
+        # "jules_rev",
+        # "shumlib_rev",
+        # "socrates_rev")
 
     # Git reference variants.
     _ref_variants = (
@@ -117,7 +117,7 @@ class Um(Package):
         "um_sources"
         )
 
-    _str_variants = _rev_variants + _ref_variants + _other_variants
+    _str_variants = _ref_variants + _other_variants
 
     for var in _str_variants:
         variant(var, default="none", description=var, values="*", multi=False)
