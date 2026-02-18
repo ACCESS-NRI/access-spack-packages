@@ -8,7 +8,7 @@ from spack_repo.builtin.build_systems.makefile import MakefilePackage
 from spack.package import *
 
 # These are the default layouts, inc 3 executables for OM2
-# alternatively, supply the 5 layouts variant to produce 1 executable
+# alternatively, supply the 5 layout variant to produce 1 executable
 OM2_LAYOUTS = [
         {"nxglob": "360", "nyglob": "300", "blckx": "15", "blcky": "300", "mxblcks": "1"},
         {"nxglob": "1440", "nyglob": "1080", "blckx": "30", "blcky": "27", "mxblcks": "4"},
@@ -132,9 +132,15 @@ class CMakeBuilder(cmake.CMakeBuilder):
 
     phases = ["set_layouts", "cmake", "build", "install"]
 
+    _all_layouts = [{}]  # all layouts to build,
+    # see OM2_LAYOUTS and ESM1P6_LAYOUTS for examples
+    _layout = {}  # current layout being setup/built/installed
+
     def cmake_args(self):
-        """List of the arguments that must be passed to cmake"""
-        # set cmake args based on the values in _layout, cmake_args is called during super().cmake()
+        """List of the arguments that must be passed to cmake.
+        These are set based on the values in _layout.
+        cmake_args is called during super().cmake()
+        """
         if self.spec.variants["model"].value == "access-esm1.6":
             args = [self.define("CICE_DRIVER", "access")]
         else:  # access-om2
@@ -151,6 +157,18 @@ class CMakeBuilder(cmake.CMakeBuilder):
         ])
 
         return args
+
+    @property
+    def build_dirname(self) -> str:
+        """Directory name to use when building the package. 
+        We modify this using _layout to ensure uniqueness with multiple builds
+        """
+        build = (
+            f"{self._layout['nxglob']}x{self._layout['nyglob']}_"
+            f"{self._layout['blckx']}x{self._layout['blcky']}_"
+            f"{self._layout['mxblcks']}"
+        )
+        return f"{super().build_dirname}/{build}"
 
     def set_layouts(self, pkg, spec, prefix):
         """Layout of cice processors to use. If variants are set, use those. 
@@ -178,17 +196,6 @@ class CMakeBuilder(cmake.CMakeBuilder):
                         "variants must be set if any are set")
 
         self._all_layouts = layouts
-
-    @property
-    def build_dirname(self) -> str:
-        """Directory name to use when building the package. """
-        # We modify this to ensure uniqueness with multiple builds
-        build = (
-            f"{self._layout['nxglob']}x{self._layout['nyglob']}_"
-            f"{self._layout['blckx']}x{self._layout['blcky']}_"
-            f"{self._layout['mxblcks']}"
-        )
-        return f"{super().build_dirname}/{build}"
 
     def cmake(self, pkg, spec, prefix):
         for layout in self._all_layouts:
