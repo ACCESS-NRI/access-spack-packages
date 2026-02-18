@@ -8,7 +8,7 @@ from spack_repo.builtin.build_systems.makefile import MakefilePackage
 from spack.package import *
 
 # These are the default layouts, inc 3 executables for OM2
-# alternatively, supply the 5 layout variant to produce 1 executable
+# alternatively, supply the 5 layout variants to produce 1 executable
 OM2_LAYOUTS = [
         {"nxglob": "360", "nyglob": "300", "blckx": "15", "blcky": "300", "mxblcks": "1"},
         {"nxglob": "1440", "nyglob": "1080", "blckx": "30", "blcky": "27", "mxblcks": "4"},
