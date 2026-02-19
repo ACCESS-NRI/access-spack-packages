@@ -164,9 +164,7 @@ jobs:
           - package: {template_value: "access-issm"}
           - package: {template_value: "access-test"}
           - package: {template_value: "coastri-roms"}
-          - package: {template_value: "gcom"}
           - package: {template_value: "gcom4"}
-          - package: {template_value: "um"}
     uses: access-nri/build-ci/.github/workflows/ci.yml@v3
     with:
       spack-manifest-path: ${{ matrix.package.filepath }}
