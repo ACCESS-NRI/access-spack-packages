@@ -7,19 +7,18 @@ class Gcom(Package):
     GCOM is a wrapper around multiprocessing libraries such as MPI
     """
 
-    homepage = "https://code.metoffice.gov.uk/trac/gcom"
-    svn = "file:///g/data/ki32/mosrs/gcom/main/trunk"
+    homepage = "https://github.com/ACCESS-NRI/gcom"
+    git = "https://github.com/ACCESS-NRI/gcom"
 
     maintainers("scottwales", "paulleopardi")
 
-    # See 'fcm kp fcm:gcom.xm' for release versions
-    version("7.8", revision=1147)
-    version("7.9", revision=1166)
-    version("8.0", revision=1181)
-    version("8.1", revision=1215)
-    version("8.2", revision=1251)
-    version("8.3", revision=1288)
-    version("8.4", revision=1386)
+    version("7.8", tag="vn7.8")
+    version("7.9", tag="vn7.9")
+    version("8.0", tag="vn8.0")
+    version("8.1", tag="vn8.1")
+    version("8.2", tag="vn8.2")
+    version("8.3", tag="vn8.3")
+    version("8.4", tag="vn8.4")
 
     variant("mpi", default=True, description="Build with MPI")
 
