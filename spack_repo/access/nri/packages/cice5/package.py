@@ -7,13 +7,27 @@ from spack_repo.builtin.build_systems.cmake import CMakePackage
 from spack_repo.builtin.build_systems.makefile import MakefilePackage
 from spack.package import *
 
+# These are the default layouts, inc 3 executables for OM2
+# alternatively, supply the 5 layout variants to produce 1 executable
+OM2_LAYOUTS = [
+        {"nxglob": "360", "nyglob": "300", "blckx": "15", "blcky": "300", "mxblcks": "1"},
+        {"nxglob": "1440", "nyglob": "1080", "blckx": "30", "blcky": "27", "mxblcks": "4"},
+        {"nxglob": "3600", "nyglob": "2700", "blckx": "40", "blcky": "30", "mxblcks": "12"},
+    ]
+ESM1P6_LAYOUTS = [
+    {"nxglob": "360", "nyglob": "300", "blckx": "30", "blcky": "300", "mxblcks": "1"},
+]
+
+
 def _int_validator(s):
     """Test a string variant is a valid integer """
-    if (s.isdigit() and int(s) > 0):
-        return True
-    else:
-        print(f"ERROR: {s} not a valid integer")
-        return False
+    if (s != "none"):
+        if (s.isdigit() and int(s) > 0):
+            return True
+        else:
+            print(f"ERROR: {s} not a valid integer")
+            return False
+
 
 class Cice5(CMakePackage, MakefilePackage):
     """The Los Alamos sea ice model (CICE) is the result of an effort to develop 
@@ -32,7 +46,7 @@ class Cice5(CMakePackage, MakefilePackage):
     version("access-om2", branch="master")
     version("access-esm1.6", branch="access-esm1.6")
 
-    # by default, keep existing processor layout defined in makefile
+    # by default, keep existing processor layout
     # if nxglob, nyglob, blckx, blcky, mxblcks are supplied, then spack will switch to cmake
     build_system("makefile", "cmake", default="makefile")
 
@@ -113,25 +127,90 @@ class Cice5(CMakePackage, MakefilePackage):
         depends_on("libaccessom2+deterministic", when="+deterministic")
         depends_on("libaccessom2~deterministic", when="~deterministic")
 
+
 class CMakeBuilder(cmake.CMakeBuilder):
 
+    phases = ["set_layouts", "cmake", "build", "install"]
+
+    _all_layouts = [{}]  # all layouts to build,
+    # see OM2_LAYOUTS and ESM1P6_LAYOUTS for examples
+    _layout = {}  # current layout being setup/built/installed
+
     def cmake_args(self):
+        """List of the arguments that must be passed to cmake.
+        These are set based on the values in _layout.
+        cmake_args is called during super().cmake()
+        """
         if self.spec.variants["model"].value == "access-esm1.6":
             args = [self.define("CICE_DRIVER", "access")]
         else:  # access-om2
             args = [self.define("CICE_DRIVER", "auscom")]
 
         args.extend([
+            self.define("CICE_NXGLOB", self._layout['nxglob']),
+            self.define("CICE_NYGLOB", self._layout['nyglob']),
+            self.define("CICE_BLCKX", self._layout['blckx']),
+            self.define("CICE_BLCKY", self._layout['blcky']),
+            self.define("CICE_MXBLCKS", self._layout['mxblcks']),
             self.define_from_variant("CICE_IO", "io_type"),
-            self.define_from_variant("CICE_NXGLOB", "nxglob"),
-            self.define_from_variant("CICE_NYGLOB", "nyglob"),
-            self.define_from_variant("CICE_BLCKX", "blckx"),
-            self.define_from_variant("CICE_BLCKY", "blcky"),
-            self.define_from_variant("CICE_MXBLCKS", "mxblcks"),
             self.define_from_variant("CICE_DETERMINISTIC", "deterministic"),
         ])
 
         return args
+
+    @property
+    def build_dirname(self) -> str:
+        """Directory name to use when building the package. 
+        We modify this using _layout to ensure uniqueness with multiple builds
+        """
+        build = (
+            f"{self._layout['nxglob']}x{self._layout['nyglob']}_"
+            f"{self._layout['blckx']}x{self._layout['blcky']}_"
+            f"{self._layout['mxblcks']}"
+        )
+        return f"{super().build_dirname}/{build}"
+
+    def set_layouts(self, pkg, spec, prefix):
+        """Layout of cice processors to use. If variants are set, use those. 
+        Otherwise, use defaults."""
+        layout_variants = OM2_LAYOUTS[0].keys()
+
+        # if all 5 layouts variants are available, set the layouts dict
+        if all([
+            self.spec.variants[variant].value != 'none' 
+            for variant in layout_variants
+        ]):
+            layouts = [{variant: self.spec.variants[variant].value
+                for variant in layout_variants}]
+        # else if no layout variants are available, use the defaults
+        elif all([
+            self.spec.variants[variant].value == 'none' 
+            for variant in layout_variants
+        ]):
+            if self.spec.variants["model"].value == "access-esm1.6":
+                layouts = ESM1P6_LAYOUTS
+            else:
+                layouts = OM2_LAYOUTS
+        else:
+            raise Error(f"All of {layout_variants} "
+                        "variants must be set if any are set")
+
+        self._all_layouts = layouts
+
+    def cmake(self, pkg, spec, prefix):
+        for layout in self._all_layouts:
+            self._layout = layout
+            super().cmake(pkg, spec, prefix)
+
+    def build(self, pkg, spec, prefix):
+        for layout in self._all_layouts:
+            self._layout = layout
+            super().build(pkg, spec, prefix)
+
+    def install(self, pkg, spec, prefix):
+        for layout in self._all_layouts:
+            self._layout = layout
+            super().install(pkg, spec, prefix)
 
 
 class MakefileBuilder(makefile.MakefileBuilder):
@@ -216,7 +295,6 @@ class MakefileBuilder(makefile.MakefileBuilder):
         self.__deps["includes"] = " ".join([istr] + [(spec[d].headers).cpp_flags for d in ideps])
 
         self.__deps["ldflags"] = " ".join([lstr] + [self.get_linker_args(spec, d) for d in ldeps])
-
 
     def edit(self, pkg, spec, prefix):
 
