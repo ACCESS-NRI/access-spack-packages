@@ -129,7 +129,7 @@ Fflags: -I${{includedir}}
             self._libname,
             "FC=" + pkg.spec["mpi"].mpifc,
             # Copied from MOM5/bin/mkmf.template.nci
-            "FCFLAGS=-fno-alias -safe-cray-ptr -fpe0 -ftz -assume byterecl -i4 -r8 -traceback -nowarn -check noarg_temp_created -assume nobuffered_io -convert big_endian -grecord-gcc-switches -align all -g3 -O2 -xCORE-AVX2 -debug all -check none",
+            "FCFLAGS=-fno-alias -safe-cray-ptr -fpe0 -ftz -assume byterecl -i4 -r8 -traceback -nowarn -check noarg_temp_created -assume nobuffered_io -convert big_endian -grecord-gcc-switches -align all -g3 -O2 -mavx2 -debug all -check none",
             "F90=" + pkg.spec["mpi"].mpifc
         )
         self._create_pkgconf(spec, prefix)
