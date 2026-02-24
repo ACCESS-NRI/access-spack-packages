@@ -111,13 +111,13 @@ Cflags: -I${{includedir}}/{k}
         config = {}
 
         # TODO: https://github.com/ACCESS-NRI/ACCESS-OM/issues/12
-        NCI_OPTIM_FLAGS = "-g3 -O2 -axCORE-AVX2 -debug all -check none -traceback"
+        NCI_OPTIM_FLAGS = "-g3 -O2 -mavx2 -debug all -check none -traceback"
         CFLAGS = ""
         if "@access-esm1.5" in self.spec:
             NCI_OPTIM_FLAGS = "-g3 -O2 -xCORE-AVX512 -debug all -check none -traceback"
 
         if "+deterministic" in self.spec:
-            NCI_OPTIM_FLAGS = "-g0 -O0 -axCORE-AVX2 -debug none -check none"
+            NCI_OPTIM_FLAGS = "-g0 -O0 -mavx2 -debug none -check none"
             CFLAGS = "-g0"
 
         if "+optimisation_report" in self.spec:
