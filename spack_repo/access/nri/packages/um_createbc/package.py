@@ -446,8 +446,8 @@ class UmCreatebc(Package):
         """
         build_bin_dir = join_path(self._build_dir(), "build-createbc", "bin")
         install_bin_dir = prefix.bin
-            mkdirp(install_bin_dir)
-            install_tree(build_bin_dir, install_bin_dir)
+        mkdirp(install_bin_dir)
+        install_tree(build_bin_dir, install_bin_dir)
 
 
     def _dynamic_resource(self, url, ref, dst_dir):
