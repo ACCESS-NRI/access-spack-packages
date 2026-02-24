@@ -7,8 +7,9 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 import configparser
+from spack_repo.builtin.build_systems.generic import Package
 from spack.package import *
-import llnl.util.tty as tty
+import spack.llnl.util.tty as tty
 import spack.util.git
 
 class UmCreatebc(Package):
@@ -118,6 +119,9 @@ class UmCreatebc(Package):
 
     for var in _str_variants:
         variant(var, default="none", description=var, values="*", multi=False)
+
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
 
     # The 'site=nci-gadi' variant of fcm defines the keywords
     # used by the FCM configuration of UmCreatebc.
@@ -442,8 +446,8 @@ class UmCreatebc(Package):
         """
         build_bin_dir = join_path(self._build_dir(), "build-createbc", "bin")
         install_bin_dir = prefix.bin
-        mkdirp(install_bin_dir)
-        install_tree(build_bin_dir, install_bin_dir)
+            mkdirp(install_bin_dir)
+            install_tree(build_bin_dir, install_bin_dir)
 
 
     def _dynamic_resource(self, url, ref, dst_dir):
