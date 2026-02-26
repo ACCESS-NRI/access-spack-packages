@@ -10,7 +10,7 @@ from spack.package import *
 
 class AccessAm3(BundlePackage):
     """
-    ACCESS-AM3 bundle containing the UM Package.
+    ACCESS-AM3 bundle containing the UM Package. Touched.
     """
 
     homepage = "https://www.access-nri.org.au"
