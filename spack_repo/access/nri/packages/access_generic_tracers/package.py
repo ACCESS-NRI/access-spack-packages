@@ -22,6 +22,7 @@ class AccessGenericTracers(CMakePackage):
     # TODO: Delete the "main" version once it is no longer being used anywhere.
     version("main", branch="main")
     version("stable", branch="main", preferred=True)
+    version("2026.02.000", tag="2026.02.000", commit="7f883aeb2628f8b462fa8c39a00bfec8f1ba4bdb")
     version("2026.01.000", tag="2026.01.000", commit="d2708630d7062f62cacf8d1722753cb9f8c2af04")
     version("2025.09.000", tag="2025.09.000", commit="8454a9f569782fd7bb5efbaf8b993cf6f14de2de")
     version("2025.08.000", tag="2025.08.000", commit="cdec99a0d8a8d26dca01ccd93ed47e96829b9cd4")
