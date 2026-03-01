@@ -144,7 +144,7 @@ class Um7(Package):
             FTRACEBACK = ""
             FDEBUG = ""
             FG = ""
-            FARCH = "-mavx2"
+            FARCH = ""
             FOBLANK = ""
 
         # FCM tries to find all instances of USE and include them as
