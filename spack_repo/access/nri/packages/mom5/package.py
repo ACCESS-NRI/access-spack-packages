@@ -199,11 +199,11 @@ class MakefileBuilder(makefile.MakefileBuilder):
             ldeps = ["oasis3-mct", "libaccessom2", "netcdf-c", "netcdf-fortran", "datetime-fortran"]
 
             # TODO: https://github.com/ACCESS-NRI/ACCESS-OM/issues/12
-            FFLAGS_OPT = "-g3 -O2 -mavx2 -debug all -check none -traceback"
-            CFLAGS_OPT = "-O2 -debug minimal -mavx2"
+            FFLAGS_OPT = "-g3 -O2 -debug all -check none -traceback"
+            CFLAGS_OPT = "-O2 -debug minimal"
             if self.spec.satisfies("+deterministic"):
-                FFLAGS_OPT = "-g0 -O0 -mavx2 -debug none -check none"
-                CFLAGS_OPT = "-O0 -debug none -mavx2"
+                FFLAGS_OPT = "-g0 -O0 -debug none -check none"
+                CFLAGS_OPT = "-O0 -debug none"
                 print("INFO: +deterministic applied")
 
         incs = " ".join([istr] + [(spec[d].headers).cpp_flags for d in ideps])
