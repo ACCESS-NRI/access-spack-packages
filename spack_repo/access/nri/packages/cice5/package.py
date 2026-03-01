@@ -309,11 +309,11 @@ class MakefileBuilder(makefile.MakefileBuilder):
         libs = self.__deps["ldflags"]
 
         # TODO: https://github.com/ACCESS-NRI/ACCESS-OM/issues/12
-        NCI_OPTIM_FLAGS = "-g3 -O2 -axCORE-AVX2 -debug all -check none -traceback -assume buffered_io"
+        NCI_OPTIM_FLAGS = "-g3 -O2 -debug all -check none -traceback -assume buffered_io"
         CFLAGS = "-c -O2"
         LDFLAGS = self.get_variant_value(spec.variants["direct_ldflags"].value)
         if "+deterministic" in self.spec:
-            NCI_OPTIM_FLAGS = "-g0 -O0 -axCORE-AVX2 -debug none -check none -assume buffered_io"
+            NCI_OPTIM_FLAGS = "-g0 -O0 -debug none -check none -assume buffered_io"
             CFLAGS = "-c -g0"
 
         if "+optimisation_report" in self.spec:
