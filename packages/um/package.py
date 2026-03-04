@@ -173,6 +173,18 @@ class Um(Package):
 
     # Optional Github sources to be used in build (i.e. AM3)
     _resource_cfg = {
+        "casim_ref": {
+            "sources_var": "casim_sources",
+            "git_url": "https://github.com/ACCESS-NRI/casim.git",
+            "subdir": "casim"},
+        "shumlib_ref": {
+            "sources_var": "shumlib_sources",
+            "git_url": "https://github.com/ACCESS-NRI/shumlib.git",
+            "subdir": "shumlib"},
+        "socrates_ref": {
+            "sources_var": "socrates_sources",
+            "git_url": "https://github.com/ACCESS-NRI/socrates.git",
+            "subdir": "socrates"},
         "jules_ref": {
             "sources_var": "jules_sources",
             "git_url": "https://github.com/ACCESS-NRI/JULES.git",
