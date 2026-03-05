@@ -6,12 +6,14 @@ The namespace of the ACCESS Spack package repository is `access.nri`.
 
 ## How to utilise this package repository
 
-By default you have a single package repository (`builtin`) when you clone spack
+> [!NOTE]
+> `$SPACK_ROOT` and `$ACCESS_SPACK_PACKAGE_PATH` are substituted in all paths to make these instructions installation independent.
+
+If you are not using ACCESS-NRI's `spack-config`, a default installation of Spack will have a single package repository (`builtin`):
 ```bash
 $ spack repo list
 [+] builtin    v2.2    $SPACK_ROOT/../package_repos/fncqgg4/repos/spack_repo/builtin
 ```
-(note `$SPACK_ROOT` is substituted in all paths to make these instructions installation independent)
 
 And the following package is not available:
 ```
