@@ -71,7 +71,9 @@ class Issm(AutotoolsPackage):
     # Dependencies
     # --------------------------------------------------------------------
     # Build-time tools
+    depends_on("c", type="build")
     depends_on("cxx", type="build")
+    depends_on("fortran", type="build")
     depends_on("autoconf", type="build")
     depends_on("automake", type="build")
     depends_on("libtool", type="build")
@@ -229,7 +231,7 @@ class Issm(AutotoolsPackage):
         if "+py-tools" in self.spec:
             py_src = join_path(self.stage.source_path, "src", "m")
             py_dst = join_path(prefix, "python-tools.zip")
-            
+
             # Recursively copy all .py files from src/m to python-tools.zip
             # Exclude contrib directory which contains working files
             exclude_dirs = {'contrib'}
