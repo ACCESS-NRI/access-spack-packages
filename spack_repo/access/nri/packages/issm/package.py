@@ -5,8 +5,6 @@
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-from turtle import st
-
 from spack_repo.builtin.build_systems.autotools import AutotoolsPackage
 from spack.package import *
 import zipfile
@@ -282,7 +280,7 @@ class Issm(AutotoolsPackage):
         clamped_mtime_date = max(mtime_date, ZIPFILE_MIN_DATE)
 
         zinfo = zipfile.ZipInfo(archive_name, clamped_mtime_date)
-        
+
         # Since we're setting the zipinfo manually, we need to set some other aspects...
         zinfo.compress_type = zip_file.compression
         # mode is both file type and perms. We only want the perms (the low 16 bits).
