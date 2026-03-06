@@ -11,7 +11,7 @@ import zipfile
 import os
 import time
 
-ZIPFILE_MIN_DATE: tuple[int] = (1980, 1, 1, 0, 0, 0)
+ZIPFILE_MIN_DATE = (1980, 1, 1, 0, 0, 0)
 
 class Issm(AutotoolsPackage):
     """Ice-sheet and Sea-Level System Model.
