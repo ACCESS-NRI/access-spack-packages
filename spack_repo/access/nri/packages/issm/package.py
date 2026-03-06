@@ -5,11 +5,15 @@
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+from turtle import st
+
 from spack_repo.builtin.build_systems.autotools import AutotoolsPackage
 from spack.package import *
 import zipfile
 import os
+import time
 
+ZIPFILE_MIN_DATE: tuple[int] = (1980, 1, 1, 0, 0, 0)
 
 class Issm(AutotoolsPackage):
     """Ice-sheet and Sea-Level System Model.
@@ -259,7 +263,33 @@ class Issm(AutotoolsPackage):
                 for src_path in py_files:
                     # Use only the filename inside the archive
                     arcname = src_path.split("/")[-1]
-                    zf.write(src_path, arcname=arcname)
+
+                    zinfo = self._clamped_mtime(src_path, arcname, zf)
+
+                    with open(src_path, "rb") as f:
+                        zf.writestr(zinfo, f.read())
+
+    def _clamped_mtime(self, file_path: str, archive_name: str, zip_file: zipfile.ZipFile) -> zipfile.ZipInfo:
+        # Since some sources during building are erroneously using unix epoch mtime (which errors out in
+        # python 3.6s implementation of zipfile when the mtime is before 1980),
+        # we clamp it to a supported date (1/1/1980).
+        stats = os.stat(file_path)
+        mtime = stats.st_mtime
+        mode = stats.st_mode
+
+        # This converts the unix-style seconds since epoch to a zipfile-understandable struct of (year, month, day, hour, min, sec)
+        mtime_date = time.localtime(mtime)[:6]
+        clamped_mtime_date = max(mtime_date, ZIPFILE_MIN_DATE)
+
+        zinfo = zipfile.ZipInfo(archive_name, clamped_mtime_date)
+        
+        # Since we're setting the zipinfo manually, we need to set some other aspects...
+        zinfo.compress_type = zip_file.compression
+        # mode is both file type and perms. We only want the perms (the low 16 bits).
+        # zipfile expects unix perms to be set in the upper 16 bits, so we shift them up by 16.
+        zinfo.external_attr = (mode & 0xFFFF) << 16
+
+        return zinfo
 
     # --------------------------------------------------------------------
     # Run environment - set ISSM_DIR and PYTHONPATH
@@ -277,4 +307,3 @@ class Issm(AutotoolsPackage):
         if "+py-tools" in self.spec:
             env.prepend_path("PYTHONPATH", join_path(self.prefix, "python-tools.zip"))
             env.prepend_path("PYTHONPATH", join_path(self.prefix, "lib"))
-
