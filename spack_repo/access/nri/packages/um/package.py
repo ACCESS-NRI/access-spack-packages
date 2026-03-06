@@ -281,6 +281,44 @@ class Um(Package):
                 f"The value {resource_path} will be used for {sources_var}.")
 
 
+        def check_model_vs_root_path_vs_um_ref(
+            model,
+            config_env,
+            resource_path):
+            """
+            Check the values set by the variants "config_root_path" and "um_ref"
+            against any existing config_root_path value in config_env, and remind
+            that the config_root_path value will be overridden by resource_path.
+            """
+            root_path_var = "config_root_path"
+            root_path_value = spec.variants[root_path_var].value
+            um_ref_value = spec.variants["um_ref"].value
+            tty.info(f"The spec sets um_ref={um_ref_value}")
+            if root_path_value == "none":
+                # In this case, the spec value for root_path_var has not
+                # overridden the model configuration value, if any.
+                if root_path_var not in config_env:
+                    tty.info(
+                        f"The {model} model does not specify {root_path_var}.")
+                else:  # root_path_var in config_env
+                    env_value = config_env[root_path_var]
+                    if env_value == "":
+                        tty.info(
+                            f"The {model} model sets {root_path_var}=''.")
+                    else:
+                        tty.warn(
+                            f"The {model} model sets "
+                            f"{root_path_var}={env_value}.")
+            else:  # root_path_value != "none"
+                # In this case, the spec value for root_path_var has already
+                # overridden the model configuration value, if any.
+                assert root_path_value == config_env[root_path_var]
+                tty.warn(f"The spec sets {root_path_var}={root_path_value}.")
+            tty.info(
+                f"The value {resource_path} will be used for {root_path_var}.")
+            tty.info("The config_revision will be set to the empty string.")
+
+
         spec = self.spec
 
         # Use rose-app.conf to set config options.
@@ -379,6 +417,17 @@ class Um(Package):
                         ref_var,
                         resource_path)
                     config_env[sources_var] = resource_path
+                    if ref_var == "um_ref":
+                        # Check and update config_root_path if necessary.
+                        # Output appropriate warning messages.
+                        check_model_vs_root_path_vs_um_ref(
+                            model,
+                            config_env,
+                            resource_path)
+                        # Set the config_env variables to the required values.
+                        config_env["config_root_path"] = resource_path
+                        config_env["config_revision"] = ""
+
         else:
             # The model does not use Github URLs and ignores the ref variants.
             for ref_var in self._resource_cfg:
