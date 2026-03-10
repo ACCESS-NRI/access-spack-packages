@@ -12,9 +12,11 @@ from spack.package import *
 import spack.llnl.util.tty as tty
 import spack.util.git
 
-class Um(Package):
+class UmBasePackage(Package):
     """
-    UM is a numerical weather prediction and climate modelling software package.
+    UmBasePackage is the base build system class for numerical weather
+    prediction and climate modelling software packages based on
+    the UK Met Office and Momentum Partnership Unified Model.
     """
 
     homepage = "https://code.metoffice.gov.uk/trac/um"
