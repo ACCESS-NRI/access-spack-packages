@@ -41,9 +41,6 @@ class Um(Package):
 
     maintainers("penguian")
 
-    variant("model", default="vn13", description="Model configuration.",
-        values=("vn13", "vn13p0-rns", "vn13p1-am", "vn13p5-rns"), multi=False)
-
     # Bool variants have their default value set to True here.
     _bool_variants = (
         "DR_HOOK",
@@ -127,10 +124,6 @@ class Um(Package):
     # used by the FCM configuration of UM.
     depends_on("fcm site=nci-gadi", type="build")
 
-    # Include openmpi directly https://github.com/ACCESS-NRI/spack-packages/issues/293
-    variant("mpi", default=True, description="Build with MPI")
-    depends_on("mpi", when="+mpi", type=("build", "link", "run"))
-
     # For GCOM versions, see
     # https://code.metoffice.gov.uk/trac/gcom/wiki/Gcom_meto_installed_versions
     depends_on("gcom@7.8", when="@:13.0", type=("build", "link"))
@@ -208,15 +201,6 @@ class Um(Package):
 
         # Both ld_flags and rpaths are lists of strings.
         return " ".join(ld_flags + rpaths)
-
-
-    def setup_run_environment(self, env):
-        """
-        Set the built path into the environment.
-        """
-        # Add the built executables to the path
-        env.prepend_path("PATH", join_path(self.prefix, "build-atmos", "bin"))
-        env.prepend_path("PATH", join_path(self.prefix, "build-recon", "bin"))
 
 
     def setup_build_environment(self, env):
@@ -443,20 +427,6 @@ class Um(Package):
             f"--config-file={config_file}",
             f"--directory={build_dir}",
             "--jobs=4")
-
-
-    def install(self, spec, prefix):
-        """
-        Install executables and accompanying files into the prefix directory,
-        according to the directory structure of EXEC_DIR, as described in (e.g.)
-        https://code.metoffice.gov.uk/trac/roses-u/browser/b/y/3/9/5/trunk/meta/rose-meta.conf
-        """
-        for um_exe in ["atmos", "recon"]:
-            bin_dir = join_path(f"build-{um_exe}", "bin")
-            build_bin_dir = join_path(self._build_dir(), bin_dir)
-            install_bin_dir = join_path(prefix, bin_dir)
-            mkdirp(install_bin_dir)
-            install_tree(build_bin_dir, install_bin_dir)
 
 
     def _dynamic_resource(self, url, ref, dst_dir):
