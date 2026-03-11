@@ -219,6 +219,16 @@ class UmBasePackage(Package):
     # Should be overridden by child classes.
     _github_models = ()
 
+    # List of resource keys from _resource_cfg to be used by this package.
+    # Defaults to all resources. Should be overridden by child classes if needed.
+    _resources_needed = (
+        "casim_ref",
+        "jules_ref",
+        "shumlib_ref",
+        "socrates_ref",
+        "ukca_ref",
+        "um_ref")
+
 
     def _config_file_path(self, model):
         """
@@ -453,7 +463,7 @@ class UmBasePackage(Package):
             # Get the root to the resources
             resources_root = join_path(self.stage.source_path, "resources")
             # Add sources to the environment
-            for ref_var in self._resource_cfg:
+            for ref_var in self._resources_needed:
                 ref_value = self._resource_ref(ref_var)
                 sources_var = self._resource_cfg[ref_var]["sources_var"]
                 subdir = self._resource_cfg[ref_var]["subdir"]
@@ -514,7 +524,7 @@ class UmBasePackage(Package):
         model = spec.variants["model"].value
         if model in self._github_models:
             # Checkout sources from Github
-            for ref_var in self._resource_cfg:
+            for ref_var in self._resources_needed:
                 ref_value = self._resource_ref(ref_var)
                 git_url = self._resource_cfg[ref_var]["git_url"]
                 subdir = self._resource_cfg[ref_var]["subdir"]

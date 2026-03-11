@@ -9,7 +9,7 @@ The UM Spack packages follow a hierarchical design to minimize code duplication 
 1.  **`UmBasePackage` (`um_base.py`)**: A base class that inherits from Spack's `Package`. It provides the core implementation for:
     *   **Unified Variants**: Logic for revisions (`*_rev`), git references (`*_ref`), and local sources (`*_sources`).
     *   **GitHub-Enabled Variants**: The `_github_models` attribute (defaulting to empty) determines which model variants trigger the GitHub-based build logic.
-    *   **Environment Management**: The `setup_build_environment` method, which handles dependency paths (GCOM, FCM, FIAT) and performs automatic redirection of `config_root_path` for GitHub-based models.
+    *   **Resource Filtering**: The `_resources_needed` attribute (cloning all components by default) allows child classes to specify only the subcomponents required for a specific build.
     *   **GitHub Integration**: The `patch` and `_dynamic_resource` methods for checking out subcomponents from GitHub with specialized tagging logic.
 2.  **Package Classes**:
     *   **`Um` (`packages/um/package.py`)**: Inherits from `UmBasePackage`. It defines the specific model variants (e.g., `vn13`, `vn13p1-am`) and provides the logic for installing the main atmosphere and reconfiguration executables. It defines `_github_models = ("vn13", "vn13p1-am")`.
