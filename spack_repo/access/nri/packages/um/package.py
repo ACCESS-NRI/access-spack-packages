@@ -64,17 +64,13 @@ class Um(Package):
     # String variants have their default values set to "none" here.
     # The real default is set by the model.
 
-    # Revision variants.
-    _rev_variants = (
-        "casim_rev",
-        "jules_rev",
-        "shumlib_rev",
-        "socrates_rev",
-        "ukca_rev")
-
     # Git reference variants.
     _ref_variants = (
+        "casim_ref",
         "jules_ref",
+        "shumlib_ref",
+        "socrates_ref",
+        "ukca_ref",
         "um_ref")
 
     # Other string variants.
@@ -115,7 +111,7 @@ class Um(Package):
         "um_sources"
         )
 
-    _str_variants = _rev_variants + _ref_variants + _other_variants
+    _str_variants = _ref_variants + _other_variants
 
     for var in _str_variants:
         variant(var, default="none", description=var, values="*", multi=False)
@@ -174,15 +170,32 @@ class Um(Package):
 
     # Optional Github sources to be used in build (i.e. AM3)
     _resource_cfg = {
+        "casim_ref": {
+            "sources_var": "casim_sources",
+            "git_url": "https://github.com/ACCESS-NRI/casim.git",
+            "subdir": "casim"},
         "jules_ref": {
             "sources_var": "jules_sources",
             "git_url": "https://github.com/ACCESS-NRI/JULES.git",
             "subdir": "jules"},
+        "shumlib_ref": {
+            "sources_var": "shumlib_sources",
+            "git_url": "https://github.com/ACCESS-NRI/shumlib.git",
+            "subdir": "shumlib"},
+        "socrates_ref": {
+            "sources_var": "socrates_sources",
+            "git_url": "https://github.com/ACCESS-NRI/socrates.git",
+            "subdir": "socrates"},
         "um_ref": {
             "sources_var": "um_sources",
             "git_url": "https://github.com/ACCESS-NRI/UM.git",
-            "subdir": "um"}}
-
+            "subdir": "um"},
+        "ukca_ref": {
+            "sources_var": "ukca_sources",
+            "git_url": "https://github.com/ACCESS-NRI/ukca.git",
+            "subdir": "ukca"
+            }
+        }
 
     def _config_file_path(self, model):
         """
@@ -320,17 +333,6 @@ class Um(Package):
                 check_model_vs_spec(model, config_env, var, spec_str_value)
                 config_env[var] = spec_str_value
 
-        # Override those environment variables where a revision variant is specified.
-        # If the variant is left unspecified, and the model does not specify a revision,
-        # then use a component revision based on the spec UM version.
-        for var in self._rev_variants:
-            spec_value = spec.variants[var].value
-            if spec_value != "none":
-                check_model_vs_spec(model, config_env, var, spec_value)
-                config_env[var] = spec_value
-            elif var not in config_env or config_env[var] == "":
-                config_env[var] = f"um{spec.version}"
-
         # Override those environment variables where any other string variant is specified.
         for var in self._other_variants:
             spec_value = spec.variants[var].value
@@ -359,34 +361,16 @@ class Um(Package):
                 linker_args = self._get_linker_args(spec, var)
                 config_env[f"ldflags_{fcm_name}_on"] = linker_args
 
-        # The _resource_cfg is relevant only for models that use Github URLs.
-        # Only one model so far, but this may change in future.
-        if model == "vn13p1-am":
-            # Get the root to the resources
-            resources_root = join_path(self.stage.source_path, "resources")
-            # Add sources to the environment if requested
-            for ref_var in self._resource_cfg:
-                ref_value = spec.variants[ref_var].value
-                if ref_value != "none":
-                    sources_var = self._resource_cfg[ref_var]["sources_var"]
-                    subdir = self._resource_cfg[ref_var]["subdir"]
-                    resource_path = join_path(resources_root, subdir)
-                    # Output appropriate warning messages.
-                    check_model_vs_sources_vs_ref(
-                        model,
-                        config_env,
-                        sources_var,
-                        ref_var,
-                        resource_path)
-                    config_env[sources_var] = resource_path
-        else:
-            # The model does not use Github URLs and ignores the ref variants.
-            for ref_var in self._resource_cfg:
-                ref_value = spec.variants[ref_var].value
-                if ref_value != "none":
-                    tty.warn(
-                        f"The {model} model ignores the variant "
-                        f"{ref_var}={ref_value}.")
+        # Get the root to the resources
+        resources_root = join_path(self.stage.source_path, "resources")
+        # Add sources to the environment if requested
+        for ref_var in self._resource_cfg:
+            ref_value = spec.variants[ref_var].value
+            if ref_value != "none":
+                sources_var = self._resource_cfg[ref_var]["sources_var"]
+                subdir = self._resource_cfg[ref_var]["subdir"]
+                resource_path = join_path(resources_root, subdir)
+                config_env[sources_var] = resource_path
 
         # Set environment variables based on config_env.
         for key in config_env:

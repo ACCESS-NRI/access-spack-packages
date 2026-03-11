@@ -7,9 +7,9 @@ class Gcom(Package):
     GCOM is a wrapper around multiprocessing libraries such as MPI
     """
 
-    homepage = "https://github.com/ACCESS-NRI/gcom"
+    homepage = "https://code.metoffice.gov.uk/trac/gcom"
+    # svn = "file:///g/data/ki32/mosrs/gcom/main/trunk"
     git = "https://github.com/ACCESS-NRI/gcom"
-
     maintainers("scottwales", "paulleopardi")
 
     version("7.8", tag="vn7.8", commit="65c857cc3201833360ff62b285e49082378dae42")
