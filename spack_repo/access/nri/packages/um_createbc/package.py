@@ -17,6 +17,8 @@ class UmCreatebc(UmBasePackage):
     variant("model", default="vn13", description="Model configuration.",
         values=("vn13", "vn13p5-rns"), multi=False)
 
+    _github_models = ("vn13",)
+
     # For GCOM versions, see
     # https://code.metoffice.gov.uk/trac/gcom/wiki/Gcom_meto_installed_versions
     # um_createbc uses the ~mpi variants of gcom exclusively.
