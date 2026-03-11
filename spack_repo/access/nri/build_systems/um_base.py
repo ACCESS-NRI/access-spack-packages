@@ -73,7 +73,11 @@ class UmBasePackage(Package):
 
     # Git reference variants.
     _ref_variants = (
+        "casim_ref",
         "jules_ref",
+        "shumlib_ref",
+        "socrates_ref",
+        "ukca_ref",
         "um_ref")
 
     # Other string variants.
@@ -169,10 +173,26 @@ class UmBasePackage(Package):
 
     # Optional Github sources to be used in build (i.e. AM3)
     _resource_cfg = {
+        "casim_ref": {
+            "sources_var": "casim_sources",
+            "git_url": "https://github.com/ACCESS-NRI/casim.git",
+            "subdir": "casim"},
         "jules_ref": {
             "sources_var": "jules_sources",
             "git_url": "https://github.com/ACCESS-NRI/JULES.git",
             "subdir": "jules"},
+        "shumlib_ref": {
+            "sources_var": "shumlib_sources",
+            "git_url": "https://github.com/ACCESS-NRI/shumlib.git",
+            "subdir": "shumlib"},
+        "socrates_ref": {
+            "sources_var": "socrates_sources",
+            "git_url": "https://github.com/ACCESS-NRI/socrates.git",
+            "subdir": "socrates"},
+        "ukca_ref": {
+            "sources_var": "ukca_sources",
+            "git_url": "https://github.com/ACCESS-NRI/ukca.git",
+            "subdir": "ukca"},
         "um_ref": {
             "sources_var": "um_sources",
             "git_url": "https://github.com/ACCESS-NRI/UM.git",
@@ -345,28 +365,32 @@ class UmBasePackage(Package):
                 linker_args = self._get_linker_args(spec, var)
                 config_env[f"ldflags_{fcm_name}_on"] = linker_args
 
-        # The _resource_cfg is relevant only for models that use Github URLs.
-        # Only one model so far, but this may change in future.
-        if model == "vn13p1-am":
+        # The _resource_cfg is relevant for models that use Github URLs (Phase 2).
+        if model in ("vn13", "vn13p1-am"):
             # Get the root to the resources
             resources_root = join_path(self.stage.source_path, "resources")
-            # Add sources to the environment if requested
+            # Add sources to the environment
             for ref_var in self._resource_cfg:
                 ref_value = spec.variants[ref_var].value
-                if ref_value != "none":
-                    sources_var = self._resource_cfg[ref_var]["sources_var"]
-                    subdir = self._resource_cfg[ref_var]["subdir"]
-                    resource_path = join_path(resources_root, subdir)
-                    # Output appropriate warning messages.
-                    check_model_vs_sources_vs_ref(
-                        model,
-                        config_env,
-                        sources_var,
-                        ref_var,
-                        resource_path)
-                    config_env[sources_var] = resource_path
+                # Automatic tagging strategy: default to "um13.X" if ref is none
+                if ref_value == "none":
+                    ref_value = f"um{spec.version}"
+
+                sources_var = self._resource_cfg[ref_var]["sources_var"]
+                subdir = self._resource_cfg[ref_var]["subdir"]
+                resource_path = join_path(resources_root, subdir)
+
+                # Output appropriate warning messages if overriding existing env.
+                check_model_vs_sources_vs_ref(
+                    model,
+                    config_env,
+                    sources_var,
+                    ref_var,
+                    resource_path)
+                config_env[sources_var] = resource_path
         else:
-            # The model does not use Github URLs and ignores the ref variants.
+            # The model does not yet use Github URLs by default and ignores ref variants
+            # unless explicitly specified (though Phase 2 enables vn13 and vn13p1-am)
             for ref_var in self._resource_cfg:
                 ref_value = spec.variants[ref_var].value
                 if ref_value != "none":
@@ -395,25 +419,27 @@ class UmBasePackage(Package):
         Patch the staging directory just before building.
         """
 
-        # This patch is relevant only for models that use Github URLs.
-        # Only one model so far, but this may change in future.
+        # This patch is relevant for models that use Github URLs (Phase 2).
         spec = self.spec
         model = spec.variants["model"].value
-        if model == "vn13p1-am":
+        if model in ("vn13", "vn13p1-am"):
             # Get the root to the resources
             resources_root = join_path(self.stage.source_path, "resources")
 
-            # Optional sources (i.e. AM3)
+            # Checkout sources from Github
             for ref_var in self._resource_cfg:
                 ref_value = spec.variants[ref_var].value
-                if ref_value != "none":
-                    git_url = self._resource_cfg[ref_var]["git_url"]
-                    subdir = self._resource_cfg[ref_var]["subdir"]
-                    resource_path = join_path(resources_root, subdir)
-                    self._dynamic_resource(
-                        url=git_url,
-                        ref=ref_value,
-                        dst_dir=resource_path)
+                # Automatic tagging strategy: default to "um13.X" if ref is none
+                if ref_value == "none":
+                    ref_value = f"um{spec.version}"
+
+                git_url = self._resource_cfg[ref_var]["git_url"]
+                subdir = self._resource_cfg[ref_var]["subdir"]
+                resource_path = join_path(resources_root, subdir)
+                self._dynamic_resource(
+                    url=git_url,
+                    ref=ref_value,
+                    dst_dir=resource_path)
 
 
     def build(self, spec, prefix):
