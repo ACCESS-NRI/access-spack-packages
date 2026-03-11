@@ -215,6 +215,11 @@ class UmBasePackage(Package):
             "subdir": "um"}}
 
 
+    # List of model variants that have been migrated to Github sources.
+    # Should be overridden by child classes.
+    _github_models = ()
+
+
     def _config_file_path(self, model):
         """
         Return the pathname of the Rose app config file
@@ -222,6 +227,30 @@ class UmBasePackage(Package):
         """
         return join_path(
             self.package_dir, "model", model, "rose-app.conf")
+
+
+    def _resource_ref(self, ref_var):
+        """
+        Return the git reference for a resource, applying automatic tagging
+        if the variant is 'none'.
+        """
+        spec = self.spec
+        ref_value = spec.variants[ref_var].value
+        if ref_value == "none":
+            if ref_var == "um_ref":
+                return f"UKMO_vn{spec.version}"
+            if ref_var == "jules_ref":
+                # JULES version = UM version - 6.0
+                return f"JULES_vn{spec.version[0] - 6}.{spec.version[1]}"
+            return f"um{spec.version}"
+        return ref_value
+
+
+    def _resource_path(self, subdir):
+        """
+        Return the absolute path to a resource in the stage directory.
+        """
+        return join_path(self.stage.source_path, "resources", subdir)
 
 
     def _get_linker_args(self, spec, fcm_libname):
@@ -420,25 +449,15 @@ class UmBasePackage(Package):
                 config_env[f"ldflags_{fcm_name}_on"] = linker_args
 
         # The _resource_cfg is relevant for models that use Github URLs (Phase 2).
-        if model in ("vn13", "vn13p1-am"):
+        if model in self._github_models:
             # Get the root to the resources
             resources_root = join_path(self.stage.source_path, "resources")
             # Add sources to the environment
             for ref_var in self._resource_cfg:
-                ref_value = spec.variants[ref_var].value
-                # Automatic tagging strategy: default to specialized tag if ref is none
-                if ref_value == "none":
-                    if ref_var == "um_ref":
-                        ref_value = f"UKMO_vn{spec.version}"
-                    elif ref_var == "jules_ref":
-                        # JULES version = UM version - 6.0
-                        ref_value = f"JULES_vn{spec.version[0] - 6}.{spec.version[1]}"
-                    else:
-                        ref_value = f"um{spec.version}"
-
+                ref_value = self._resource_ref(ref_var)
                 sources_var = self._resource_cfg[ref_var]["sources_var"]
                 subdir = self._resource_cfg[ref_var]["subdir"]
-                resource_path = join_path(resources_root, subdir)
+                resource_path = self._resource_path(subdir)
 
                 # Output appropriate warning messages if overriding existing env.
                 check_model_vs_sources_vs_ref(
@@ -493,26 +512,13 @@ class UmBasePackage(Package):
         # This patch is relevant for models that use Github URLs (Phase 2).
         spec = self.spec
         model = spec.variants["model"].value
-        if model in ("vn13", "vn13p1-am"):
-            # Get the root to the resources
-            resources_root = join_path(self.stage.source_path, "resources")
-
+        if model in self._github_models:
             # Checkout sources from Github
             for ref_var in self._resource_cfg:
-                ref_value = spec.variants[ref_var].value
-                # Automatic tagging strategy: default to specialized tag if ref is none
-                if ref_value == "none":
-                    if ref_var == "um_ref":
-                        ref_value = f"UKMO_vn{spec.version}"
-                    elif ref_var == "jules_ref":
-                        # JULES version = UM version - 6.0
-                        ref_value = f"JULES_vn{spec.version[0] - 6}.{spec.version[1]}"
-                    else:
-                        ref_value = f"um{spec.version}"
-
+                ref_value = self._resource_ref(ref_var)
                 git_url = self._resource_cfg[ref_var]["git_url"]
                 subdir = self._resource_cfg[ref_var]["subdir"]
-                resource_path = join_path(resources_root, subdir)
+                resource_path = self._resource_path(subdir)
                 self._dynamic_resource(
                     url=git_url,
                     ref=ref_value,

@@ -17,6 +17,8 @@ class Um(UmBasePackage):
     variant("model", default="vn13", description="Model configuration.",
         values=("vn13", "vn13p0-rns", "vn13p1-am", "vn13p5-rns"), multi=False)
 
+    _github_models = ("vn13", "vn13p1-am")
+
     # Include openmpi directly https://github.com/ACCESS-NRI/spack-packages/issues/293
     variant("mpi", default=True, description="Build with MPI")
     depends_on("mpi", when="+mpi", type=("build", "link", "run"))
