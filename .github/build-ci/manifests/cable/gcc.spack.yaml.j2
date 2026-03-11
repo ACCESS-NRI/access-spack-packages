@@ -1,13 +1,17 @@
 spack:
   specs:
   # package is defined in the workflows inputs.spack-manifest-data-pairs
-  # And the gcc_compilers are defined in the standard_definitions.json data file
-  - '{{ package }} +mpi  %{{ gcc_compiler }}'
-  - '{{ package }} ~mpi %{{ gcc_compiler }}'
+  # gcc_compiler_ver is defined in the standard_definitions.json data file
+  - '{{ package }} +mpi'
+  - '{{ package }} ~mpi'
   packages:
+    gcc:
+      require:
+        - '{{ gcc_compiler_ver }}'
     all:
       require:
-      - '%{{ gcc_compiler }} target={{ target }}'
+        - '%access_gcc'
+        - 'target={{ target }}'
   concretizer:
     unify: false
   view: false
