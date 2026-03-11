@@ -372,9 +372,15 @@ class UmBasePackage(Package):
             # Add sources to the environment
             for ref_var in self._resource_cfg:
                 ref_value = spec.variants[ref_var].value
-                # Automatic tagging strategy: default to "um13.X" if ref is none
+                # Automatic tagging strategy: default to specialized tag if ref is none
                 if ref_value == "none":
-                    ref_value = f"um{spec.version}"
+                    if ref_var == "um_ref":
+                        ref_value = f"UKMO_vn{spec.version}"
+                    elif ref_var == "jules_ref":
+                        # JULES version = UM version - 6.0
+                        ref_value = f"JULES_vn{spec.version[0] - 6}.{spec.version[1]}"
+                    else:
+                        ref_value = f"um{spec.version}"
 
                 sources_var = self._resource_cfg[ref_var]["sources_var"]
                 subdir = self._resource_cfg[ref_var]["subdir"]
@@ -429,9 +435,15 @@ class UmBasePackage(Package):
             # Checkout sources from Github
             for ref_var in self._resource_cfg:
                 ref_value = spec.variants[ref_var].value
-                # Automatic tagging strategy: default to "um13.X" if ref is none
+                # Automatic tagging strategy: default to specialized tag if ref is none
                 if ref_value == "none":
-                    ref_value = f"um{spec.version}"
+                    if ref_var == "um_ref":
+                        ref_value = f"UKMO_vn{spec.version}"
+                    elif ref_var == "jules_ref":
+                        # JULES version = UM version - 6.0
+                        ref_value = f"JULES_vn{spec.version[0] - 6}.{spec.version[1]}"
+                    else:
+                        ref_value = f"um{spec.version}"
 
                 git_url = self._resource_cfg[ref_var]["git_url"]
                 subdir = self._resource_cfg[ref_var]["subdir"]
