@@ -22,13 +22,15 @@ class AccessMocsy(CMakePackage, MakefilePackage):
     # https://github.com/ACCESS-NRI/mocsy/blob/master/LICENSE
     license("MIT", checked_by="dougiesquire")
 
-    # TODO: Delete the "gtracers" version once it is no longer being used anywhere.
-    version("gtracers", branch="gtracers")
     version("stable", branch="gtracers", preferred=True)
     version("2025.07.002", tag="2025.07.002", commit="bfbf7f87244bb42db53cd304ddfead567e990312")
     version("2025.07.001", tag="2025.07.001", commit="156b3c8f50562e20882c686988022e3ef19f8526")
     version("2025.07.000", tag="2025.07.000", commit="1e4bc055519a6446232dcff803e7b80e56c49424")
     version("2017.12.0", tag="2017.12.0", commit="385222c469942f0562b4c70b926dfdd8173138e7")
+
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+    depends_on("mpi")
 
     build_system(conditional("cmake", when="@2025.07.000:"), "makefile", default="cmake")
 
@@ -52,11 +54,6 @@ class AccessMocsy(CMakePackage, MakefilePackage):
             description="Precision to use (1 or 2)",
             values=("1", "2"),
         )
-
-    depends_on("c", type="build")
-    depends_on("fortran", type="build")
-
-    depends_on("mpi")
 
 
 class CMakeBuilder(cmake.CMakeBuilder):
