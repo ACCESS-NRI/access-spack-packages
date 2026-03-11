@@ -118,10 +118,26 @@ class UmBasePackage(Package):
         "um_sources"
         )
 
-    _str_variants = _rev_variants + _ref_variants + _other_variants
+    for var in _rev_variants:
+        comp = var.split('_')[0].upper()
+        variant(var, default="none", values="*", multi=False,
+                description=f"Svn revision for {comp}. "
+                            f"Defaults to automatic versioning if 'none'.")
 
-    for var in _str_variants:
-        variant(var, default="none", description=var, values="*", multi=False)
+    for var in _ref_variants:
+        comp = var.split('_')[0].upper()
+        variant(var, default="none", values="*", multi=False,
+                description=f"Git branch/tag/commit for {comp}. "
+                            f"Overrides Svn. Defaults to automatic tagging if 'none'.")
+
+    # Group other variants by purpose
+    for var in _other_variants:
+        if var.endswith("_sources"):
+            comp = var.split('_')[0].upper()
+            variant(var, default="none", values="*", multi=False,
+                    description=f"Local source directory for {comp}. Overrides Git/Svn.")
+        else:
+            variant(var, default="none", values="*", multi=False, description=var)
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")
