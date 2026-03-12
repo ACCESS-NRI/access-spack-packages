@@ -134,7 +134,7 @@ class UmBasePackage(Package):
         "stash_version",
         "timer_version",
         "ukca_sources",
-        "um_sources"
+        "um_sources",
         )
 
     for var in _rev_variants:
@@ -509,11 +509,6 @@ class UmBasePackage(Package):
                 resource_path = resource_info["path"]
 
                 if ref_var == "um_ref":
-                    # For GitHub-enabled models, the UM source is the main package source
-                    # and is located at self.stage.source_path.
-                    resource_path = self.stage.source_path
-                    tty.info(f"Using staged source for {sources_var}: {resource_path}")
-
                     # Check and update config_root_path if necessary.
                     # Output appropriate warning messages.
                     check_model_vs_root_path_vs_um_ref(
@@ -569,9 +564,6 @@ class UmBasePackage(Package):
         if model in self._github_models:
             # Checkout sources from Github
             for ref_var in self._resources_needed:
-                if ref_var == "um_ref":
-                    # The main UM source is already handled by the fetcher
-                    continue
                 self._dynamic_resource(ref_var)
 
 
