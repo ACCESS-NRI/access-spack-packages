@@ -52,8 +52,10 @@ If a git reference variant (e.g., `um_ref`) is set to `none`, the base class aut
 
 FCM (the UM build tool) expects subcomponent sources to be placed in specific locations. The Spack recipe handles this in two phases:
 
-1.  **Environment Management** (`setup_build_environment`): It "wires" the environment by setting variables like `jules_sources` to their expected paths.
-2.  **Source Fetching** (`patch`): It physically populates those paths using `git clone` or checkout. The core UM source is handled natively by Spack's primary fetcher and is reused in the staging area to avoid redundant downloads.
+1.  **Environment Management** (`setup_build_environment`): It "wires" the environment by setting variables like `jules_sources` and `um_sources` to their expected paths.
+2.  **Source Fetching** (`patch`): It physically populates those paths using `git clone`. Note that UM is cloned **twice**: once by Spack's primary fetcher into the staging root, and again during `patch` into `resources/um`. This redundancy is necessary because:
+    - **Spack Lifecycle**: Spack requires a successful primary fetch to initialize the build.
+    - **FCM Path Resolution**: The UM build tool (FCM) uses relative pathing in its configuration files. It expects the source and configuration root to be in the specific `resources/um` subdirectory that matches the environment variables set in step 1.
 
 ---
 
@@ -61,7 +63,7 @@ FCM (the UM build tool) expects subcomponent sources to be placed in specific lo
 
 Build the latest supported version with default tagging:
 ```bash
-spack install um@13.5 model=vn13
+spack install um@13.8 model=vn13
 ```
 
 Use a custom branch for a specific subcomponent:
