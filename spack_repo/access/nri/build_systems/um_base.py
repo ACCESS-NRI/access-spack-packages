@@ -503,8 +503,6 @@ class UmBasePackage(Package):
 
         # The _resource_cfg is relevant for models that use Github URLs (Phase 2).
         if model in self._github_models:
-            # Get the root to the resources
-            resources_root = join_path(self.stage.source_path, "resources")
             # Add sources to the environment
             for ref_var in self._resources_needed:
                 resource_info = self._get_resource_info(ref_var)
