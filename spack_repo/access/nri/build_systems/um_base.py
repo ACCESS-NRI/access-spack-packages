@@ -11,6 +11,7 @@ from spack_repo.builtin.build_systems.generic import Package
 from spack.package import *
 import spack.llnl.util.tty as tty
 import spack.util.git
+import spack.fetch_strategy as fs
 
 class UmBasePackage(Package):
     """
@@ -20,7 +21,26 @@ class UmBasePackage(Package):
     """
 
     homepage = "https://code.metoffice.gov.uk/trac/um"
-    svn = "file:///g/data/ki32/mosrs/um/main/trunk"
+    _svn_mirror = "file:///g/data/ki32/mosrs/um/main/trunk"
+
+    @property
+    def fetcher(self):
+        """
+        Return the fetch strategy based on the model variant.
+        """
+        spec = self.spec
+        model = spec.variants["model"].value
+        if model in self._github_models:
+            # GitHub migration: Return a Git fetch strategy
+            resource_info = self._get_resource_info("um_ref")
+            return fs.from_kwargs(git=resource_info["url"], tag=resource_info["ref"])
+        else:
+            # Legacy: Return an Svn fetch strategy
+            # Recover the revision from the version definition if available
+            rev = None
+            if spec.version in self.versions:
+                rev = self.versions[spec.version].get("revision")
+            return fs.from_kwargs(svn=self._svn_mirror, revision=rev)
 
     # See 'fcm kp fcm:um.xm' for release versions.
     _revision = {
@@ -263,6 +283,19 @@ class UmBasePackage(Package):
         return join_path(self.stage.source_path, "resources", subdir)
 
 
+    def _get_resource_info(self, ref_var):
+        """
+        Return a dictionary of resource details for a given reference variant.
+        """
+        cfg = self._resource_cfg[ref_var]
+        return {
+            "ref": self._resource_ref(ref_var),
+            "url": cfg["git_url"],
+            "sources_var": cfg["sources_var"],
+            "path": self._resource_path(cfg["subdir"])
+        }
+
+
     def _get_linker_args(self, spec, fcm_libname):
         """
         Return the linker flags corresponding to fcm_libname,
@@ -464,21 +497,16 @@ class UmBasePackage(Package):
             resources_root = join_path(self.stage.source_path, "resources")
             # Add sources to the environment
             for ref_var in self._resources_needed:
-                ref_value = self._resource_ref(ref_var)
-                sources_var = self._resource_cfg[ref_var]["sources_var"]
-                subdir = self._resource_cfg[ref_var]["subdir"]
-                resource_path = self._resource_path(subdir)
-
-                # Output appropriate warning messages if overriding existing env.
-                check_model_vs_sources_vs_ref(
-                    model,
-                    config_env,
-                    sources_var,
-                    ref_var,
-                    resource_path)
-                config_env[sources_var] = resource_path
+                resource_info = self._get_resource_info(ref_var)
+                sources_var = resource_info["sources_var"]
+                resource_path = resource_info["path"]
 
                 if ref_var == "um_ref":
+                    # For GitHub-enabled models, the UM source is the main package source
+                    # and is located at self.stage.source_path.
+                    resource_path = self.stage.source_path
+                    tty.info(f"Using staged source for {sources_var}: {resource_path}")
+
                     # Check and update config_root_path if necessary.
                     # Output appropriate warning messages.
                     check_model_vs_root_path_vs_um_ref(
@@ -488,6 +516,15 @@ class UmBasePackage(Package):
                     # Set the config_env variables to the required values.
                     config_env["config_root_path"] = resource_path
                     config_env["config_revision"] = ""
+
+                # Output appropriate warning messages if overriding existing env.
+                check_model_vs_sources_vs_ref(
+                    model,
+                    config_env,
+                    sources_var,
+                    ref_var,
+                    resource_path)
+                config_env[sources_var] = resource_path
         else:
             # The model does not yet use Github URLs by default and ignores ref variants
             # unless explicitly specified (though Phase 2 enables vn13 and vn13p1-am)
@@ -525,14 +562,10 @@ class UmBasePackage(Package):
         if model in self._github_models:
             # Checkout sources from Github
             for ref_var in self._resources_needed:
-                ref_value = self._resource_ref(ref_var)
-                git_url = self._resource_cfg[ref_var]["git_url"]
-                subdir = self._resource_cfg[ref_var]["subdir"]
-                resource_path = self._resource_path(subdir)
-                self._dynamic_resource(
-                    url=git_url,
-                    ref=ref_value,
-                    dst_dir=resource_path)
+                if ref_var == "um_ref":
+                    # The main UM source is already handled by the fetcher
+                    continue
+                self._dynamic_resource(ref_var)
 
 
     def build(self, spec, prefix):
@@ -550,19 +583,19 @@ class UmBasePackage(Package):
             "--jobs=4")
 
 
-    def _dynamic_resource(self, url, ref, dst_dir):
+    def _dynamic_resource(self, ref_var):
         """
         Check out resource dynamically based on a branch/tag/commit.
 
         Parameters
         ----------
-        url : str
-            Git URL.
-        ref : str
-            branch, commit or tag
-        dst_dir : str
-            Checkout path.
+        ref_var : str
+            Reference variant name (e.g. 'jules_ref').
         """
+        resource_info = self._get_resource_info(ref_var)
+        url = resource_info["url"]
+        ref = resource_info["ref"]
+        dst_dir = resource_info["path"]
 
         # Create the destination directory
         mkdirp(dst_dir)

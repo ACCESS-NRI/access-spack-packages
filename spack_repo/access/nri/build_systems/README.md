@@ -1,30 +1,43 @@
 # UM Build System Architecture
 
-This directory contains the core build system logic for the Unified Model (UM) and its associated utility programs, such as `um-createbc`.
+This directory contains the central build system logic for the Unified Model (UM) and associated programs like `um-createbc`. 
 
-## Overview
+## Core Principles
 
-The UM Spack packages follow a hierarchical design to minimize code duplication and ensure consistency across models:
+The UM Spack recipes are designed to handle a "hybrid" migration: a single package version (e.g., `13.0`) must be able to fetch from **SVN** (for legacy builds on NCI Gadi) or **GitHub** (for CI environments and modern development) depending on chosen variants.
 
-1.  **`UmBasePackage` (`um_base.py`)**: A base class that inherits from Spack's `Package`. It provides the core implementation for:
-    *   **Unified Variants**: Logic for revisions (`*_rev`), git references (`*_ref`), and local sources (`*_sources`).
-    *   **GitHub-Enabled Variants**: The `_github_models` attribute (defaulting to empty) determines which model variants trigger the GitHub-based build logic.
-    *   **Resource Filtering**: The `_resources_needed` attribute (cloning all components by default) allows child classes to specify only the subcomponents required for a specific build.
-    *   **GitHub Integration**: The `patch` and `_dynamic_resource` methods for checking out subcomponents from GitHub with specialized tagging logic.
-2.  **Package Classes**:
-    *   **`Um` (`packages/um/package.py`)**: Inherits from `UmBasePackage`. It defines the specific model variants (e.g., `vn13`, `vn13p1-am`) and provides the logic for installing the main atmosphere and reconfiguration executables. It defines `_github_models = ("vn13", "vn13p1-am")`.
-    *   **`UmCreatebc` (`packages/um_createbc/package.py`)**: Inherits from `UmBasePackage`. It manages the `um_createbc.exe` utility program, specifically used for the creation of lateral boundary conditions. It defines `_github_models = ("vn13",)`.
+To achieve this, the system follows a hierarchical design:
+1.  **`UmBasePackage` (`um_base.py`)**: Implements the technical logic for dynamic fetching, environment "wiring", and resource management.
+2.  **Product Packages** (`packages/um/`, `packages/um_createbc/`): Define specific model variants and declare which models are "GitHub-enabled" via the `_github_models` attribute.
 
-## GitHub Migration
+---
 
-Starting with the `vn13` series, the build system supports fetching subcomponent sources from GitHub instead of the legacy SVN (MOSRS). 
+## Dynamic Fetch Strategy
 
-> [!NOTE]
-> The list of supported models in the `Um` and `UmCreatebc` classes will evolve over time. The exact models available depend on which model variants have been migrated to the GitHub-based infrastructure and which ones remain on the legacy SVN system.
+Standard Spack recipes use static `git` or `svn` attributes. Because the source location for UM changes based on the `model` variant, we override the **`fetcher` property** in `UmBasePackage`.
 
-### Automatic Tagging Logic
+### Why `@property`?
+- **Lifecycle timing**: Spack's engine reads the `fetcher` attribute at the very start of the installation. By making it a decorated property, we can run a check against the user's `spec` variants dynamically.
+- **CI Compatibility**: This allows the recipe to detect when a model has moved to GitHub and bypass the Gadi-specific `/g/data` SVN mirrors entirely, enabling the recipes to build in GitHub Actions.
 
-When a git reference variant (e.g., `um_ref`, `jules_ref`) is set to `none`, `UmBasePackage` automatically determines the appropriate tag based on the UM version:
+## Resource Resolution
+
+To prevent code duplication, `UmBasePackage` uses a centralized helper method `_get_resource_info(ref_var)`. This provides a consistent data structure used across all build phases:
+
+| Field | Purpose |
+| :--- | :--- |
+| **`ref`** | Resolved branch, tag, or commit (handles automatic tagging). |
+| **`url`** | The GitHub repository URL for the component. |
+| **`path`** | The absolute location in the staging directory where the code should live. |
+| **`sources_var`** | The specific environment variable expected by FCM (e.g., `jules_sources`). |
+
+This method uses direct dictionary access to enforce schema integrity; if a mandatory field is missing in the configuration, the build will fail immediately with a clear `KeyError`.
+
+---
+
+## Automatic Tagging Logic
+
+If a git reference variant (e.g., `um_ref`) is set to `none`, the base class automatically calculates the appropriate tag:
 
 | Component | GitHub Repository | Tag Convention | Note |
 | :--- | :--- | :--- | :--- |
@@ -32,36 +45,23 @@ When a git reference variant (e.g., `um_ref`, `jules_ref`) is set to `none`, `Um
 | **JULES** | `ACCESS-NRI/JULES` | `JULES_vn<version-6.0>` | e.g., `JULES_vn7.5` for UM 13.5 |
 | **Others** | `casim`, `ukca`, etc. | `um<version>` | e.g., `um13.5` |
 
-### Source Precedence
-
-The build system determines sources in the following order of priority:
-
-1.  **Local Sources** (`*_sources`): Highest priority. Uses a local directory.
-2.  **Git Reference** (`*_ref`): Clones from GitHub using the specified branch, tag, or commit.
-3.  **Automatic Tagging**: Used if the selected `model` variant is GitHub-enabled and no explicit `*_ref` is provided.
-4.  **Svn Revision** (`*_rev`): Legacy fallback for MOSRS-based builds.
-
 ## Build Lifecycle
 
-The build system interacts with GitHub-sourced components in two distinct phases to ensure the FCM build system functions correctly:
+FCM (the UM build tool) expects subcomponent sources to be placed in specific locations. The Spack recipe handles this in two phases:
 
-1.  **Environment Management** (`setup_build_environment`): In this phase, the build system "wires" the environment by setting variables like `jules_sources` to their expected paths. This informs FCM where to look for source code, overriding its internal defaults.
-2.  **Source Fetching** (`patch`): In this phase, the build system physically populates those paths. It performs the `git clone` or checkout operations to fetch the actual source code into the staging area.
+1.  **Environment Management** (`setup_build_environment`): It "wires" the environment by setting variables like `jules_sources` to their expected paths.
+2.  **Source Fetching** (`patch`): It physically populates those paths using `git clone` or checkout. The core UM source is handled natively by Spack's primary fetcher and is reused in the staging area to avoid redundant downloads.
 
-This dual-phase approach is necessary because UM subcomponent versions are determined dynamically based on Spack variants, which prevents the use of standard static `resource()` directives.
+---
 
 ## Usage
 
-Users can typically build the latest supported version with default tagging:
-
+Build the latest supported version with default tagging:
 ```bash
 spack install um@13.5 model=vn13
 ```
 
-To use a custom branch for a specific subcomponent:
-
+Use a custom branch for a specific subcomponent:
 ```bash
 spack install um@13.1 model=vn13p1-am ukca_ref=my_feature_branch
 ```
-
-For more details on available variants and descriptions, run `spack info um`.
