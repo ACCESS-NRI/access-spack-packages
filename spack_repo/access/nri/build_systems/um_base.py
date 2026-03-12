@@ -56,10 +56,9 @@ class UmBasePackage(Package):
         "13.9": 130128,
     }
     _max_minor = 9
-    version("13.0", revision=_revision["13.0"], preferred=True)
-    for v in range(1, 1 + _max_minor):
+    for v in range(1 + _max_minor):
         _version = f"13.{v}"
-        version(_version, revision=_revision[_version])
+        version(_version, revision=_revision[_version], preferred=(v == 8))
 
     maintainers("penguian")
 
