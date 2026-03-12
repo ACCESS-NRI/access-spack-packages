@@ -576,6 +576,7 @@ class UmBasePackage(Package):
         mkdirp(build_dir)
         fcm = which("fcm")
         fcm("make",
+            "-vv"
             "--new",
             f"--config-file={config_file}",
             f"--directory={build_dir}",
