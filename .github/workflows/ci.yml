@@ -180,10 +180,3 @@ jobs:
       # container-image-version: :rocky
     secrets:
       spack-install-command-pat: ${{ secrets.SPACK_INSTALL_COMMAND_PAT }}
-- name: Print build log to console
-  if: failure()
-  run: |
-    LOG_FILE=$(find /tmp/root/spack-stage -name "spack-build-out.txt")
-    if [ -f "$LOG_FILE" ]; then
-      tail -n 1000 "$LOG_FILE"
-    fi
