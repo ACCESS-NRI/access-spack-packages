@@ -32,8 +32,8 @@ class UmBasePackage(Package):
         model = spec.variants["model"].value
         if model in self._github_models:
             # GitHub migration: Return a Git fetch strategy
-            resource_info = self._get_resource_info("um_ref")
-            return fs.from_kwargs(git=resource_info["url"], tag=resource_info["ref"])
+            git_info = self._get_git_info("um_ref")
+            return fs.from_kwargs(git=git_info["url"], tag=git_info["ref"])
         else:
             # Legacy: Return an Svn fetch strategy
             # Recover the revision from the version definition if available
@@ -283,17 +283,27 @@ class UmBasePackage(Package):
         return join_path(self.stage.source_path, "resources", subdir)
 
 
-    def _get_resource_info(self, ref_var):
+    def _get_git_info(self, ref_var):
         """
-        Return a dictionary of resource details for a given reference variant.
+        Return a dictionary of Git metadata for a given reference variant.
         """
         cfg = self._resource_cfg[ref_var]
         return {
             "ref": self._resource_ref(ref_var),
             "url": cfg["git_url"],
             "sources_var": cfg["sources_var"],
-            "path": self._resource_path(cfg["subdir"])
         }
+
+
+    def _get_resource_info(self, ref_var):
+        """
+        Return a dictionary of full resource details (metadata + path)
+        for a given reference variant.
+        """
+        cfg = self._resource_cfg[ref_var]
+        info = self._get_git_info(ref_var)
+        info["path"] = self._resource_path(cfg["subdir"])
+        return info
 
 
     def _get_linker_args(self, spec, fcm_libname):
