@@ -22,16 +22,19 @@ Standard Spack recipes use static `git` or `svn` attributes. Because the source 
 
 ## Resource Resolution
 
-To prevent code duplication, `UmBasePackage` uses a centralized helper method `_get_resource_info(ref_var)`. This provides a consistent data structure used across all build phases:
+`UmBasePackage` uses a two-tiered resolution system to manage component metadata and file paths while avoiding circular dependencies with Spack's staging engine:
 
-| Field | Purpose |
-| :--- | :--- |
-| **`ref`** | Resolved branch, tag, or commit (handles automatic tagging). |
-| **`url`** | The GitHub repository URL for the component. |
-| **`path`** | The absolute location in the staging directory where the code should live. |
-| **`sources_var`** | The specific environment variable expected by FCM (e.g., `jules_sources`). |
+1.  **`_get_git_info(ref_var)`**: Retrieves pure Git metadata (URLs, Tags, SHAs). This is used by the `@property fetcher` to identify remote sources without needing to know the local file path.
+2.  **`_get_resource_info(ref_var)`**: A wrapper that combines the Git metadata with the resolved local **`path`** in the staging directory. This is used during the `patch` and `build` phases.
 
-This method uses direct dictionary access to enforce schema integrity; if a mandatory field is missing in the configuration, the build will fail immediately with a clear `KeyError`.
+| Field | Purpose | Provided By |
+| :--- | :--- | :--- |
+| **`ref`** | Resolved branch, tag, or commit (handles automatic tagging). | Both |
+| **`url`** | The GitHub repository URL for the component. | Both |
+| **`sources_var`** | The specific environment variable expected by FCM (e.g., `jules_sources`). | Both |
+| **`path`** | The absolute location in the staging directory where the code lives. | `_get_resource_info` |
+
+The `fetcher` uses the metadata function to enforce schema integrity; if a mandatory field is missing in the configuration, the build will fail immediately with a clear `KeyError`.
 
 ---
 
