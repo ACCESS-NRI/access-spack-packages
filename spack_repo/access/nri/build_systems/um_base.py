@@ -595,7 +595,7 @@ class UmBasePackage(Package):
             with open(config_file, "w") as f:
                 f.write(f"include = {original_config}\n")
                 for ref_var in self._resources_needed:
-                    subdir = _resource_cfg[ref_var]["subdir"]
+                    subdir = self._resource_cfg[ref_var]["subdir"]
                     # Clear the problematic svn-based location entry
                     f.write(f"extract.location[{subdir}] = \n")
         else:
