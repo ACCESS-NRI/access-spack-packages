@@ -32,7 +32,7 @@ class UmBasePackage(Package):
         model = spec.variants["model"].value
         if model in self._github_models:
             # GitHub migration: Return a Git fetch strategy
-            git_info = self._get_git_info("um_ref")
+            git_info = self._get_project("um_ref")
             return fs.from_kwargs(git=git_info["url"], tag=git_info["ref"])
         else:
             # Legacy: Return an Svn fetch strategy
@@ -209,28 +209,34 @@ class UmBasePackage(Package):
     # Optional Github sources to be used in build (i.e. AM3)
     _resource_cfg = {
         "casim_ref": {
+            "location_var": "casim_project_location",
             "sources_var": "casim_sources",
-            "git_url": "https://github.com/ACCESS-NRI/casim.git",
+            "url": "https://github.com/ACCESS-NRI/casim.git",
             "subdir": "casim"},
         "jules_ref": {
+            "location_var": "jules_project_location",
             "sources_var": "jules_sources",
-            "git_url": "https://github.com/ACCESS-NRI/JULES.git",
+            "url": "https://github.com/ACCESS-NRI/JULES.git",
             "subdir": "jules"},
         "shumlib_ref": {
+            "location_var": "shumlib_project_location",
             "sources_var": "shumlib_sources",
-            "git_url": "https://github.com/ACCESS-NRI/shumlib.git",
+            "url": "https://github.com/ACCESS-NRI/shumlib.git",
             "subdir": "shumlib"},
         "socrates_ref": {
+            "location_var": "socrates_project_location",
             "sources_var": "socrates_sources",
-            "git_url": "https://github.com/ACCESS-NRI/socrates.git",
+            "url": "https://github.com/ACCESS-NRI/socrates.git",
             "subdir": "socrates"},
         "ukca_ref": {
+            "location_var": "ukca_project_location",
             "sources_var": "ukca_sources",
-            "git_url": "https://github.com/ACCESS-NRI/ukca.git",
+            "url": "https://github.com/ACCESS-NRI/ukca.git",
             "subdir": "ukca"},
         "um_ref": {
+            "location_var": "um_project_location",
             "sources_var": "um_sources",
-            "git_url": "https://github.com/ACCESS-NRI/UM.git",
+            "url": "https://github.com/ACCESS-NRI/UM.git",
             "subdir": "um"}}
 
 
@@ -282,15 +288,16 @@ class UmBasePackage(Package):
         return join_path(self.stage.source_path, "resources", subdir)
 
 
-    def _get_git_info(self, ref_var):
+    def _get_project(self, ref_var):
         """
-        Return a dictionary of Git metadata for a given reference variant.
+        Return a dictionary of project metadata for a given reference variant.
         """
         cfg = self._resource_cfg[ref_var]
         return {
-            "ref": self._resource_ref(ref_var),
-            "url": cfg["git_url"],
+            "location_var": cfg["location_var"],
             "sources_var": cfg["sources_var"],
+            "url": cfg["url"],
+            "ref": self._resource_ref(ref_var),
         }
 
 
@@ -299,8 +306,8 @@ class UmBasePackage(Package):
         Return a dictionary of full resource details (metadata + path)
         for a given reference variant.
         """
+        info = self._get_project(ref_var)
         cfg = self._resource_cfg[ref_var]
-        info = self._get_git_info(ref_var)
         info["path"] = self._resource_path(cfg["subdir"])
         return info
 
@@ -346,17 +353,20 @@ class UmBasePackage(Package):
                         f"The value {spec_value} will be used.")
 
 
-        def check_model_vs_sources_vs_ref(
+        def check_model_vs_resource(
             model,
             config_env,
-            sources_var,
             ref_var,
-            resource_path):
+            resource_info):
             """
             Check the values set by the variants sources_var and ref_var
             against any existing sources value in config_env, and remind
-            that the sources value will be overridden by resource_path.
+            that the sources_var value and the location_var value will
+            be overridden by the empty string and the resource_path respectively.
             """
+            sources_var = resource_info["sources_var"]
+            location_var = resource_info["location_var"]
+            resource_path = resource_info["path"]
             sources_value = spec.variants[sources_var].value
             ref_value = spec.variants[ref_var].value
             tty.info(f"The spec sets {ref_var}={ref_value}")
@@ -381,7 +391,8 @@ class UmBasePackage(Package):
                 assert sources_value == config_env[sources_var]
                 tty.warn(f"The spec sets {sources_var}={sources_value}.")
             tty.info(
-                f"The value {resource_path} will be used for {sources_var}.")
+                f"The value '' will be used for {sources_var} and "
+                f"the value {resource_path} will be used for {location_var}.")
 
 
         def check_model_vs_root_path_vs_um_ref(
@@ -520,13 +531,13 @@ class UmBasePackage(Package):
                     config_env["config_revision"] = ""
 
                 # Output appropriate warning messages if overriding existing env.
-                check_model_vs_sources_vs_ref(
+                check_model_vs_resource(
                     model,
                     config_env,
-                    sources_var,
                     ref_var,
-                    resource_path)
-                config_env[sources_var] = resource_path
+                    resource_info)
+                config_env[sources_var] = ""
+                config_env[resource_info["location_var"]] = resource_path
         else:
             # The model does not yet use Github URLs by default and ignores ref variants
             # unless explicitly specified (though Phase 2 enables vn13 and vn13p1-am)
