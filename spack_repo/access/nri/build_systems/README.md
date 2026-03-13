@@ -24,17 +24,30 @@ Standard Spack recipes use static `git` or `svn` attributes. Because the source 
 
 `UmBasePackage` uses a two-tiered resolution system to manage component metadata and file paths while avoiding circular dependencies with Spack's staging engine:
 
-1.  **`_get_git_info(ref_var)`**: Retrieves pure Git metadata (URLs, Tags, SHAs). This is used by the `@property fetcher` to identify remote sources without needing to know the local file path.
+1.  **`_get_project(ref_var)`**: Retrieves pure Git metadata (URLs, Tags, SHAs). This is used by the `@property fetcher` to identify remote sources without needing to know the local file path.
 2.  **`_get_resource_info(ref_var)`**: A wrapper that combines the Git metadata with the resolved local **`path`** in the staging directory. This is used during the `patch` and `build` phases.
 
 | Field | Purpose | Provided By |
 | :--- | :--- | :--- |
 | **`ref`** | Resolved branch, tag, or commit (handles automatic tagging). | Both |
 | **`url`** | The GitHub repository URL for the component. | Both |
-| **`sources_var`** | The specific environment variable expected by FCM (e.g., `jules_sources`). | Both |
+| **`sources_var`** | The environment variable name for source overrides (e.g., `jules_sources`). | Both |
+| **`location_var`** | The variable name for direct project locations (e.g., `jules_project_location`). | Both |
 | **`path`** | The absolute location in the staging directory where the code lives. | `_get_resource_info` |
 
-The `fetcher` uses the metadata function to enforce schema integrity; if a mandatory field is missing in the configuration, the build will fail immediately with a clear `KeyError`.
+### FCM Configuration Strategy
+To handle the transition from SVN to GitHub, `UmBasePackage` employs a **dynamic wrapper** for `fcm-make.cfg`. This wrapper `includes` the original configuration and clears `extract.location` entries for each component. 
+
+This approach is **unavoidable** as long as we must support legacy Met Office configurations hardcoded with SVN syntax (specifically the `@` symbol), which is incompatible with local filesystem paths. It is preferred over static configuration variants because it:
+-   Reduces maintenance by centralizing override logic.
+-   Scales automatically with the component list.
+-   Maintains a single source of truth for platform-specific settings.
+
+### Future Roadmap
+Once the migration to GitHub is universal and legacy SVN support is deprecated:
+1.  **Simplify Fetchers**: Remove the dynamic `@property fetcher` and recursion guards in favor of standard Spack `git` attributes.
+2.  **Optimize Staging**: Refactor upstream configs to use environment variables exclusively, allowing the elimination of the redundant `resources/` clone.
+3.  **Clean Configs**: Transition to GitHub-native FCM configurations to remove the need for dynamic wrapper overrides.
 
 ---
 
@@ -52,10 +65,12 @@ If a git reference variant (e.g., `um_ref`) is set to `none`, the base class aut
 
 FCM (the UM build tool) expects subcomponent sources to be placed in specific locations. The Spack recipe handles this in two phases:
 
-1.  **Environment Management** (`setup_build_environment`): It "wires" the environment by setting variables like `jules_sources` and `um_sources` to their expected paths.
+1.  **Environment Management** (`setup_build_environment`): 
+    - It "wires" the environment by setting variables like `jules_project_location` and `um_project_location` to their staging paths.
+    - **Crucially**, it clears the corresponding `*_sources` variables (setting them to the empty string). This forces FCM to use the `project_location` variable as the primary source path, bypassing conditional SVN assignments (e.g., `{?}= fcm:um.xm`) in base Met Office configurations.
 2.  **Source Fetching** (`patch`): It physically populates those paths using `git clone`. Note that UM is cloned **twice**: once by Spack's primary fetcher into the staging root, and again during `patch` into `resources/um`. This redundancy is necessary because:
     - **Spack Lifecycle**: Spack requires a successful primary fetch to initialize the build.
-    - **FCM Path Resolution**: The UM build tool (FCM) uses relative pathing in its configuration files. It expects the source and configuration root to be in the specific `resources/um` subdirectory that matches the environment variables set in step 1.
+    - **FCM Path Resolution**: The UM build tool (FCM) uses relative pathing in its configuration files. It expects the source and configuration root to be in the specific `resources/um` subdirectory that matches the `project_location` variable set in step 1.
 
 ---
 
