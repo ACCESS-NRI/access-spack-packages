@@ -582,9 +582,26 @@ class UmBasePackage(Package):
         """
         Use FCM to build the executables.
         """
-        config_file = join_path(self.package_dir, "fcm-make.cfg")
+        original_config = join_path(self.package_dir, "fcm-make.cfg")
         build_dir = self._build_dir()
         mkdirp(build_dir)
+
+        model = spec.variants["model"].value
+        if model in self._github_models:
+            # Create a dynamic wrapper config to override hardcoded SVN syntax
+            # (e.g. extract.location[um] = $um_base@$um_rev) found in remote
+            # Met Office configurations.
+            config_file = join_path(build_dir, "fcm-make-dynamic.cfg")
+            with open(config_file, "w") as f:
+                f.write(f"include = {original_config}\n")
+                for ref_var in self._resources_needed:
+                    resource_info = self._get_resource_info(ref_var)
+                    namespace = resource_info["subdir"]
+                    # Clear the problematic svn-based location entry
+                    f.write(f"extract.location[{namespace}] = \n")
+        else:
+            config_file = original_config
+
         fcm = which("fcm")
         fcm("make",
             "--new",
