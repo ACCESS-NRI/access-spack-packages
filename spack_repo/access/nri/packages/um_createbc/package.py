@@ -19,7 +19,7 @@ class UmCreatebc(UmBasePackage):
 
     _github_models = ("vn13",)
 
-    _resources_needed = ("shumlib_ref", "um_ref")
+    _resources_needed = ("shumlib", "um")
 
     # For GCOM versions, see
     # https://code.metoffice.gov.uk/trac/gcom/wiki/Gcom_meto_installed_versions

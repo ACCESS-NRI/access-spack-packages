@@ -32,7 +32,7 @@ class UmBasePackage(Package):
         model = spec.variants["model"].value
         if model in self._github_models:
             # GitHub migration: Return a Git fetch strategy
-            git_info = self._get_project("um_ref")
+            git_info = self._get_project("um")
             return fs.from_kwargs(git=git_info["url"], tag=git_info["ref"])
         else:
             # Legacy: Return an Svn fetch strategy
@@ -206,39 +206,25 @@ class UmBasePackage(Package):
             "fcm_name": "netcdf",
             "fcm_ld_flags": "-lnetcdff -lnetcdf"}}
 
-    # Optional Github sources to be used in build (i.e. AM3)
-    _resource_cfg = {
-        "casim_ref": {
-            "location_var": "casim_project_location",
-            "sources_var": "casim_sources",
-            "url": "https://github.com/ACCESS-NRI/casim.git",
-            "subdir": "casim"},
-        "jules_ref": {
-            "location_var": "jules_project_location",
-            "sources_var": "jules_sources",
-            "url": "https://github.com/ACCESS-NRI/JULES.git",
-            "subdir": "jules"},
-        "shumlib_ref": {
-            "location_var": "shumlib_project_location",
-            "sources_var": "shumlib_sources",
-            "url": "https://github.com/ACCESS-NRI/shumlib.git",
-            "subdir": "shumlib"},
-        "socrates_ref": {
-            "location_var": "socrates_project_location",
-            "sources_var": "socrates_sources",
-            "url": "https://github.com/ACCESS-NRI/socrates.git",
-            "subdir": "socrates"},
-        "ukca_ref": {
-            "location_var": "ukca_project_location",
-            "sources_var": "ukca_sources",
-            "url": "https://github.com/ACCESS-NRI/ukca.git",
-            "subdir": "ukca"},
-        "um_ref": {
-            "location_var": "um_project_location",
-            "sources_var": "um_sources",
-            "url": "https://github.com/ACCESS-NRI/UM.git",
-            "subdir": "um"}}
+    _projects =  (
+        "casim",
+        "jules",
+        "shumlib",
+        "socrates",
+        "ukca",
+        "um",
+    )
 
+    # Optional Github sources to be used in build (i.e. AM3)
+    _resource_cfg = dict()
+    for project in _projects:
+        _resource_cfg[project] = {
+            "location_var": f"{project}_project_location",
+            "sources_var": f"{project}_sources",
+            "url": f"https://github.com/ACCESS-NRI/{project}.git",
+            "ref_var": f"{project}_ref",
+            "subdir": project,
+        }
 
     # List of model variants that have been migrated to Github sources.
     # Should be overridden by child classes.
@@ -246,13 +232,7 @@ class UmBasePackage(Package):
 
     # List of resource keys from _resource_cfg to be used by this package.
     # Defaults to all resources. Should be overridden by child classes if needed.
-    _resources_needed = (
-        "casim_ref",
-        "jules_ref",
-        "shumlib_ref",
-        "socrates_ref",
-        "ukca_ref",
-        "um_ref")
+    _resources_needed = _projects
 
 
     def _config_file_path(self, model):
@@ -288,26 +268,28 @@ class UmBasePackage(Package):
         return join_path(self.stage.source_path, "resources", subdir)
 
 
-    def _get_project(self, ref_var):
+    def _get_project(self, project):
         """
-        Return a dictionary of project metadata for a given reference variant.
+        Return a dictionary of project metadata for a given project name.
         """
-        cfg = self._resource_cfg[ref_var]
+        cfg = self._resource_cfg[project]
+        ref_var = cfg["ref_var"]
         return {
             "location_var": cfg["location_var"],
             "sources_var": cfg["sources_var"],
             "url": cfg["url"],
+            "ref_var": ref_var,
             "ref": self._resource_ref(ref_var),
         }
 
 
-    def _get_resource_info(self, ref_var):
+    def _get_resource_info(self, project):
         """
         Return a dictionary of full resource details (metadata + path)
-        for a given reference variant.
+        for a given project name.
         """
-        info = self._get_project(ref_var)
-        cfg = self._resource_cfg[ref_var]
+        info = self._get_project(project)
+        cfg = self._resource_cfg[project]
         info["path"] = self._resource_path(cfg["subdir"])
         return info
 
@@ -356,7 +338,7 @@ class UmBasePackage(Package):
         def check_model_vs_resource(
             model,
             config_env,
-            ref_var,
+            project,
             resource_info):
             """
             Check the values set by the variants sources_var and ref_var
@@ -366,6 +348,7 @@ class UmBasePackage(Package):
             """
             sources_var = resource_info["sources_var"]
             location_var = resource_info["location_var"]
+            ref_var = resource_info["ref_var"]
             resource_path = resource_info["path"]
             sources_value = spec.variants[sources_var].value
             ref_value = spec.variants[ref_var].value
@@ -405,9 +388,10 @@ class UmBasePackage(Package):
             that the config_root_path value will be overridden by resource_path.
             """
             root_path_var = "config_root_path"
+            ref_var = self._resource_cfg["um"]["ref_var"]
             root_path_value = spec.variants[root_path_var].value
-            um_ref_value = spec.variants["um_ref"].value
-            tty.info(f"The spec sets um_ref={um_ref_value}")
+            ref_value = spec.variants[ref_var].value
+            tty.info(f"The spec sets {ref_var}={ref_value}")
             if root_path_value == "none":
                 # In this case, the spec value for root_path_var has not
                 # overridden the model configuration value, if any.
@@ -514,12 +498,12 @@ class UmBasePackage(Package):
         # The _resource_cfg is relevant for models that use Github URLs (Phase 2).
         if model in self._github_models:
             # Add sources to the environment
-            for ref_var in self._resources_needed:
-                resource_info = self._get_resource_info(ref_var)
+            for project in self._resources_needed:
+                resource_info = self._get_resource_info(project)
                 sources_var = resource_info["sources_var"]
                 resource_path = resource_info["path"]
 
-                if ref_var == "um_ref":
+                if project == "um":
                     # Check and update config_root_path if necessary.
                     # Output appropriate warning messages.
                     check_model_vs_root_path_vs_um_ref(
@@ -534,14 +518,15 @@ class UmBasePackage(Package):
                 check_model_vs_resource(
                     model,
                     config_env,
-                    ref_var,
+                    project,
                     resource_info)
                 config_env[sources_var] = ""
                 config_env[resource_info["location_var"]] = resource_path
         else:
             # The model does not yet use Github URLs by default and ignores ref variants
             # unless explicitly specified (though Phase 2 enables vn13 and vn13p1-am)
-            for ref_var in self._resource_cfg:
+            for project in self._projects:
+                ref_var = self._resource_cfg[project]["ref_var"]
                 ref_value = spec.variants[ref_var].value
                 if ref_value != "none":
                     tty.warn(
@@ -574,8 +559,8 @@ class UmBasePackage(Package):
         model = spec.variants["model"].value
         if model in self._github_models:
             # Checkout sources from Github
-            for ref_var in self._resources_needed:
-                self._dynamic_resource(ref_var)
+            for project in self._resources_needed:
+                self._dynamic_resource(project)
 
 
     def build(self, spec, prefix):
@@ -594,8 +579,8 @@ class UmBasePackage(Package):
             config_file = join_path(build_dir, "fcm-make-dynamic.cfg")
             with open(config_file, "w") as f:
                 f.write(f"include = {original_config}\n")
-                for ref_var in self._resources_needed:
-                    subdir = self._resource_cfg[ref_var]["subdir"]
+                for project in self._resources_needed:
+                    subdir = self._resource_cfg[project]["subdir"]
                     # Clear the problematic svn-based location entry
                     f.write(f"extract.location[{subdir}] = \n")
         else:
@@ -609,16 +594,16 @@ class UmBasePackage(Package):
             "--jobs=4")
 
 
-    def _dynamic_resource(self, ref_var):
+    def _dynamic_resource(self, project):
         """
         Check out resource dynamically based on a branch/tag/commit.
 
         Parameters
         ----------
-        ref_var : str
-            Reference variant name (e.g. 'jules_ref').
+        project : str
+            Project name (e.g. 'jules').
         """
-        resource_info = self._get_resource_info(ref_var)
+        resource_info = self._get_resource_info(project)
         url = resource_info["url"]
         ref = resource_info["ref"]
         dst_dir = resource_info["path"]
