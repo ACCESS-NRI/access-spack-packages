@@ -1,87 +1,51 @@
-# UM Build System Architecture
+# ACCESS-NRI Build Systems
 
-This directory contains the central build system logic for the Unified Model (UM) and associated programs like `um-createbc`. 
+This directory contains shared build system logic and base classes used by ACCESS-NRI Spack packages.
 
-## Core Principles
+Currently, **`um_base.py`** is the only build system implemented here. It provides the foundation for programs based on the Unified Model (UM), such as `um` and `um-createbc`.
 
-The UM Spack recipes are designed to handle a "hybrid" migration: a single package version (e.g., `13.0`) must be able to fetch from **SVN** (for legacy builds on NCI Gadi) or **GitHub** (for CI environments and modern development) depending on chosen variants.
+---
+
+## UM Build System (`um_base.py`)
+
+The `um_base.py` module was introduced by refactoring the common logic from the `um` and `um-createbc` Spack package recipes into a shared base class, `UmBasePackage`.
+
+### Hybrid Source Support
+The build system supports a "hybrid" source model. A single package version can fetch from either **SVN** (for legacy builds on NCI Gadi) or **GitHub** (for modern development and CI environments) depending on the `model` variant.
 
 To achieve this, the system follows a hierarchical design:
 1.  **`UmBasePackage` (`um_base.py`)**: Implements the technical logic for dynamic fetching, environment "wiring", and resource management.
-2.  **Product Packages** (`packages/um/`, `packages/um_createbc/`): Define specific model variants and declare which models are "GitHub-enabled" via the `_github_models` attribute.
+2.  **Product Packages** (`packages/um/`, `packages/um_createbc/`): Inherit from the base class, define specific model variants, and declare GitHub support via the `_github_models` attribute.
 
----
+### Dynamic Fetch Strategy
+Standard Spack recipes use static `git` or `svn` attributes. Because the source location for UM changes based on the `model` variant, `UmBasePackage` overrides the **`fetcher` property**. This allows the recipe to detect when a model has moved to GitHub and bypass legacy SVN mirrors entirely when appropriate.
 
-## Dynamic Fetch Strategy
+### Resource Resolution
+The system uses a centralized **`_resource_cfg`** dictionary, indexed by project name (e.g., `"um"`, `"jules"`), to manage component metadata:
 
-Standard Spack recipes use static `git` or `svn` attributes. Because the source location for UM changes based on the `model` variant, we override the **`fetcher` property** in `UmBasePackage`.
+1.  **`_get_project(project)`**: Retrieves Git metadata (URLs, Tags, SHAs).
+2.  **`_get_resource_info(project)`**: Combines Git metadata with the resolved local **`path`** in the staging directory.
 
-### Why `@property`?
-- **Lifecycle timing**: Spack's engine reads the `fetcher` attribute at the very start of the installation. By making it a decorated property, we can run a check against the user's `spec` variants dynamically.
-- **CI Compatibility**: This allows the recipe to detect when a model has moved to GitHub and bypass the Gadi-specific `/g/data` SVN mirrors entirely, enabling the recipes to build in GitHub Actions.
+| Field | Purpose |
+| :--- | :--- |
+| **`ref`** | Resolved branch, tag, or commit (handles automatic tagging). |
+| **`url`** | The GitHub repository URL for the component. |
+| **`sources_var`** | The environment variable name for source overrides (e.g., `jules_sources`). |
+| **`location_var`** | The variable name for direct project locations (e.g., `jules_project_location`). |
+| **`path`** | The absolute location in the staging directory where the code lives. |
 
-## Resource Resolution
+### Environment Management
+In the `setup_build_environment` phase, the build system:
+- Sets project environment variables (e.g., `jules_project_location`) to their staging paths.
+- Clears corresponding `*_sources` variables. This forces the build process to use the calculated project locations, ensuring consistency regardless of the underlying source (SVN or GitHub).
 
-`UmBasePackage` uses a two-tiered resolution system to manage component metadata and file paths while avoiding circular dependencies with Spack's staging engine:
-
-1.  **`_get_project(ref_var)`**: Retrieves pure Git metadata (URLs, Tags, SHAs). This is used by the `@property fetcher` to identify remote sources without needing to know the local file path.
-2.  **`_get_resource_info(ref_var)`**: A wrapper that combines the Git metadata with the resolved local **`path`** in the staging directory. This is used during the `patch` and `build` phases.
-
-| Field | Purpose | Provided By |
-| :--- | :--- | :--- |
-| **`ref`** | Resolved branch, tag, or commit (handles automatic tagging). | Both |
-| **`url`** | The GitHub repository URL for the component. | Both |
-| **`sources_var`** | The environment variable name for source overrides (e.g., `jules_sources`). | Both |
-| **`location_var`** | The variable name for direct project locations (e.g., `jules_project_location`). | Both |
-| **`path`** | The absolute location in the staging directory where the code lives. | `_get_resource_info` |
-
-### FCM Configuration Strategy
-To handle the transition from SVN to GitHub, `UmBasePackage` employs a **dynamic wrapper** for `fcm-make.cfg`. This wrapper `includes` the original configuration and clears `extract.location` entries for each component. 
-
-This approach is **unavoidable** as long as we must support legacy Met Office configurations hardcoded with SVN syntax (specifically the `@` symbol), which is incompatible with local filesystem paths. It is preferred over static configuration variants because it:
--   Reduces maintenance by centralizing override logic.
--   Scales automatically with the component list.
--   Maintains a single source of truth for platform-specific settings.
-
-### Future Roadmap
-Once the migration to GitHub is universal and legacy SVN support is deprecated:
-1.  **Simplify Fetchers**: Remove the dynamic `@property fetcher` and recursion guards in favor of standard Spack `git` attributes.
-2.  **Optimize Staging**: Refactor upstream configs to use environment variables exclusively, allowing the elimination of the redundant `resources/` clone.
-3.  **Clean Configs**: Transition to GitHub-native FCM configurations to remove the need for dynamic wrapper overrides.
-
----
-
-## Automatic Tagging Logic
-
-If a git reference variant (e.g., `um_ref`) is set to `none`, the base class automatically calculates the appropriate tag:
-
-| Component | GitHub Repository | Tag Convention | Note |
-| :--- | :--- | :--- | :--- |
-| **UM** | `ACCESS-NRI/UM` | `UKMO_vn<version>` | e.g., `UKMO_vn13.5` |
-| **JULES** | `ACCESS-NRI/JULES` | `JULES_vn<version-6.0>` | e.g., `JULES_vn7.5` for UM 13.5 |
-| **Others** | `casim`, `ukca`, etc. | `um<version>` | e.g., `um13.5` |
-
-## Build Lifecycle
-
-FCM (the UM build tool) expects subcomponent sources to be placed in specific locations. The Spack recipe handles this in two phases:
-
-1.  **Environment Management** (`setup_build_environment`): 
-    - It "wires" the environment by setting variables like `jules_project_location` and `um_project_location` to their staging paths.
-    - **Crucially**, it clears the corresponding `*_sources` variables (setting them to the empty string). This forces FCM to use the `project_location` variable as the primary source path, bypassing conditional SVN assignments (e.g., `{?}= fcm:um.xm`) in base Met Office configurations.
-2.  **Source Fetching** (`patch`): It physically populates those paths using `git clone`. Note that UM is cloned **twice**: once by Spack's primary fetcher into the staging root, and again during `patch` into `resources/um`. This redundancy is necessary because:
-    - **Spack Lifecycle**: Spack requires a successful primary fetch to initialize the build.
-    - **FCM Path Resolution**: The UM build tool (FCM) uses relative pathing in its configuration files. It expects the source and configuration root to be in the specific `resources/um` subdirectory that matches the `project_location` variable set in step 1.
-
----
-
-## Usage
-
-Build the latest supported version with default tagging:
+### Usage
+Build a supported version with default tagging:
 ```bash
 spack install um@13.8 model=vn13
 ```
 
 Use a custom branch for a specific subcomponent:
 ```bash
-spack install um@13.1 model=vn13p1-am ukca_ref=my_feature_branch
+spack install um@13.8 model=vn13 jules_ref=my_feature_branch
 ```
