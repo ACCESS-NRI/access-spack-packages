@@ -206,7 +206,7 @@ class UmBasePackage(Package):
             "fcm_name": "netcdf",
             "fcm_ld_flags": "-lnetcdff -lnetcdf"}}
 
-    _projects =  (
+    _projects = (
         "casim",
         "jules",
         "shumlib",
