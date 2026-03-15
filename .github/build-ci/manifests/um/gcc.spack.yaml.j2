@@ -1,0 +1,15 @@
+# This manifest is used specifically for um
+spack:
+  specs:
+  - '{{ package }}'
+  packages:
+    gcc:
+      require:
+        - '{{ gcc_compiler_ver }}'
+    all:
+      require:
+        - '%access_gcc'
+        - 'target={{ target }}'
+  concretizer:
+    unify: false
+  view: false
