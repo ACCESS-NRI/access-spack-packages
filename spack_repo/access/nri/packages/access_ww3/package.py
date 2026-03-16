@@ -17,6 +17,7 @@ class AccessWw3(CMakePackage):
     license("LGPL-3.0-only", checked_by="anton-seaice")
 
     version("stable", branch="dev/2025.08", preferred=True)   # need to update branch for new major versions
+    version("2026.03.000", tag="2026.03.000", commit="1845b8c17321e8625829f8edad763f44722cfeac")
     version("2025.08.000", tag="2025.08.000", commit="5ccdad475003c711ccb660039847759cc952519f")
     version("2025.03.0", tag="2025.03.0", commit="d980dececb8843da1769470f24bc633982073db6")
 
