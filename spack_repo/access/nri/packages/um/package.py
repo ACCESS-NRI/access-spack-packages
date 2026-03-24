@@ -57,7 +57,7 @@ class Um(UmBasePackage):
         """
         for um_exe in ["atmos", "recon"]:
             bin_dir = join_path(f"build-{um_exe}", "bin")
-            build_bin_dir = join_path(self._build_dir(), bin_dir)
+            build_bin_dir = join_path(self.build_dir(), bin_dir)
             install_bin_dir = join_path(prefix, bin_dir)
             mkdirp(install_bin_dir)
             install_tree(build_bin_dir, install_bin_dir)
