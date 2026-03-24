@@ -43,7 +43,7 @@ class Gcom(Package):
             mach_c = "gfortran"
         else:
             raise NotImplementedError("Unknown compiler")
-        if "+mpi" in spec:
+        if spec.satisfies("+mpi"):
             mach_m = "mpp"
         else:
             mach_m = "serial"
@@ -54,8 +54,10 @@ class Gcom(Package):
         """
         Fix serial builds on Gadi by replacing mpicc/mpif90 with serial compilers
         in the machine configuration files.
+        See https://github.com/ACCESS-NRI/gcom/blob/vn8.4/fcm-make/machines/nci_gadi_ifort_serial.cfg
         """
-        if "~mpi" in self.spec:
+        spec = self.spec
+        if spec.satisfies("~mpi"):
             machine = self.gcom_machine(self.spec)
             cfg_path = join_path("fcm-make", "machines", f"{machine}.cfg")
             filter_file("mpicc", "cc", cfg_path)
