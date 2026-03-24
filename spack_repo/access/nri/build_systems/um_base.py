@@ -74,11 +74,14 @@ class UmBasePackage(Package):
     # For all string variants other than Git reference variants,
     # the real default is set by the model.
 
-    # Project-based variants
+    # Project-based collections.
+
     # Revision variants.
     _rev_variants = []
     # Sources variants
     _sources_variants = []
+    # Configuraion items to use when GitHub sources are needed.
+    _project_cfg = {}
 
     for _project in _projects:
         # Revision variants.
@@ -101,6 +104,14 @@ class UmBasePackage(Package):
             description=f"Git branch/tag/commit for {_project}. "
                         f"Overrides Subversion. "
                         f"Defaults to automatic tagging if 'none'.")
+
+        # Configuraion items to use when GitHub sources are needed.
+        _project_cfg[_project] = {
+            "location_var": f"{_project}_project_location",
+            "sources_var": f"{_project}_sources",
+            "url": f"https://github.com/ACCESS-NRI/{_project}.git",
+            "ref_var": _ref_var,
+        }
 
     # Other string variants.
     _other_variants = [
@@ -184,17 +195,6 @@ class UmBasePackage(Package):
     # Should be overridden by child classes if needed.
     projects_needed = _projects
 
-    # Optional Github sources to be used in build (i.e. AM3)
-    _project_cfg = {}
-    for _project in _projects:
-        _ref_var = f"{_project}_ref"
-        _project_cfg[_project] = {
-            "location_var": f"{_project}_project_location",
-            "sources_var": f"{_project}_sources",
-            "url": f"https://github.com/ACCESS-NRI/{_project}.git",
-            "ref_var": _ref_var,
-        }
-
     def _config_file_path(self, model):
         """
         Return the pathname of the Rose app config file
@@ -221,11 +221,13 @@ class UmBasePackage(Package):
             return f"um{spec.version}"
         return ref_value
 
+
     def _resource_path(self, project):
         """
         Return the absolute path to a resource in the stage directory.
         """
         return join_path(self.stage.source_path, "resources", project)
+
 
     @property
     def fetcher(self):
@@ -497,7 +499,7 @@ class UmBasePackage(Package):
         env.prepend_path("PATH", spec["fcm"].prefix.bin)
 
 
-    def _build_dir(self):
+    def build_dir(self):
         """
         Return the build directory.
         """
