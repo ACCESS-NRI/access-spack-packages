@@ -296,20 +296,16 @@ class UmBasePackage(Package):
         def check_model_vs_resource(
             model,
             config_env,
-            resource_cfg,
-            resource_path):
+            resource_cfg):
             """
             Check the values set by the variants sources_var and ref_var
             against any existing sources value in config_env, and remind
             that the sources_var value and the location_var value will
-            be overridden by the empty string and the resource_path respectively.
+            be overridden by the empty string.
             """
             sources_var = resource_cfg["sources_var"]
             location_var = resource_cfg["location_var"]
-            ref_var = resource_cfg["ref_var"]
             sources_value = spec.variants[sources_var].value
-            ref_value = spec.variants[ref_var].value
-            tty.info(f"The spec sets {ref_var}={ref_value}")
             if sources_value == "none":
                 # In this case, the spec value for sources_var has not
                 # overridden the model configuration value, if any.
@@ -331,8 +327,8 @@ class UmBasePackage(Package):
                 assert sources_value == config_env[sources_var]
                 tty.warn(f"The spec sets {sources_var}={sources_value}.")
             tty.info(
-                f"The value '' will be used for {sources_var} and "
-                f"the value {resource_path} will be used for {location_var}.")
+                f"Both {location_var} and {sources_var} will be set to the empty string."
+            )
 
 
         def check_model_vs_root_path_vs_um_ref(
@@ -459,10 +455,10 @@ class UmBasePackage(Package):
                 resource_cfg = self._project_cfg[project]
                 location_var = resource_cfg["location_var"]
                 sources_var = resource_cfg["sources_var"]
-                resource_path = self._resource_path(project)
                 if project == "um":
                     # Check and update config_root_path if necessary.
                     # Output appropriate warning messages.
+                    resource_path = self._resource_path(project)
                     check_model_vs_root_path_vs_um_ref(
                         model,
                         config_env,
@@ -475,9 +471,8 @@ class UmBasePackage(Package):
                 check_model_vs_resource(
                     model,
                     config_env,
-                    resource_cfg,
-                    resource_path)
-                config_env[location_var] = resource_path
+                    resource_cfg)
+                config_env[location_var] = ""
                 config_env[sources_var] = ""
         else:
             # The model does not yet use Github URLs by default and ignores ref variants
@@ -525,20 +520,21 @@ class UmBasePackage(Package):
         Use FCM to build the executables.
         """
         original_config = join_path(self.package_dir, "fcm-make.cfg")
-        build_dir = self._build_dir()
+        build_dir = self.build_dir()
         mkdirp(build_dir)
 
         model = spec.variants["model"].value
         if model in self.github_models:
-            # Create a dynamic wrapper config to override hardcoded SVN syntax
-            # (e.g. extract.location[um] = $um_base@$um_rev) found in remote
-            # Met Office configurations.
+            # Create a dynamic wrapper config to override the extract.location
+            # (e.g. extract.location[um] = $um_base@$um_rev) with
+            # the dynamic resource path
             config_file = join_path(build_dir, "fcm-make-dynamic.cfg")
             with open(config_file, "w") as f:
                 f.write(f"include = {original_config}\n")
                 for project in self.projects_needed:
-                    # Clear the problematic svn-based location entry
-                    f.write(f"extract.location[{project}] = \n")
+                    # Set the extract location to the dynamic resource path.
+                    resource_path = self._resource_path(project)
+                    f.write(f"extract.location[{project}] = {resource_path}\n")
         else:
             config_file = original_config
 
