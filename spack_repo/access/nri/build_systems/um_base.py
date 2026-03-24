@@ -1,10 +1,9 @@
-# Copyright 2013-2023 Lawrence Livermore National Security, LLC and other
-# Spack Project Developers. See the top-level COPYRIGHT file for details.
-#
-# Copyright 2024 ACCESS-NRI
-# Based on https://github.com/nci/spack-repo/blob/main/packages/um/package.py
+# Copyright Spack Project Developers. See COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
+
+# Copyright 2024-2026 ACCESS-NRI
+# Based on https://github.com/nci/spack-repo/blob/main/packages/um/package.py
 
 import configparser
 from spack_repo.builtin.build_systems.generic import Package
@@ -262,7 +261,7 @@ class UmBasePackage(Package):
             spec[dep_name].libs.ld_flags,
             self._lib_cfg[fcm_libname]["fcm_ld_flags"]]
         # The reason for the explicit -rpath is:
-        # https://github.com/ACCESS-NRI/spack-packages/issues/14#issuecomment-1653651447
+        # https://github.com/ACCESS-NRI/access-spack-packages/issues/14#issuecomment-1653651447
         rpaths = ["-Wl,-rpath=" + d for d in spec[dep_name].libs.directories]
 
         # Both ld_flags and rpaths are lists of strings.

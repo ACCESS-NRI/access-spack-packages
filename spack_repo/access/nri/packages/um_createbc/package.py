@@ -1,10 +1,8 @@
-# Copyright 2013-2023 Lawrence Livermore National Security, LLC and other
-# Spack Project Developers. See the top-level COPYRIGHT file for details.
-#
-# Copyright 2024 ACCESS-NRI
-# Based on https://github.com/nci/spack-repo/blob/main/packages/um/package.py
+# Copyright Spack Project Developers. See COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
+
+# Copyright 2024-2026 ACCESS-NRI
 
 from spack_repo.access.nri.build_systems.um_base import UmBasePackage
 from spack.package import *

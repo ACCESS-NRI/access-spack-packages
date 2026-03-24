@@ -1,3 +1,9 @@
+# Copyright Spack Project Developers. See COPYRIGHT file for details.
+#
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+
+# Copyright 2024-2026 ACCESS-NRI
+
 from spack_repo.builtin.build_systems.generic import Package
 from spack.package import *
 
