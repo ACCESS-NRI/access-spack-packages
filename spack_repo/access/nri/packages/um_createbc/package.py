@@ -17,9 +17,13 @@ class UmCreatebc(UmBasePackage):
     variant("model", default="vn13", description="Model configuration.",
         values=("vn13", "vn13p5-rns"), multi=False)
 
-    _github_models = ("vn13",)
+    # List of model variants that have been migrated to Github sources.
+    # Defined in parent class and overridden here.
+    github_models = ("vn13",)
 
-    _resources_needed = ("shumlib", "um")
+    # List of projects to be used by this package.
+    # Defined in parent class and overridden here.
+    projects_needed = ("shumlib", "um")
 
     # For GCOM versions, see
     # https://code.metoffice.gov.uk/trac/gcom/wiki/Gcom_meto_installed_versions

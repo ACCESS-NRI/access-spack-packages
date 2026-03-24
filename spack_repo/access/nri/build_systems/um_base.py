@@ -8,6 +8,7 @@
 
 import configparser
 from spack_repo.builtin.build_systems.generic import Package
+from spack.util.executable import ProcessError
 from spack.package import *
 import spack.llnl.util.tty as tty
 import spack.util.git
@@ -22,25 +23,6 @@ class UmBasePackage(Package):
 
     homepage = "https://code.metoffice.gov.uk/trac/um"
     _svn_mirror = "file:///g/data/ki32/mosrs/um/main/trunk"
-
-    @property
-    def fetcher(self):
-        """
-        Return the fetch strategy based on the model variant.
-        """
-        spec = self.spec
-        model = spec.variants["model"].value
-        if model in self._github_models:
-            # GitHub migration: Return a Git fetch strategy
-            git_info = self._get_project("um")
-            return fs.from_kwargs(git=git_info["url"], tag=git_info["ref"])
-        else:
-            # Legacy: Return an Svn fetch strategy
-            # Recover the revision from the version definition if available
-            rev = None
-            if spec.version in self.versions:
-                rev = self.versions[spec.version].get("revision")
-            return fs.from_kwargs(svn=self._svn_mirror, revision=rev)
 
     # See 'fcm kp fcm:um.xm' for release versions.
     _revision = {
@@ -62,6 +44,15 @@ class UmBasePackage(Package):
 
     maintainers("penguian")
 
+    _projects = (
+        "casim",
+        "jules",
+        "shumlib",
+        "socrates",
+        "ukca",
+        "um",
+    )
+
     # Bool variants have their default value set to True here.
     _bool_variants = (
         "DR_HOOK",
@@ -80,28 +71,39 @@ class UmBasePackage(Package):
             values=("none", "off", "on"), multi=False)
 
     # String variants have their default values set to "none" here.
-    # The real default is set by the model.
+    # For all string variants other than Git reference variants,
+    # the real default is set by the model.
 
+    # Project-based variants
     # Revision variants.
-    _rev_variants = (
-        "casim_rev",
-        "jules_rev",
-        "shumlib_rev",
-        "socrates_rev",
-        "ukca_rev")
+    _rev_variants = []
+    # Sources variants
+    _sources_variants = []
 
-    # Git reference variants.
-    _ref_variants = (
-        "casim_ref",
-        "jules_ref",
-        "shumlib_ref",
-        "socrates_ref",
-        "ukca_ref",
-        "um_ref")
+    for _project in _projects:
+        # Revision variants.
+        if _project != "um":
+            _rev_var = f"{_project}_rev"
+            _rev_variants.append(_rev_var)
+            variant(_rev_var, default="none", values="*", multi=False,
+                description=f"Subversion revision for {_project}. "
+                            f"Defaults to automatic versioning if 'none'.")
+
+        # Sources variants
+        _sources_var = f"{_project}_sources"
+        _sources_variants.append(_sources_var)
+        variant(_sources_var, default="none", values="*", multi=False,
+            description=f"FCM diff extract location of {_project}.")
+
+        # Git reference variants.
+        _ref_var = f"{_project}_ref"
+        variant(_ref_var, default="none", values="*", multi=False,
+            description=f"Git branch/tag/commit for {_project}. "
+                        f"Overrides Subversion. "
+                        f"Defaults to automatic tagging if 'none'.")
 
     # Other string variants.
-    _other_variants = (
-        "casim_sources",
+    _other_variants = [
         "compile_atmos",
         "compile_createbc",
         "compile_crmstyle_coarse_grid",
@@ -129,34 +131,12 @@ class UmBasePackage(Package):
         "portio_version",
         "prebuild",
         "recon_mpi",
-        "shumlib_sources",
-        "socrates_sources",
         "stash_version",
         "timer_version",
-        "ukca_sources",
-        "um_sources",
-        )
+    ]
 
-    for var in _rev_variants:
-        comp = var.split('_')[0].upper()
-        variant(var, default="none", values="*", multi=False,
-                description=f"Svn revision for {comp}. "
-                            f"Defaults to automatic versioning if 'none'.")
-
-    for var in _ref_variants:
-        comp = var.split('_')[0].upper()
-        variant(var, default="none", values="*", multi=False,
-                description=f"Git branch/tag/commit for {comp}. "
-                            f"Overrides Svn. Defaults to automatic tagging if 'none'.")
-
-    # Group other variants by purpose
-    for var in _other_variants:
-        if var.endswith("_sources"):
-            comp = var.split('_')[0].upper()
-            variant(var, default="none", values="*", multi=False,
-                    description=f"Local source directory for {comp}. Overrides Git/Svn.")
-        else:
-            variant(var, default="none", values="*", multi=False, description=var)
+    for _var in _other_variants:
+        variant(_var, default="none", values="*", multi=False, description=_var)
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")
@@ -164,17 +144,6 @@ class UmBasePackage(Package):
     # The 'site=nci-gadi' variant of fcm defines the keywords
     # used by the FCM configuration of UM.
     depends_on("fcm site=nci-gadi", type="build")
-
-    # For GCOM versions, see
-    # https://code.metoffice.gov.uk/trac/gcom/wiki/Gcom_meto_installed_versions
-    depends_on("gcom@7.8", when="@:13.0", type=("build", "link"))
-    depends_on("gcom@7.9", when="@13.1", type=("build", "link"))
-    depends_on("gcom@8.0", when="@13.2", type=("build", "link"))
-    depends_on("gcom@8.1", when="@13.3", type=("build", "link"))
-    depends_on("gcom@8.2", when="@13.4", type=("build", "link"))
-    depends_on("gcom@8.3", when="@13.5:13.7", type=("build", "link"))
-    depends_on("gcom@8.4", when="@13.8", type=("build", "link"))
-    depends_on("gcom@8.4:", when="@13.9:", type=("build", "link"))
     depends_on("fiat@um", type=("build", "link", "run"),
         when="+DR_HOOK")
     depends_on("eccodes +fortran +netcdf", type=("build", "link", "run"),
@@ -206,34 +175,25 @@ class UmBasePackage(Package):
             "fcm_name": "netcdf",
             "fcm_ld_flags": "-lnetcdff -lnetcdf"}}
 
-    _projects = (
-        "casim",
-        "jules",
-        "shumlib",
-        "socrates",
-        "ukca",
-        "um",
-    )
-
-    # Optional Github sources to be used in build (i.e. AM3)
-    _resource_cfg = dict()
-    for project in _projects:
-        _resource_cfg[project] = {
-            "location_var": f"{project}_project_location",
-            "sources_var": f"{project}_sources",
-            "url": f"https://github.com/ACCESS-NRI/{project}.git",
-            "ref_var": f"{project}_ref",
-            "subdir": project,
-        }
-
     # List of model variants that have been migrated to Github sources.
     # Should be overridden by child classes.
-    _github_models = ()
+    github_models = ()
 
-    # List of resource keys from _resource_cfg to be used by this package.
-    # Defaults to all resources. Should be overridden by child classes if needed.
-    _resources_needed = _projects
+    # List of projects to be used by this package.
+    # Defaults to all projects.
+    # Should be overridden by child classes if needed.
+    projects_needed = _projects
 
+    # Optional Github sources to be used in build (i.e. AM3)
+    _project_cfg = {}
+    for _project in _projects:
+        _ref_var = f"{_project}_ref"
+        _project_cfg[_project] = {
+            "location_var": f"{_project}_project_location",
+            "sources_var": f"{_project}_sources",
+            "url": f"https://github.com/ACCESS-NRI/{_project}.git",
+            "ref_var": _ref_var,
+        }
 
     def _config_file_path(self, model):
         """
@@ -244,12 +204,13 @@ class UmBasePackage(Package):
             self.package_dir, "model", model, "rose-app.conf")
 
 
-    def _resource_ref(self, ref_var):
+    def _resource_ref(self, project):
         """
         Return the git reference for a resource, applying automatic tagging
         if the variant is 'none'.
         """
         spec = self.spec
+        ref_var = self._project_cfg[project]["ref_var"]
         ref_value = spec.variants[ref_var].value
         if ref_value == "none":
             if ref_var == "um_ref":
@@ -260,38 +221,33 @@ class UmBasePackage(Package):
             return f"um{spec.version}"
         return ref_value
 
-
-    def _resource_path(self, subdir):
+    def _resource_path(self, project):
         """
         Return the absolute path to a resource in the stage directory.
         """
-        return join_path(self.stage.source_path, "resources", subdir)
+        return join_path(self.stage.source_path, "resources", project)
 
-
-    def _get_project(self, project):
+    @property
+    def fetcher(self):
         """
-        Return a dictionary of project metadata for a given project name.
+        Return the fetch strategy based on the model variant.
         """
-        cfg = self._resource_cfg[project]
-        ref_var = cfg["ref_var"]
-        return {
-            "location_var": cfg["location_var"],
-            "sources_var": cfg["sources_var"],
-            "url": cfg["url"],
-            "ref_var": ref_var,
-            "ref": self._resource_ref(ref_var),
-        }
-
-
-    def _get_resource_info(self, project):
-        """
-        Return a dictionary of full resource details (metadata + path)
-        for a given project name.
-        """
-        info = self._get_project(project)
-        cfg = self._resource_cfg[project]
-        info["path"] = self._resource_path(cfg["subdir"])
-        return info
+        spec = self.spec
+        model = spec.variants["model"].value
+        if model in self.github_models:
+            # GitHub: Return a Git fetch strategy
+            project = "um"
+            cfg = self._project_cfg[project]
+            url = cfg["url"]
+            ref = self._resource_ref(project)
+            return fs.from_kwargs(git=url, tag=ref)
+        else:
+            # Subversion: Return a Subversion fetch strategy
+            # Recover the revision from the version definition if available
+            rev = None
+            if spec.version in self.versions:
+                rev = self.versions[spec.version].get("revision")
+            return fs.from_kwargs(svn=self._svn_mirror, revision=rev)
 
 
     def _get_linker_args(self, spec, fcm_libname):
@@ -338,18 +294,17 @@ class UmBasePackage(Package):
         def check_model_vs_resource(
             model,
             config_env,
-            project,
-            resource_info):
+            resource_cfg,
+            resource_path):
             """
             Check the values set by the variants sources_var and ref_var
             against any existing sources value in config_env, and remind
             that the sources_var value and the location_var value will
             be overridden by the empty string and the resource_path respectively.
             """
-            sources_var = resource_info["sources_var"]
-            location_var = resource_info["location_var"]
-            ref_var = resource_info["ref_var"]
-            resource_path = resource_info["path"]
+            sources_var = resource_cfg["sources_var"]
+            location_var = resource_cfg["location_var"]
+            ref_var = resource_cfg["ref_var"]
             sources_value = spec.variants[sources_var].value
             ref_value = spec.variants[ref_var].value
             tty.info(f"The spec sets {ref_var}={ref_value}")
@@ -388,7 +343,7 @@ class UmBasePackage(Package):
             that the config_root_path value will be overridden by resource_path.
             """
             root_path_var = "config_root_path"
-            ref_var = self._resource_cfg["um"]["ref_var"]
+            ref_var = self._project_cfg["um"]["ref_var"]
             root_path_value = spec.variants[root_path_var].value
             ref_value = spec.variants[ref_var].value
             tty.info(f"The spec sets {ref_var}={ref_value}")
@@ -429,7 +384,7 @@ class UmBasePackage(Package):
 
         # Modify the config as per points 8 and 9 of
         # https://metomi.github.io/rose/2019.01.8/html/api/configuration/rose-configuration-format.html
-        config_env = dict()
+        config_env = {}
         for key in config["env"]:
             if len(key) > 0 and key[0] != '!':
                 config_env[key] = config["env"][key].replace("\n=", "\n")
@@ -468,7 +423,7 @@ class UmBasePackage(Package):
                 config_env[var] = f"um{spec.version}"
 
         # Override those environment variables where any other string variant is specified.
-        for var in self._other_variants:
+        for var in self._sources_variants + self._other_variants:
             spec_value = spec.variants[var].value
             if spec_value != "none":
                 check_model_vs_spec(model, config_env, var, spec_value)
@@ -495,14 +450,14 @@ class UmBasePackage(Package):
                 linker_args = self._get_linker_args(spec, var)
                 config_env[f"ldflags_{fcm_name}_on"] = linker_args
 
-        # The _resource_cfg is relevant for models that use Github URLs (Phase 2).
-        if model in self._github_models:
+        # The resource_cfg is relevant for models that use Github URLs.
+        if model in self.github_models:
             # Add sources to the environment
-            for project in self._resources_needed:
-                resource_info = self._get_resource_info(project)
-                sources_var = resource_info["sources_var"]
-                resource_path = resource_info["path"]
-
+            for project in self.projects_needed:
+                resource_cfg = self._project_cfg[project]
+                location_var = resource_cfg["location_var"]
+                sources_var = resource_cfg["sources_var"]
+                resource_path = self._resource_path(project)
                 if project == "um":
                     # Check and update config_root_path if necessary.
                     # Output appropriate warning messages.
@@ -518,15 +473,15 @@ class UmBasePackage(Package):
                 check_model_vs_resource(
                     model,
                     config_env,
-                    project,
-                    resource_info)
+                    resource_cfg,
+                    resource_path)
+                config_env[location_var] = resource_path
                 config_env[sources_var] = ""
-                config_env[resource_info["location_var"]] = resource_path
         else:
             # The model does not yet use Github URLs by default and ignores ref variants
             # unless explicitly specified (though Phase 2 enables vn13 and vn13p1-am)
             for project in self._projects:
-                ref_var = self._resource_cfg[project]["ref_var"]
+                ref_var = self._project_cfg[project]["ref_var"]
                 ref_value = spec.variants[ref_var].value
                 if ref_value != "none":
                     tty.warn(
@@ -557,9 +512,9 @@ class UmBasePackage(Package):
         # This patch is relevant for models that use Github URLs (Phase 2).
         spec = self.spec
         model = spec.variants["model"].value
-        if model in self._github_models:
+        if model in self.github_models:
             # Checkout sources from Github
-            for project in self._resources_needed:
+            for project in self.projects_needed:
                 self._dynamic_resource(project)
 
 
@@ -572,17 +527,16 @@ class UmBasePackage(Package):
         mkdirp(build_dir)
 
         model = spec.variants["model"].value
-        if model in self._github_models:
+        if model in self.github_models:
             # Create a dynamic wrapper config to override hardcoded SVN syntax
             # (e.g. extract.location[um] = $um_base@$um_rev) found in remote
             # Met Office configurations.
             config_file = join_path(build_dir, "fcm-make-dynamic.cfg")
             with open(config_file, "w") as f:
                 f.write(f"include = {original_config}\n")
-                for project in self._resources_needed:
-                    subdir = self._resource_cfg[project]["subdir"]
+                for project in self.projects_needed:
                     # Clear the problematic svn-based location entry
-                    f.write(f"extract.location[{subdir}] = \n")
+                    f.write(f"extract.location[{project}] = \n")
         else:
             config_file = original_config
 
@@ -603,10 +557,10 @@ class UmBasePackage(Package):
         project : str
             Project name (e.g. 'jules').
         """
-        resource_info = self._get_resource_info(project)
-        url = resource_info["url"]
-        ref = resource_info["ref"]
-        dst_dir = resource_info["path"]
+        resource_cfg = self._project_cfg[project]
+        url = resource_cfg["url"]
+        ref = self._resource_ref(project)
+        dst_dir = self._resource_path(project)
 
         # Create the destination directory
         mkdirp(dst_dir)
