@@ -48,6 +48,5 @@ class UmCreatebc(UmBasePackage):
         Install executables and accompanying files into the prefix directory.
         """
         build_bin_dir = join_path(self.build_dir(), "build-createbc", "bin")
-        install_bin_dir = prefix.bin
-        mkdirp(install_bin_dir)
-        install_tree(build_bin_dir, install_bin_dir)
+        mkdirp(prefix.bin)
+        install_tree(build_bin_dir, prefix.bin)
