@@ -24,6 +24,7 @@ class UmBasePackage(Package):
     _svn_mirror = "file:///g/data/ki32/mosrs/um/main/trunk"
 
     # See 'fcm kp fcm:um.xm' for release versions.
+    # Needed only for Subversion builds.
     _revision = {
         "13.0": 111272,
         "13.1": 114076,
@@ -75,9 +76,9 @@ class UmBasePackage(Package):
 
     # Project-based collections.
 
-    # Revision variants.
+    # Revision variants. Needed only for Subversion sources.
     _rev_variants = []
-    # Sources variants
+    # Sources variants.  Needed only for Subversion sources.
     _sources_variants = []
     # Configuraion items to use when GitHub sources are needed.
     _project_cfg = {}
@@ -185,7 +186,7 @@ class UmBasePackage(Package):
             "fcm_name": "netcdf",
             "fcm_ld_flags": "-lnetcdff -lnetcdf"}}
 
-    # List of model variants that have been migrated to Github sources.
+    # List of model variants that have Github sources.
     # Should be overridden by child classes.
     github_models = ()
 
@@ -297,8 +298,9 @@ class UmBasePackage(Package):
             config_env,
             project_cfg):
             """
-            Check the values set by the variants sources_var and ref_var
-            against any existing sources value in config_env, and remind
+            This function is needed while some models still use Subversion.
+            Check the values set by the variant sources_var against any
+            existing sources value in config_env, and remind the user
             that the sources_var value and the location_var value will
             be overridden by the empty string.
             """
@@ -474,8 +476,7 @@ class UmBasePackage(Package):
                 config_env[location_var] = ""
                 config_env[sources_var] = ""
         else:
-            # The model does not yet use Github URLs by default and ignores ref variants
-            # unless explicitly specified (though Phase 2 enables vn13 and vn13p1-am)
+            # The model uses Subversion and ignores ref variants.
             for project in self._projects:
                 ref_var = self._project_cfg[project]["ref_var"]
                 ref_value = spec.variants[ref_var].value
@@ -526,14 +527,15 @@ class UmBasePackage(Package):
         if model in self.github_models:
             # Create a dynamic wrapper config to override the extract.location
             # (e.g. extract.location[um] = $um_base@$um_rev) with
-            # the dynamic resource path
-            config_file = join_path(build_dir, "fcm-make-dynamic.cfg")
-            with open(config_file, "w") as f:
+            # the project path.
+            dynamic_config = join_path(build_dir, "fcm-make-dynamic.cfg")
+            with open(dynamic_config, "w") as f:
                 f.write(f"include = {original_config}\n")
                 for project in self.projects_needed:
                     # Set the extract location to the dynamic resource path.
                     project_path = self._project_path(project)
                     f.write(f"extract.location[{project}] = {project_path}\n")
+            config_file = dynamic_config
         else:
             config_file = original_config
 
