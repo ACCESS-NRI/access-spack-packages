@@ -532,7 +532,7 @@ class UmBasePackage(Package):
             with open(dynamic_config, "w") as f:
                 f.write(f"include = {original_config}\n")
                 for project in self.projects_needed:
-                    # Set the extract location to the dynamic resource path.
+                    # Set the extract location to the project path.
                     project_path = self._project_path(project)
                     f.write(f"extract.location[{project}] = {project_path}\n")
             config_file = dynamic_config
