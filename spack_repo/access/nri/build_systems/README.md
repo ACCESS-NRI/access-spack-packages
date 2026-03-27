@@ -20,11 +20,11 @@ To achieve this, the system follows a hierarchical design:
 ### Dynamic Fetch Strategy
 Standard Spack recipes use static `git` or `svn` attributes. Because the source location for UM changes based on the `model` variant, `UmBasePackage` overrides the **`fetcher` property**. This allows the recipe to detect when a model has moved to GitHub and bypass Subversion mirrors entirely when appropriate.
 
-### Resource Resolution
+### Project Resolution
 The system uses a centralized **`_project_cfg`** dictionary, indexed by project name (e.g., `"um"`, `"jules"`), to manage component metadata. Two helper methods build on this:
 
-1.  **`_resource_ref(project)`**: Returns the resolved Git reference (branch, tag, or commit), applying automatic tagging when the corresponding `*_ref` variant is `"none"`.
-2.  **`_resource_path(project)`**: Returns the absolute path to the project's checkout directory inside the stage (`<source_path>/resources/<project>`).
+1.  **`_project_ref(project)`**: Returns the resolved Git reference (branch, tag, or commit), applying automatic tagging when the corresponding `*_ref` variant is `"none"`.
+2.  **`_project_path(project)`**: Returns the absolute path to the project's checkout directory inside the stage (`<source_path>/resources/<project>`).
 
 | Field | Purpose |
 | :--- | :--- |
@@ -43,7 +43,7 @@ In `setup_build_environment`, the build system reads the model's `rose-app.conf`
 - **Linker flags**: computed via `_get_linker_args()` and placed in `ldflags_<lib>_on` variables.
 
 For **GitHub-sourced models** (`model in github_models`):
-- `config_root_path` is set to the staged UM resource path; `config_revision` is cleared.
+- `config_root_path` is set to the staged UM project path; `config_revision` is cleared.
 - Each project's `<project>_project_location` and `<project>_sources` variables are both set to the empty string, forcing FCM to use the staged checkout rather than any Subversion or environment-based source definition.
 
 For **Subversion-sourced models**:
@@ -56,5 +56,5 @@ For GitHub-sourced models, `UmBasePackage` handles the checkout of required proj
 ### Build Execution
 During the **`build` phase**, the system:
 1.  Locates the package's default `fcm-make.cfg`.
-2.  For GitHub models, generates a **`fcm-make-dynamic.cfg`** in the build directory. This wrapper includes the original configuration but overrides each component's `extract.location` to point to the staged resource path.
+2.  For GitHub models, generates a **`fcm-make-dynamic.cfg`** in the build directory. This wrapper includes the original configuration but overrides each component's `extract.location` to point to the staged project path.
 3.  Invokes `fcm make` with the calculated configuration and a parallel job count.

@@ -203,7 +203,7 @@ class UmBasePackage(Package):
             self.package_dir, "model", model, "rose-app.conf")
 
 
-    def _resource_ref(self, project):
+    def _project_ref(self, project):
         """
         Return the git reference for a resource, applying automatic tagging
         if the variant is 'none'.
@@ -221,7 +221,7 @@ class UmBasePackage(Package):
         return ref_value
 
 
-    def _resource_path(self, project):
+    def _project_path(self, project):
         """
         Return the absolute path to a resource in the stage directory.
         """
@@ -240,7 +240,7 @@ class UmBasePackage(Package):
             project = "um"
             cfg = self._project_cfg[project]
             url = cfg["url"]
-            ref = self._resource_ref(project)
+            ref = self._project_ref(project)
             return fs.from_kwargs(git=url, tag=ref)
         else:
             # Subversion: Return a Subversion fetch strategy
@@ -292,18 +292,18 @@ class UmBasePackage(Package):
                         f"The value {spec_value} will be used.")
 
 
-        def check_model_vs_resource(
+        def check_model_vs_project(
             model,
             config_env,
-            resource_cfg):
+            project_cfg):
             """
             Check the values set by the variants sources_var and ref_var
             against any existing sources value in config_env, and remind
             that the sources_var value and the location_var value will
             be overridden by the empty string.
             """
-            sources_var = resource_cfg["sources_var"]
-            location_var = resource_cfg["location_var"]
+            sources_var = project_cfg["sources_var"]
+            location_var = project_cfg["location_var"]
             sources_value = spec.variants[sources_var].value
             if sources_value == "none":
                 # In this case, the spec value for sources_var has not
@@ -333,11 +333,11 @@ class UmBasePackage(Package):
         def check_model_vs_root_path_vs_um_ref(
             model,
             config_env,
-            resource_path):
+            project_path):
             """
             Check the values set by the variants "config_root_path" and "um_ref"
             against any existing config_root_path value in config_env, and remind
-            that the config_root_path value will be overridden by resource_path.
+            that the config_root_path value will be overridden by project_path.
             """
             root_path_var = "config_root_path"
             ref_var = self._project_cfg["um"]["ref_var"]
@@ -365,7 +365,7 @@ class UmBasePackage(Package):
                 assert root_path_value == config_env[root_path_var]
                 tty.warn(f"The spec sets {root_path_var}={root_path_value}.")
             tty.info(
-                f"The value {resource_path} will be used for {root_path_var}.")
+                f"The value {project_path} will be used for {root_path_var}.")
             tty.info("The config_revision will be set to the empty string.")
 
 
@@ -447,30 +447,30 @@ class UmBasePackage(Package):
                 linker_args = self._get_linker_args(spec, var)
                 config_env[f"ldflags_{fcm_name}_on"] = linker_args
 
-        # The resource_cfg is relevant for models that use Github URLs.
+        # The project_cfg is relevant for models that use Github URLs.
         if model in self.github_models:
             # Add sources to the environment
             for project in self.projects_needed:
-                resource_cfg = self._project_cfg[project]
-                location_var = resource_cfg["location_var"]
-                sources_var = resource_cfg["sources_var"]
+                project_cfg = self._project_cfg[project]
+                location_var = project_cfg["location_var"]
+                sources_var = project_cfg["sources_var"]
                 if project == "um":
                     # Check and update config_root_path if necessary.
                     # Output appropriate warning messages.
-                    resource_path = self._resource_path(project)
+                    project_path = self._project_path(project)
                     check_model_vs_root_path_vs_um_ref(
                         model,
                         config_env,
-                        resource_path)
+                        project_path)
                     # Set the config_env variables to the required values.
-                    config_env["config_root_path"] = resource_path
+                    config_env["config_root_path"] = project_path
                     config_env["config_revision"] = ""
 
                 # Output appropriate warning messages if overriding existing env.
-                check_model_vs_resource(
+                check_model_vs_project(
                     model,
                     config_env,
-                    resource_cfg)
+                    project_cfg)
                 config_env[location_var] = ""
                 config_env[sources_var] = ""
         else:
@@ -532,8 +532,8 @@ class UmBasePackage(Package):
                 f.write(f"include = {original_config}\n")
                 for project in self.projects_needed:
                     # Set the extract location to the dynamic resource path.
-                    resource_path = self._resource_path(project)
-                    f.write(f"extract.location[{project}] = {resource_path}\n")
+                    project_path = self._project_path(project)
+                    f.write(f"extract.location[{project}] = {project_path}\n")
         else:
             config_file = original_config
 
@@ -554,10 +554,10 @@ class UmBasePackage(Package):
         project : str
             Project name (e.g. 'jules').
         """
-        resource_cfg = self._project_cfg[project]
-        url = resource_cfg["url"]
-        ref = self._resource_ref(project)
-        dst_dir = self._resource_path(project)
+        project_cfg = self._project_cfg[project]
+        url = project_cfg["url"]
+        ref = self._project_ref(project)
+        dst_dir = self._project_path(project)
 
         # Create the destination directory
         mkdirp(dst_dir)
