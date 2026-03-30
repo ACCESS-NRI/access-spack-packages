@@ -130,7 +130,6 @@ class UmBasePackage(Package):
         "extract",
         "fcflags_overrides",
         "gwd_ussp_precision",
-        "jules_sources",
         "land_surface_model",
         "ldflags_overrides_prefix",
         "ldflags_overrides_suffix",
