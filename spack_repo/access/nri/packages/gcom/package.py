@@ -1,3 +1,9 @@
+# Copyright Spack Project Developers. See COPYRIGHT file for details.
+#
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+
+# Copyright 2024-2026 ACCESS-NRI
+
 from spack_repo.builtin.build_systems.generic import Package
 from spack.package import *
 
@@ -33,6 +39,37 @@ class Gcom(Package):
     # https://github.com/spack/spack/releases/tag/v0.21.0 Feature 4
     depends_on("openmpi@4.1.3:", when="+mpi^[virtuals=mpi] openmpi", type=("build", "link", "run"))
 
+    def gcom_machine(self, spec):
+        """
+        Determine the machine configuration name
+        """
+        if spec.satisfies("%intel"):
+            mach_c = "ifort"
+        elif spec.satisfies("%gcc"):
+            mach_c = "gfortran"
+        else:
+            raise NotImplementedError("Unknown compiler")
+        if spec.satisfies("+mpi"):
+            mach_m = "mpp"
+        else:
+            mach_m = "serial"
+        return f"nci_gadi_{mach_c}_{mach_m}"
+
+
+    def patch(self):
+        """
+        Fix serial builds on Gadi by replacing mpicc/mpif90 with serial compilers
+        in the machine configuration files.
+        See https://github.com/ACCESS-NRI/gcom/blob/vn8.4/fcm-make/machines/nci_gadi_ifort_serial.cfg
+        """
+        spec = self.spec
+        if spec.satisfies("~mpi"):
+            machine = self.gcom_machine(self.spec)
+            cfg_path = join_path("fcm-make", "machines", f"{machine}.cfg")
+            filter_file("mpicc", "cc", cfg_path)
+            filter_file("mpif90", "fc", cfg_path)
+
+
     def install(self, spec, prefix):
         fcm = which("fcm")
 
@@ -44,18 +81,7 @@ class Gcom(Package):
         env["ROSE_TASK_MIRROR_TARGET"] = "localhost"
 
         # Decide on the build variant
-        if spec.satisfies("%intel"):
-            mach_c = "ifort"
-        elif spec.satisfies("%gcc"):
-            mach_c = "gfortran"
-        else:
-            raise NotImplentedError("Unknown compiler")
-        if "+mpi" in spec:
-            mach_m = "mpp"
-        else:
-            mach_m = "serial"
-
-        env["GCOM_MACHINE"] = f"nci_gadi_{mach_c}_{mach_m}"
+        env["GCOM_MACHINE"] = self.gcom_machine(spec)
 
         # Do the build with fcm
         fcm("make", "-f", "fcm-make/gcom.cfg")
