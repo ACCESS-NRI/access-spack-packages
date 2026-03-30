@@ -214,10 +214,13 @@ class UmBasePackage(Package):
         ref_value = spec.variants[ref_var].value
         if ref_value == "none":
             if ref_var == "um_ref":
+                # Use a UM repo tag, e.g. UKMO_vn13.8
                 return f"UKMO_vn{spec.version}"
             if ref_var == "jules_ref":
+                # Use a JULES repo tag, e.g. JULES_vn7.8
                 # JULES version = UM version - 6.0
                 return f"JULES_vn{spec.version[0] - 6}.{spec.version[1]}"
+            # Use a CASIM, SHUMLIB, etc. repo tag, e.g. um13.8
             return f"um{spec.version}"
         return ref_value
 
