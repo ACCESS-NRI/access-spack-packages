@@ -94,6 +94,11 @@ class Issm(AutotoolsPackage):
     with when("+ad"):
         depends_on("codipack")
         depends_on("medipack")
+        depends_on("gsl")
+        depends_on("access-triangle")
+        depends_on("python", type=("build", "run"))
+        depends_on("py-numpy", type=("build", "run"))
+        
 
     # When building with Python wrappers, need access-triangle, Python, and NumPy
     with when("+wrappers"):
@@ -173,6 +178,14 @@ class Issm(AutotoolsPackage):
             args += [
                 f"--with-codipack-dir={self.spec['codipack'].prefix}",
                 f"--with-medipack-dir={self.spec['medipack'].prefix}",
+                f"--with-gsl-dir={self.spec['gsl'].prefix}",
+                f"--with-triangle-dir={self.spec['access-triangle'].prefix}",
+                f"--with-python-dir={self.spec['python'].prefix}",
+                f"--with-python-numpy-dir={self.spec['py-numpy'].prefix}",
+                "--enable-tape-alloc",
+                "--with-numthreads=4",
+                "--with-fortran-lib=-lgfortran",
+                f"--with-blas-lapack-dir={self.spec['scalapack'].prefix}",
             ]
         else:
             # Classic build with PETSc
