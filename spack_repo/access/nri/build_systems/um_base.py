@@ -20,7 +20,7 @@ class UmBasePackage(Package):
     """
 
     homepage = "https://code.metoffice.gov.uk/trac/um"
-    url = "https://github.com/ACCESS-NRI/um.git"
+    git = "https://github.com/ACCESS-NRI/um.git"
 
     # UM versions 13.0 to 13.9 use Git tags.
     version("13.0", tag="UKMO_vn13.0")
