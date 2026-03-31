@@ -191,7 +191,7 @@ class UmBasePackage(Package):
         """
         Return the absolute path to a resource in the stage directory.
         """
-        return join_path(self.stage.source_path, "resources", project)
+        return join_path(self.stage.path, "resources", project)
 
 
 
@@ -343,7 +343,7 @@ class UmBasePackage(Package):
         """
         Patch the staging directory just before building.
         """
-        # Checkout sources from Github
+        # Checkout other resources from Github
         for project in self.projects_needed:
             self._dynamic_resource(project)
 
