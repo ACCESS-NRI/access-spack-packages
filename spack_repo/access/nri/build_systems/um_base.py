@@ -11,7 +11,6 @@ from spack.util.executable import ProcessError
 from spack.package import *
 import spack.llnl.util.tty as tty
 import spack.util.git
-import spack.fetch_strategy as fs
 
 class UmBasePackage(Package):
     """
@@ -21,26 +20,19 @@ class UmBasePackage(Package):
     """
 
     homepage = "https://code.metoffice.gov.uk/trac/um"
-    _svn_mirror = "file:///g/data/ki32/mosrs/um/main/trunk"
+    url = "https://github.com/ACCESS-NRI/um.git"
 
-    # See 'fcm kp fcm:um.xm' for release versions.
-    # Needed only for Subversion builds.
-    _revision = {
-        "13.0": 111272,
-        "13.1": 114076,
-        "13.2": 116723,
-        "13.3": 118802,
-        "13.4": 120750,
-        "13.5": 123226,
-        "13.6": 124981,
-        "13.7": 127030,
-        "13.8": 128625,
-        "13.9": 130128,
-    }
-    _max_minor = 9
-    for v in range(1 + _max_minor):
-        _version = f"13.{v}"
-        version(_version, revision=_revision[_version], preferred=(v == 8))
+    # UM versions 13.0 to 13.9 use Git tags.
+    version("13.0", tag="UKMO_vn13.0")
+    version("13.1", tag="UKMO_vn13.1")
+    version("13.2", tag="UKMO_vn13.2")
+    version("13.3", tag="UKMO_vn13.3")
+    version("13.4", tag="UKMO_vn13.4")
+    version("13.5", tag="UKMO_vn13.5")
+    version("13.6", tag="UKMO_vn13.6")
+    version("13.7", tag="UKMO_vn13.7")
+    version("13.8", tag="UKMO_vn13.8", preferred=True)
+    version("13.9", tag="UKMO_vn13.9")
 
     maintainers("penguian")
 
@@ -50,7 +42,6 @@ class UmBasePackage(Package):
         "shumlib",
         "socrates",
         "ukca",
-        "um",
     )
 
     # Bool variants have their default value set to True here.
@@ -76,39 +67,18 @@ class UmBasePackage(Package):
 
     # Project-based collections.
 
-    # Revision variants. Needed only for Subversion sources.
-    _rev_variants = []
-    # Sources variants.  Needed only for Subversion sources.
-    _sources_variants = []
     # Configuraion items to use when GitHub sources are needed.
     _project_cfg = {}
 
     for _project in _projects:
-        # Revision variants.
-        if _project != "um":
-            _rev_var = f"{_project}_rev"
-            _rev_variants.append(_rev_var)
-            variant(_rev_var, default="none", values="*", multi=False,
-                description=f"Subversion revision for {_project}. "
-                            f"Defaults to automatic versioning if 'none'.")
-
-        # Sources variants
-        _sources_var = f"{_project}_sources"
-        _sources_variants.append(_sources_var)
-        variant(_sources_var, default="none", values="*", multi=False,
-            description=f"FCM diff extract location of {_project}.")
-
         # Git reference variants.
         _ref_var = f"{_project}_ref"
         variant(_ref_var, default="none", values="*", multi=False,
             description=f"Git branch/tag/commit for {_project}. "
-                        f"Overrides Subversion. "
                         f"Defaults to automatic tagging if 'none'.")
 
         # Configuraion items to use when GitHub sources are needed.
         _project_cfg[_project] = {
-            "location_var": f"{_project}_project_location",
-            "sources_var": f"{_project}_sources",
             "url": f"https://github.com/ACCESS-NRI/{_project}.git",
             "ref_var": _ref_var,
         }
@@ -185,10 +155,6 @@ class UmBasePackage(Package):
             "fcm_name": "netcdf",
             "fcm_ld_flags": "-lnetcdff -lnetcdf"}}
 
-    # List of model variants that have Github sources.
-    # Should be overridden by child classes.
-    github_models = ()
-
     # List of projects to be used by this package.
     # Defaults to all projects.
     # Should be overridden by child classes if needed.
@@ -212,9 +178,6 @@ class UmBasePackage(Package):
         ref_var = self._project_cfg[project]["ref_var"]
         ref_value = spec.variants[ref_var].value
         if ref_value == "none":
-            if ref_var == "um_ref":
-                # Use a UM repo tag, e.g. UKMO_vn13.8
-                return f"UKMO_vn{spec.version}"
             if ref_var == "jules_ref":
                 # Use a JULES repo tag, e.g. JULES_vn7.8
                 # JULES version = UM version - 6.0
@@ -231,27 +194,6 @@ class UmBasePackage(Package):
         return join_path(self.stage.source_path, "resources", project)
 
 
-    @property
-    def fetcher(self):
-        """
-        Return the fetch strategy based on the model variant.
-        """
-        spec = self.spec
-        model = spec.variants["model"].value
-        if model in self.github_models:
-            # GitHub: Return a Git fetch strategy
-            project = "um"
-            cfg = self._project_cfg[project]
-            url = cfg["url"]
-            ref = self._project_ref(project)
-            return fs.from_kwargs(git=url, tag=ref)
-        else:
-            # Subversion: Return a Subversion fetch strategy
-            # Recover the revision from the version definition if available
-            rev = None
-            if spec.version in self.versions:
-                rev = self.versions[spec.version].get("revision")
-            return fs.from_kwargs(svn=self._svn_mirror, revision=rev)
 
 
     def _get_linker_args(self, spec, fcm_libname):
@@ -295,82 +237,6 @@ class UmBasePackage(Package):
                         f"The value {spec_value} will be used.")
 
 
-        def check_model_vs_project(
-            model,
-            config_env,
-            project_cfg):
-            """
-            This function is needed while some models still use Subversion.
-            Check the values set by the variant sources_var against any
-            existing sources value in config_env, and remind the user
-            that the sources_var value and the location_var value will
-            be overridden by the empty string.
-            """
-            sources_var = project_cfg["sources_var"]
-            location_var = project_cfg["location_var"]
-            sources_value = spec.variants[sources_var].value
-            if sources_value == "none":
-                # In this case, the spec value for sources_var has not
-                # overridden the model configuration value, if any.
-                if sources_var not in config_env:
-                    tty.info(
-                        f"The {model} model does not specify {sources_var}.")
-                else:  # sources_var in config_env
-                    env_value = config_env[sources_var]
-                    if env_value == "":
-                        tty.info(
-                            f"The {model} model sets {sources_var}=''.")
-                    else:
-                        tty.warn(
-                            f"The {model} model sets "
-                            f"{sources_var}={env_value}.")
-            else:  # sources_value != "none"
-                # In this case, the spec value for sources_var has already
-                # overridden the model configuration value, if any.
-                assert sources_value == config_env[sources_var]
-                tty.warn(f"The spec sets {sources_var}={sources_value}.")
-            tty.info(
-                f"Both {location_var} and {sources_var} will be set to the empty string."
-            )
-
-
-        def check_model_vs_root_path_vs_um_ref(
-            model,
-            config_env,
-            project_path):
-            """
-            Check the values set by the variants "config_root_path" and "um_ref"
-            against any existing config_root_path value in config_env, and remind
-            that the config_root_path value will be overridden by project_path.
-            """
-            root_path_var = "config_root_path"
-            ref_var = self._project_cfg["um"]["ref_var"]
-            root_path_value = spec.variants[root_path_var].value
-            ref_value = spec.variants[ref_var].value
-            tty.info(f"The spec sets {ref_var}={ref_value}")
-            if root_path_value == "none":
-                # In this case, the spec value for root_path_var has not
-                # overridden the model configuration value, if any.
-                if root_path_var not in config_env:
-                    tty.info(
-                        f"The {model} model does not specify {root_path_var}.")
-                else:  # root_path_var in config_env
-                    env_value = config_env[root_path_var]
-                    if env_value == "":
-                        tty.info(
-                            f"The {model} model sets {root_path_var}=''.")
-                    else:
-                        tty.warn(
-                            f"The {model} model sets "
-                            f"{root_path_var}={env_value}.")
-            else:  # root_path_value != "none"
-                # In this case, the spec value for root_path_var has already
-                # overridden the model configuration value, if any.
-                assert root_path_value == config_env[root_path_var]
-                tty.warn(f"The spec sets {root_path_var}={root_path_value}.")
-            tty.info(
-                f"The value {project_path} will be used for {root_path_var}.")
-            tty.info("The config_revision will be set to the empty string.")
 
 
         spec = self.spec
@@ -412,23 +278,17 @@ class UmBasePackage(Package):
                 check_model_vs_spec(model, config_env, var, spec_str_value)
                 config_env[var] = spec_str_value
 
-        # Override those environment variables where a revision variant is specified.
-        # If the variant is left unspecified, and the model does not specify a revision,
-        # then use a component revision based on the spec UM version.
-        for var in self._rev_variants:
-            spec_value = spec.variants[var].value
-            if spec_value != "none":
-                check_model_vs_spec(model, config_env, var, spec_value)
-                config_env[var] = spec_value
-            elif var not in config_env or config_env[var] == "":
-                config_env[var] = f"um{spec.version}"
-
         # Override those environment variables where any other string variant is specified.
-        for var in self._sources_variants + self._other_variants:
+        for var in self._other_variants:
             spec_value = spec.variants[var].value
             if spec_value != "none":
                 check_model_vs_spec(model, config_env, var, spec_value)
                 config_env[var] = spec_value
+        # If config_revision is left unspecified, and the model does not specify it,
+        # then leave it empty.
+        var = "config_revision"
+        if spec.variants[var].value == "none" and (var not in config_env or config_env[var] == ""):
+             config_env[var] = ""
 
         # Define CPATH and FPATH for dependencies that need include files or modules.
         for path in ["CPATH", "FPATH"]:
@@ -451,41 +311,17 @@ class UmBasePackage(Package):
                 linker_args = self._get_linker_args(spec, var)
                 config_env[f"ldflags_{fcm_name}_on"] = linker_args
 
-        # The project_cfg is relevant for models that use Github URLs.
-        if model in self.github_models:
-            # Add sources to the environment
-            for project in self.projects_needed:
-                project_cfg = self._project_cfg[project]
-                location_var = project_cfg["location_var"]
-                sources_var = project_cfg["sources_var"]
-                if project == "um":
-                    # Check and update config_root_path if necessary.
-                    # Output appropriate warning messages.
-                    project_path = self._project_path(project)
-                    check_model_vs_root_path_vs_um_ref(
-                        model,
-                        config_env,
-                        project_path)
-                    # Set the config_env variables to the required values.
-                    config_env["config_root_path"] = project_path
-                    config_env["config_revision"] = ""
+        # Set environment variables for all GitHub sources.
+        # Set config_root_path to self.stage.source_path.
+        project_path = self.stage.source_path
+        config_env["config_root_path"] = project_path
+        config_env["config_revision"] = ""
 
-                # Output appropriate warning messages if overriding existing env.
-                check_model_vs_project(
-                    model,
-                    config_env,
-                    project_cfg)
-                config_env[location_var] = ""
-                config_env[sources_var] = ""
-        else:
-            # The model uses Subversion and ignores ref variants.
-            for project in self._projects:
-                ref_var = self._project_cfg[project]["ref_var"]
-                ref_value = spec.variants[ref_var].value
-                if ref_value != "none":
-                    tty.warn(
-                        f"The {model} model ignores the variant "
-                        f"{ref_var}={ref_value}.")
+        # Set location, rev, and sources variables to empty strings.
+        for project in ("um",) + self.projects_needed:
+            config_env[f"{project}_project_location"] = ""
+            config_env[f"{project}_rev"] = ""
+            config_env[f"{project}_sources"] = ""
 
         # Set environment variables based on config_env.
         for key in config_env:
@@ -507,14 +343,9 @@ class UmBasePackage(Package):
         """
         Patch the staging directory just before building.
         """
-
-        # This patch is relevant for models that use Github URLs (Phase 2).
-        spec = self.spec
-        model = spec.variants["model"].value
-        if model in self.github_models:
-            # Checkout sources from Github
-            for project in self.projects_needed:
-                self._dynamic_resource(project)
+        # Checkout sources from Github
+        for project in self.projects_needed:
+            self._dynamic_resource(project)
 
 
     def build(self, spec, prefix):
@@ -525,21 +356,19 @@ class UmBasePackage(Package):
         build_dir = self.build_dir()
         mkdirp(build_dir)
 
-        model = spec.variants["model"].value
-        if model in self.github_models:
-            # Create a dynamic wrapper config to override the extract.location
-            # (e.g. extract.location[um] = $um_base@$um_rev) with
-            # the project path.
-            dynamic_config = join_path(build_dir, "fcm-make-dynamic.cfg")
-            with open(dynamic_config, "w") as f:
-                f.write(f"include = {original_config}\n")
-                for project in self.projects_needed:
-                    # Set the extract location to the project path.
-                    project_path = self._project_path(project)
-                    f.write(f"extract.location[{project}] = {project_path}\n")
-            config_file = dynamic_config
-        else:
-            config_file = original_config
+        # Create a dynamic wrapper config to override the extract.location
+        # (e.g. extract.location[um] = $um_base@$um_rev) with
+        # the project path.
+        dynamic_config = join_path(build_dir, "fcm-make-dynamic.cfg")
+        with open(dynamic_config, "w") as f:
+            f.write(f"include = {original_config}\n")
+            # Set the extract location for 'um' to the contents of self.stage.source_path.
+            f.write(f"extract.location[um] = {self.stage.source_path}\n")
+            for project in self.projects_needed:
+                # Set the extract location to the project path.
+                project_path = self._project_path(project)
+                f.write(f"extract.location[{project}] = {project_path}\n")
+        config_file = dynamic_config
 
         fcm = which("fcm")
         fcm("make",

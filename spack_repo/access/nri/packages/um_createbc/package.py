@@ -13,11 +13,7 @@ class UmCreatebc(UmBasePackage):
     """
 
     variant("model", default="vn13", description="Model configuration.",
-        values=("vn13", "vn13p5-rns"), multi=False)
-
-    # List of model variants that have been migrated to Github sources.
-    # Defined in parent class and overridden here.
-    github_models = ("vn13",)
+        values=("vn13",), multi=False)
 
     # List of projects to be used by this package.
     # Defined in parent class and overridden here.
