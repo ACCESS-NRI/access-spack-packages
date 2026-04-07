@@ -19,8 +19,8 @@ class Issm(AutotoolsPackage):
     This recipe supports two distinct build flavours:
 
     * **Classic** (default) - links against PETSc for linear algebra.
-    * **Automatic Differentiation** (+ad) - uses CoDiPack + MediPack and
-      **excludes PETSc** (ISSM's AD implementation is not PETSc-compatible).
+    * **Automatic Differentiation** (+ad) - uses CoDiPack + MediPack together
+      with PETSc for linear algebra solving.
     """
 
     homepage = "https://issm.jpl.nasa.gov/"
@@ -54,7 +54,7 @@ class Issm(AutotoolsPackage):
     variant(
         "ad",
         default=False,
-        description="Build with CoDiPack automatic differentiation (drops PETSc)",
+        description="Build with CoDiPack automatic differentiation (includes PETSc for solving)",
     )
 
     variant(
@@ -86,11 +86,10 @@ class Issm(AutotoolsPackage):
 
     # Conditional dependencies
     # --------------------------------------------------------------------
-    # When building "default" ISSM, use Petsc (with metis [incl. parmetis], mumps, and scalapack variants)
-    with when("~ad"):
-        depends_on("petsc~examples+metis+mumps+scalapack")
+    # PETSc is used for linear algebra solving in both classic and AD builds
+    depends_on("petsc~examples+metis+mumps+scalapack")
 
-    # When building with AD support, do not use Petsc; instead use CoDiPack + MeDiPack.
+    # When building with AD support, add CoDiPack + MediPack dependencies
     with when("+ad"):
         depends_on("codipack")
         depends_on("medipack")
@@ -172,9 +171,13 @@ class Issm(AutotoolsPackage):
             "--without-Love",
         ]
 
-        # Linear-algebra backend
+        # Linear-algebra backend (PETSc used in all builds)
+        args += [
+            f"--with-petsc-dir={self.spec['petsc'].prefix}",
+        ]
+        
+        # Automatic Differentiation specific options
         if "+ad" in self.spec:
-            # AD build: *exclude* PETSc and point at CoDiPack/MediPack
             args += [
                 f"--with-codipack-dir={self.spec['codipack'].prefix}",
                 f"--with-medipack-dir={self.spec['medipack'].prefix}",
@@ -185,12 +188,6 @@ class Issm(AutotoolsPackage):
                 "--enable-tape-alloc",
                 "--with-numthreads=4",
                 "--with-fortran-lib=-lgfortran",
-                f"--with-blas-lapack-dir={self.spec['scalapack'].prefix}",
-            ]
-        else:
-            # Classic build with PETSc
-            args += [
-                f"--with-petsc-dir={self.spec['petsc'].prefix}",
             ]
         args.append(f"--with-parmetis-dir={self.spec['parmetis'].prefix}")
         args.append(f"--with-metis-dir={self.spec['metis'].prefix}")
