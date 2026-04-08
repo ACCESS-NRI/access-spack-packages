@@ -19,8 +19,8 @@ class Issm(AutotoolsPackage):
     This recipe supports two distinct build flavours:
 
     * **Classic** (default) - links against PETSc for linear algebra.
-    * **Automatic Differentiation** (+ad) - uses CoDiPack + MediPack together
-      with PETSc for linear algebra solving.
+    * **Automatic Differentiation** (+ad) - uses CoDiPack + MediPack with
+      PETSc and adjointpetsc for linear algebra solving with AD support.
     """
 
     homepage = "https://issm.jpl.nasa.gov/"
@@ -54,7 +54,7 @@ class Issm(AutotoolsPackage):
     variant(
         "ad",
         default=False,
-        description="Build with CoDiPack automatic differentiation (includes PETSc for solving)",
+        description="Build with CoDiPack automatic differentiation and adjointpetsc support",
     )
 
     variant(
@@ -86,10 +86,10 @@ class Issm(AutotoolsPackage):
 
     # Conditional dependencies
     # --------------------------------------------------------------------
-    # PETSc is used for linear algebra solving in both classic and AD builds
-    depends_on("petsc~examples+metis+mumps+scalapack")
+    # PETSc is used for linear algebra in all builds
+    depends_on("petsc@3.23~examples+metis+mumps+scalapack")
 
-    # When building with AD support, add CoDiPack + MediPack dependencies
+    # When building with AD support, add CoDiPack + MediPack + adjointpetsc dependencies
     with when("+ad"):
         depends_on("codipack")
         depends_on("medipack")
