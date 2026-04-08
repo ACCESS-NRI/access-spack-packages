@@ -93,6 +93,7 @@ class Issm(AutotoolsPackage):
     with when("+ad"):
         depends_on("codipack")
         depends_on("medipack")
+        depends_on("adjointpetsc")
         depends_on("gsl")
         depends_on("access-triangle")
         depends_on("python", type=("build", "run"))
@@ -181,13 +182,13 @@ class Issm(AutotoolsPackage):
             args += [
                 f"--with-codipack-dir={self.spec['codipack'].prefix}",
                 f"--with-medipack-dir={self.spec['medipack'].prefix}",
+                f"--with-adjointpetsc-dir={self.spec['adjointpetsc'].prefix}",
                 f"--with-gsl-dir={self.spec['gsl'].prefix}",
                 f"--with-triangle-dir={self.spec['access-triangle'].prefix}",
                 f"--with-python-dir={self.spec['python'].prefix}",
                 f"--with-python-numpy-dir={self.spec['py-numpy'].prefix}",
                 "--enable-tape-alloc",
                 "--with-numthreads=4",
-                "--with-adjointpetsc",
             ]
         args.append(f"--with-parmetis-dir={self.spec['parmetis'].prefix}")
         args.append(f"--with-metis-dir={self.spec['metis'].prefix}")
