@@ -187,7 +187,6 @@ class Issm(AutotoolsPackage):
                 f"--with-python-numpy-dir={self.spec['py-numpy'].prefix}",
                 "--enable-tape-alloc",
                 "--with-numthreads=4",
-                "--with-fortran-lib=-lgfortran",
             ]
         args.append(f"--with-parmetis-dir={self.spec['parmetis'].prefix}")
         args.append(f"--with-metis-dir={self.spec['metis'].prefix}")
