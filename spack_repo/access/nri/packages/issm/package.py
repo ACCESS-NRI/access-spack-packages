@@ -87,12 +87,14 @@ class Issm(AutotoolsPackage):
     # Conditional dependencies
     # --------------------------------------------------------------------
     # PETSc is used for linear algebra in all builds
-    depends_on("petsc~examples+metis+mumps+scalapack")
+    with when("~ad"):
+        depends_on("petsc~examples+metis+mumps+scalapack")
 
     # When building with AD support, add CoDiPack + MediPack + adjointpetsc dependencies
     with when("+ad"):
         depends_on("codipack")
         depends_on("medipack")
+        depends_on("petsc")
         depends_on("adjointpetsc")
         
 
@@ -178,7 +180,6 @@ class Issm(AutotoolsPackage):
             args += [
                 f"--with-codipack-dir={self.spec['codipack'].prefix}",
                 f"--with-medipack-dir={self.spec['medipack'].prefix}",
-                f"--with-petsc-dir={self.spec['petsc'].prefix}",
                 f"--with-adjointpetsc-dir={self.spec['adjointpetsc'].prefix}"
                 ]
         else:
