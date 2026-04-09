@@ -87,17 +87,13 @@ class Issm(AutotoolsPackage):
     # Conditional dependencies
     # --------------------------------------------------------------------
     # PETSc is used for linear algebra in all builds
-    depends_on("petsc@3.23~examples+metis+mumps+scalapack")
+    depends_on("petsc~examples+metis+mumps+scalapack")
 
     # When building with AD support, add CoDiPack + MediPack + adjointpetsc dependencies
     with when("+ad"):
         depends_on("codipack")
         depends_on("medipack")
         depends_on("adjointpetsc")
-        depends_on("gsl")
-        depends_on("access-triangle")
-        depends_on("python", type=("build", "run"))
-        depends_on("py-numpy", type=("build", "run"))
         
 
     # When building with Python wrappers, need access-triangle, Python, and NumPy
@@ -182,7 +178,12 @@ class Issm(AutotoolsPackage):
             args += [
                 f"--with-codipack-dir={self.spec['codipack'].prefix}",
                 f"--with-medipack-dir={self.spec['medipack'].prefix}",
-                f"--with-adjointpetsc-dir={self.spec['adjointpetsc'].prefix}",
+                f"--with-petsc-dir={self.spec['petsc'].prefix}",
+                f"--with-adjointpetsc-dir={self.spec['adjointpetsc'].prefix}"
+                ]
+        else:
+            # Classic build with PETSc
+            args += [
                 f"--with-gsl-dir={self.spec['gsl'].prefix}",
                 f"--with-triangle-dir={self.spec['access-triangle'].prefix}",
                 f"--with-python-dir={self.spec['python'].prefix}",
