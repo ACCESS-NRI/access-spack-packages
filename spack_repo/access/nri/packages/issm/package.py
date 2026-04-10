@@ -95,7 +95,7 @@ class Issm(AutotoolsPackage):
         depends_on("codipack")
         depends_on("medipack")
         depends_on("petsc")
-        depends_on("adjointpetsc")
+        depends_on("adjoint-petsc")
         
 
     # When building with Python wrappers, need access-triangle, Python, and NumPy
@@ -180,7 +180,7 @@ class Issm(AutotoolsPackage):
             args += [
                 f"--with-codipack-dir={self.spec['codipack'].prefix}",
                 f"--with-medipack-dir={self.spec['medipack'].prefix}",
-                f"--with-adjointpetsc-dir={self.spec['adjointpetsc'].prefix}"
+                f"--with-adjointpetsc-dir={self.spec['adjoint-petsc'].prefix}"
                 ]
         else:
             # Classic build with PETSc
