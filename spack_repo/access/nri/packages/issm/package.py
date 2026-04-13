@@ -186,7 +186,6 @@ class Issm(AutotoolsPackage):
             # Classic build with PETSc
             args += [
                 f"--with-petsc-dir={self.spec['petsc'].prefix}",
-                f"--with-gsl-dir={self.spec['gsl'].prefix}",
                 f"--with-triangle-dir={self.spec['access-triangle'].prefix}",
                 f"--with-python-dir={self.spec['python'].prefix}",
                 f"--with-python-numpy-dir={self.spec['py-numpy'].prefix}",
