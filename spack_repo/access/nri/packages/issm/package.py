@@ -183,7 +183,7 @@ class Issm(AutotoolsPackage):
         if "+production" in self.spec:
             args += [
                 "--disable-debugging",
-                "--disable-development",
+                "--enable-development",
             ]
         else:
             args += [
