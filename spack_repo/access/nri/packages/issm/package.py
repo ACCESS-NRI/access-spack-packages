@@ -64,6 +64,12 @@ class Issm(AutotoolsPackage):
     )
 
     variant(
+        "production",
+        default=True,
+        description="Build ISSM in production mode with optimized PETSc and release flags",
+    )
+
+    variant(
         "py-tools",
         default=False,
         description="Install ISSM python files under <prefix>/python-tools",
@@ -86,8 +92,15 @@ class Issm(AutotoolsPackage):
 
     # Conditional dependencies
     # --------------------------------------------------------------------
+
     # PETSc is used for linear algebra in all builds
     depends_on("petsc~examples+metis+mumps+scalapack")
+
+    # When building "production" ISSM, use a PETSc variant with optimizations and no debug symbols. 
+    # This is the recommended configuration for production use, and ensures that users get the best performance out of the box.
+    with when("+production"):
+    depends_on("petsc~debug~examples+metis+mumps+scalapack")
+
 
     # When building with AD support, add CoDiPack + MediPack + adjointpetsc dependencies
     with when("+ad"):
@@ -141,6 +154,14 @@ class Issm(AutotoolsPackage):
             for var in ("CFLAGS", "CXXFLAGS", "FFLAGS", "LDFLAGS"):
                 env.append_flags(var, self.compiler.openmp_flag)
 
+        # Production build: optimized release flags
+        if "+production" in self.spec:
+            for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
+                env.append_flags(var, "-O2 -DNDEBUG")
+            if self.spec.satisfies("%intel") or self.spec.satisfies("%oneapi"):
+                for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
+                    env.append_flags(var, "-fp-model precise")
+
         # Automatic Differentiation extras
         if "+ad" in self.spec:
             # CoDiPack's performance tips: force inlining & keep full symbols
@@ -160,8 +181,6 @@ class Issm(AutotoolsPackage):
     # --------------------------------------------------------------------
     def configure_args(self):
         args = [
-            "--enable-debugging",
-            "--enable-development",
             "--enable-shared",
             "--without-kriging",
             "--without-Love",
@@ -173,7 +192,19 @@ class Issm(AutotoolsPackage):
             f"--with-petsc-dir={self.spec['petsc'].prefix}",
         ]
         
-        # Automatic Differentiation specific options
+        # Production specific options
+        if "+production" in self.spec:
+            args += [
+                "--disable-debugging",
+                "--disable-development",
+            ]
+        else:
+            args += [
+                "--enable-debugging",
+                "--enable-development",
+            ]
+
+        # Linear-algebra backend
         if "+ad" in self.spec:
             args += [
                 f"--with-codipack-dir={self.spec['codipack'].prefix}",
