@@ -151,7 +151,7 @@ class Issm(AutotoolsPackage):
         # Production build: optimized release flags
         if "+production" in self.spec:
             for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
-                env.append_flags(var, "-O3 -DNDEBUG")
+                env.append_flags(var, "-O2 -DNDEBUG")
             if self.spec.satisfies("%intel") or self.spec.satisfies("%oneapi"):
                 for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
                     env.append_flags(var, "-fp-model precise")
