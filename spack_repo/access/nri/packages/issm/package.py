@@ -64,6 +64,12 @@ class Issm(AutotoolsPackage):
     )
 
     variant(
+        "production",
+        default=True,
+        description="Build ISSM in production mode with optimized PETSc and release flags",
+    )
+
+    variant(
         "py-tools",
         default=False,
         description="Install ISSM python files under <prefix>/python-tools",
@@ -88,7 +94,8 @@ class Issm(AutotoolsPackage):
     # --------------------------------------------------------------------
     # When building "default" ISSM, use Petsc (with metis [incl. parmetis], mumps, and scalapack variants)
     with when("~ad"):
-        depends_on("petsc~examples+metis+mumps+scalapack")
+        depends_on("petsc~examples+metis+mumps+scalapack", when="~production")
+        depends_on("petsc~debug~examples+metis+mumps+scalapack", when="+production")
 
     # When building with AD support, do not use Petsc; instead use CoDiPack + MeDiPack.
     with when("+ad"):
@@ -141,6 +148,14 @@ class Issm(AutotoolsPackage):
             for var in ("CFLAGS", "CXXFLAGS", "FFLAGS", "LDFLAGS"):
                 env.append_flags(var, self.compiler.openmp_flag)
 
+        # Production build: optimized release flags
+        if "+production" in self.spec:
+            for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
+                env.append_flags(var, "-O2 -DNDEBUG")
+            if self.spec.satisfies("%intel") or self.spec.satisfies("%oneapi"):
+                for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
+                    env.append_flags(var, "-fp-model precise")
+
         # Automatic Differentiation extras
         if "+ad" in self.spec:
             # CoDiPack's performance tips: force inlining & keep full symbols
@@ -160,12 +175,21 @@ class Issm(AutotoolsPackage):
     # --------------------------------------------------------------------
     def configure_args(self):
         args = [
-            "--enable-debugging",
-            "--enable-development",
             "--enable-shared",
             "--without-kriging",
             "--without-Love",
         ]
+
+        if "+production" in self.spec:
+            args += [
+                "--disable-debugging",
+                "--disable-development",
+            ]
+        else:
+            args += [
+                "--enable-debugging",
+                "--enable-development",
+            ]
 
         # Linear-algebra backend
         if "+ad" in self.spec:
