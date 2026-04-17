@@ -33,8 +33,10 @@ class Issm(AutotoolsPackage):
     # --------------------------------------------------------------------
     version("upstream", branch="main", git="https://github.com/ISSMteam/ISSM.git")
     version("main", branch="main")
-    version("access-release", branch="access-release", preferred=True)
+    version("access-release", branch="access-release")
     version("access-development", branch="access-development")
+
+    version("2026.04.16", tag="2026.04.16", preferred=True)
 
     # --------------------------------------------------------------------
     # Variants
