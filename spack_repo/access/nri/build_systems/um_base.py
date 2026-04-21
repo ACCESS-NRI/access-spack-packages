@@ -158,7 +158,7 @@ class UmBasePackage(Package):
         when="+DR_HOOK")
     depends_on("eccodes +fortran +netcdf", type=("build", "link", "run"),
         when="+eccodes")
-    depends_on("netcdf-fortran@4.5.2", type=("build", "link", "run"),
+    depends_on("netcdf-fortran@4.5.2:", type=("build", "link", "run"),
         when="+netcdf")
 
     phases = ["build", "install"]
@@ -548,6 +548,9 @@ class UmBasePackage(Package):
             f"--directory={build_dir}",
             "--jobs=4")
 
+        # Upstream is missing a pkgconfig files, so we'll create them.
+        self.__create_pkgconfig(spec, prefix)
+
 
     def _dynamic_resource(self, project):
         """
@@ -579,3 +582,32 @@ class UmBasePackage(Package):
                 git("checkout", ref)
 
         tty.msg(f"{ref} checked out from {url} to {dst_dir}")
+
+    def __create_pkgconfig(self, spec, prefix):
+
+        um_version = self.spec.version.string
+
+        for k in ["atmos"]:
+            # Location to install pkgconf file
+            pkgdir = f"{self.build_dir()}/build-{k}/lib/pkgconfig"
+            mkdirp(pkgdir)
+
+            lib = f"libum-{k}.a"
+            text = f"""\
+prefix={prefix}
+exec_prefix=${{prefix}}
+libdir=${{exec_prefix}}/lib
+includedir=${{prefix}}/include
+
+Name: {lib}
+Description: UM {um_version} {lib} Library for Fortran
+Version: {um_version}
+Libs: -L${{libdir}} -l{lib}
+Cflags: -I${{includedir}}
+"""
+            pcpath = join_path(pkgdir, f"libum-{k}.pc")
+            with open(pcpath, "w", encoding="utf-8") as pc:
+                nchars_written = pc.write(text)
+
+            if nchars_written < len(text):
+                raise OSError
