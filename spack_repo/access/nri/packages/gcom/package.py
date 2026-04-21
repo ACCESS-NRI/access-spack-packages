@@ -104,15 +104,15 @@ class Gcom(Package):
 
         for k in ["gcom"]:
 
-            lib = f"lib{k}.a"
+            lib = f"{k}"
             text = f"""\
 prefix={prefix}
 exec_prefix=${{prefix}}
 libdir=${{exec_prefix}}/lib
 includedir=${{prefix}}/include
 
-Name: {lib}
-Description: GCOM {version} {lib} Library for Fortran
+Name: lib{lib}
+Description: GCOM {version} lib{lib} Library for Fortran
 Version: {version}
 Libs: -L${{libdir}} -l{lib}
 Cflags: -I${{includedir}}

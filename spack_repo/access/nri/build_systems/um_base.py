@@ -592,16 +592,17 @@ class UmBasePackage(Package):
             pkgdir = f"{self.build_dir()}/build-{k}/lib/pkgconfig"
             mkdirp(pkgdir)
 
-            lib = f"libum-{k}.a"
+            lib = f"um-{k}"
             text = f"""\
 prefix={prefix}
 exec_prefix=${{prefix}}
 libdir=${{exec_prefix}}/lib
 includedir=${{prefix}}/include
 
-Name: {lib}
-Description: UM {um_version} {lib} Library for Fortran
+Name: lib{lib}
+Description: UM {um_version} lib{lib} Library for Fortran
 Version: {um_version}
+Requires: libgcom
 Libs: -L${{libdir}} -l{lib}
 Cflags: -I${{includedir}}
 """
