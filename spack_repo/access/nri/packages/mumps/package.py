@@ -264,8 +264,14 @@ class Mumps(Package):
         # its own main(). This conflicts with the C examples' main(), causing
         # "multiple definition of `main'" errors. The -nofor-main flag
         # prevents this.
+        # NOTE: -nofor-main is added to both OPTL and FL. In MUMPS 5.8+,
+        # examples/Makefile links without $(OPTL), so embedding it in FL
+        # ensures it reaches every link step including examples.
         if using_intel or using_oneapi:
             optl.append("-nofor-main")
+
+        # Build the FL suffix for Intel/oneAPI so -nofor-main is always used
+        fl_extra = " -nofor-main" if (using_intel or using_oneapi) else ""
 
         makefile_conf.extend(
             [
@@ -281,7 +287,7 @@ class Mumps(Package):
                 [
                     "CC = {0}".format(self.spec["mpi"].mpicc),
                     "FC = {0}".format(self.spec["mpi"].mpifc),
-                    "FL = {0}".format(self.spec["mpi"].mpifc),
+                    "FL = {0}{1}".format(self.spec["mpi"].mpifc, fl_extra),
                     "SCALAP = %s" % scalapack.ld_flags,
                     "MUMPS_TYPE = par",
                 ]
@@ -291,7 +297,7 @@ class Mumps(Package):
                 [
                     "CC = {0}".format(spack_cc),
                     "FC = {0}".format(spack_fc),
-                    "FL = {0}".format(spack_fc),
+                    "FL = {0}{1}".format(spack_fc, fl_extra),
                     "MUMPS_TYPE = seq",
                 ]
             )
