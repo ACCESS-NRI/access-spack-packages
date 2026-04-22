@@ -260,18 +260,17 @@ class Mumps(Package):
         if "+blr_mt" in self.spec:
             optf.append("-DBLR_MT")
 
-        # Intel and oneAPI Fortran compilers link for_main.o which provides
-        # its own main(). This conflicts with the C examples' main(), causing
-        # "multiple definition of `main'" errors. The -nofor-main flag
-        # prevents this.
-        # NOTE: -nofor-main is added to both OPTL and FL. In MUMPS 5.8+,
-        # examples/Makefile links without $(OPTL), so embedding it in FL
-        # ensures it reaches every link step including examples.
+        # Intel and oneAPI Fortran compilers auto-link for_main.o, which
+        # provides main() and calls MAIN__(). The C examples define main()
+        # by default, causing a conflict. The fix is to compile C sources
+        # with -DMAIN_COMP so c_example.c defines MAIN__() instead of main().
+        # -DMAIN_COMP must be in OPTC because MUMPS 5.8 examples/Makefile
+        # uses $(OPTC) in CFLAGS but does NOT include $(CDEFS).
         if using_intel or using_oneapi:
-            optl.append("-nofor-main")
+            optc.append("-DMAIN_COMP")
 
         # Build the FL suffix for Intel/oneAPI so -nofor-main is always used
-        fl_extra = " -nofor-main" if (using_intel or using_oneapi) else ""
+        fl_extra = ""
 
         makefile_conf.extend(
             [
@@ -287,7 +286,7 @@ class Mumps(Package):
                 [
                     "CC = {0}".format(self.spec["mpi"].mpicc),
                     "FC = {0}".format(self.spec["mpi"].mpifc),
-                    "FL = {0}{1}".format(self.spec["mpi"].mpifc, fl_extra),
+                    "FL = {0}".format(self.spec["mpi"].mpifc),
                     "SCALAP = %s" % scalapack.ld_flags,
                     "MUMPS_TYPE = par",
                 ]
@@ -297,7 +296,7 @@ class Mumps(Package):
                 [
                     "CC = {0}".format(spack_cc),
                     "FC = {0}".format(spack_fc),
-                    "FL = {0}{1}".format(spack_fc, fl_extra),
+                    "FL = {0}".format(spack_fc),
                     "MUMPS_TYPE = seq",
                 ]
             )
