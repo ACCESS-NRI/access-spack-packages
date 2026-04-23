@@ -97,8 +97,8 @@ class Issm(AutotoolsPackage):
 
     # When building "default" ISSM, use Petsc (with metis [incl. parmetis], mumps, and scalapack variants)
     with when("~ad"):
-        depends_on("petsc~examples+metis+access-mumps+scalapack", when="~production")
-        depends_on("petsc~debug~examples+metis+access-mumps+scalapack", when="+production")
+        depends_on("petsc~examples+metis+mumps+scalapack", when="~production")
+        depends_on("petsc~debug~examples+metis+mumps+scalapack", when="+production")
 
     # PETSc is used for linear algebra in all builds
     depends_on("petsc~examples+metis+mumps+scalapack")
