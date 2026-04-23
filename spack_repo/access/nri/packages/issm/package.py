@@ -96,8 +96,8 @@ class Issm(AutotoolsPackage):
     # --------------------------------------------------------------------
     # When building "default" ISSM, use Petsc (with metis [incl. parmetis], mumps, and scalapack variants)
     with when("~ad"):
-        depends_on("petsc~examples+metis+mumps+scalapack", when="~production")
-        depends_on("petsc~debug~examples+metis+mumps+scalapack", when="+production")
+        depends_on("petsc~examples+metis+access-mumps+scalapack", when="~production")
+        depends_on("petsc~debug~examples+metis+access-mumps+scalapack", when="+production")
 
     # When building with AD support, do not use Petsc; instead use CoDiPack + MeDiPack.
     with when("+ad"):
@@ -114,8 +114,8 @@ class Issm(AutotoolsPackage):
     # --------------------------------------------------------------------
     depends_on("metis")
     depends_on("parmetis")
-    depends_on("mumps~openmp", when="~openmp")
-    depends_on("mumps+openmp", when="+openmp")
+    depends_on("access-mumps~openmp", when="~openmp")
+    depends_on("access-mumps+openmp", when="+openmp")
     depends_on("scalapack")
     depends_on("m1qn3")
 
@@ -207,7 +207,7 @@ class Issm(AutotoolsPackage):
             ]
         args.append(f"--with-parmetis-dir={self.spec['parmetis'].prefix}")
         args.append(f"--with-metis-dir={self.spec['metis'].prefix}")
-        args.append(f"--with-mumps-dir={self.spec['mumps'].prefix}")
+        args.append(f"--with-mumps-dir={self.spec['access-mumps'].prefix}")
 
         # Optimiser
         args.append(f"--with-m1qn3-dir={self.spec['m1qn3'].prefix.lib}")

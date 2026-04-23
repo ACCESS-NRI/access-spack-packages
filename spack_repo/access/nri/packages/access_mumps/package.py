@@ -260,17 +260,12 @@ class Mumps(Package):
         if "+blr_mt" in self.spec:
             optf.append("-DBLR_MT")
 
-        # Intel and oneAPI Fortran compilers auto-link for_main.o, which
-        # provides main() and calls MAIN__(). The C examples define main()
-        # by default, causing a conflict. The fix is to compile C sources
-        # with -DMAIN_COMP so c_example.c defines MAIN__() instead of main().
-        # -DMAIN_COMP must be in OPTC because MUMPS 5.8 examples/Makefile
-        # uses $(OPTC) in CFLAGS but does NOT include $(CDEFS).
+        # Intel and oneAPI Fortran compilers link for_main.o which provides
+        # its own main(). This conflicts with the C examples' main(), causing
+        # "multiple definition of `main'" errors. The -nofor-main flag
+        # prevents this.
         if using_intel or using_oneapi:
-            optc.append("-DMAIN_COMP")
-
-        # Build the FL suffix for Intel/oneAPI so -nofor-main is always used
-        fl_extra = ""
+            optl.append("-nofor-main")
 
         makefile_conf.extend(
             [
