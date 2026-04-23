@@ -11,7 +11,7 @@ from spack_repo.builtin.build_systems.generic import Package
 from spack.package import *
 
 
-class Mumps(Package):
+class AccessMumps(Package):
     """MUMPS: a MUltifrontal Massively Parallel sparse direct Solver"""
 
     homepage = "https://mumps-solver.org/index.php"
