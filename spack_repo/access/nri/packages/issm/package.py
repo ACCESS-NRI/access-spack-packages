@@ -96,8 +96,8 @@ class Issm(AutotoolsPackage):
     # --------------------------------------------------------------------
     # When building "default" ISSM, use Petsc (with metis [incl. parmetis], mumps, and scalapack variants)
     with when("~ad"):
-        depends_on("petsc~examples+metis+mumps+scalapack", when="~production")
-        depends_on("petsc~debug~examples+metis+mumps+scalapack", when="+production")
+        depends_on("access-petsc~examples+metis+mumps+scalapack", when="~production")
+        depends_on("access-petsc~debug~examples+metis+mumps+scalapack", when="+production")
 
     # When building with AD support, do not use Petsc; instead use CoDiPack + MeDiPack.
     with when("+ad"):
@@ -203,7 +203,7 @@ class Issm(AutotoolsPackage):
         else:
             # Classic build with PETSc
             args += [
-                f"--with-petsc-dir={self.spec['petsc'].prefix}",
+                f"--with-petsc-dir={self.spec['access-petsc'].prefix}",
             ]
         args.append(f"--with-parmetis-dir={self.spec['parmetis'].prefix}")
         args.append(f"--with-metis-dir={self.spec['metis'].prefix}")
