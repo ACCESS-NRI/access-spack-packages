@@ -20,6 +20,9 @@ class Um(UmBasePackage):
     # Defined in parent class and overridden here.
     github_models = ("vn13", "vn13p1-am")
 
+    variant("access3", default=True,
+        description="Install UM as library for Access3 models")
+
     # List of projects to be used by this package.
     # Defined in parent class as all projects and left to default here.
     # projects_needed = super().projects_needed
@@ -40,6 +43,10 @@ class Um(UmBasePackage):
     variant("mpi", default=True, description="Build with MPI")
     depends_on("mpi", when="+mpi", type=("build", "link", "run"))
 
+    with when("+access3"):
+        depends_on("esmf@8.7.0:")
+        conflicts("~netcdf")
+
     def setup_run_environment(self, env):
         """
         Set the built path into the environment.
@@ -51,13 +58,26 @@ class Um(UmBasePackage):
 
     def install(self, spec, prefix):
         """
-        Install executables and accompanying files into the prefix directory,
-        according to the directory structure of EXEC_DIR, as described in (e.g.)
-        https://code.metoffice.gov.uk/trac/roses-u/browser/b/y/3/9/5/trunk/meta/rose-meta.conf
+        Install executables and libraries into spack release folder (prefix)
         """
+        if self.spec.variants["access3"].value:
+
+            # Install library files from build-atmos directory straight into prefix path
+            # so it is in the default path added CMAKE_PREFIX_PATH for dependents
+            for dir_name in ["lib", "include"]:
+                dir_path = join_path("build-atmos", dir_name)
+                build_dir = join_path(self.build_dir(), dir_path)
+                install_dir = join_path(prefix, dir_name)
+                mkdirp(install_dir)
+                install_tree(build_dir, install_dir)
+
+        # Install executables and accompanying files into the prefix directory,
+        # according to the directory structure of EXEC_DIR, as described in (e.g.)
+        # https://code.metoffice.gov.uk/trac/roses-u/browser/b/y/3/9/5/trunk/meta/rose-meta.conf
         for um_exe in ["atmos", "recon"]:
             bin_dir = join_path(f"build-{um_exe}", "bin")
             build_bin_dir = join_path(self.build_dir(), bin_dir)
             install_bin_dir = join_path(prefix, bin_dir)
             mkdirp(install_bin_dir)
             install_tree(build_bin_dir, install_bin_dir)
+

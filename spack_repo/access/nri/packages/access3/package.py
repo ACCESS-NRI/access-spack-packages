@@ -14,6 +14,8 @@ KNOWN_CONF = (
     "MOM6-CICE6",
     "CICE6-WW3",
     "MOM6-CICE6-WW3",
+    "MOM6-UM13",
+    "MOM6-CICE6-UM13",
 )
 
 # tag,commit pairs for releases in access3-share git repository
@@ -78,6 +80,12 @@ class Access3(CMakePackage):
             depends_on("access-mom6@2025.02.000: +access3", when=f"configurations={conf}")
         if "WW3" in conf:
             depends_on("access-ww3@2025.03.0: +access3", when=f"configurations={conf}")
+        if "UM13" in conf:
+            conflicts('@:2026.04')
+            depends_on("um +access3+netcdf~eccodes", when=f"configurations={conf}")
+        if "CICE6" in conf and "UM13" in conf:
+            # Set the driver variant for UM-CICE coupling code to be included
+            depends_on("access-cice driver=access/cmeps", when=f"configurations={conf}")
 
     def cmake_args(self):
         # make configurations a cmake argument

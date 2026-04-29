@@ -86,7 +86,40 @@ class Gcom(Package):
         # Do the build with fcm
         fcm("make", "-f", "fcm-make/gcom.cfg")
 
+        self.__create_pkgconfig(spec, prefix)
+
         # Install the library
         mkdirp(prefix.lib)
         install("build/lib/libgcom.a", prefix.lib + "/libgcom.a")
+        install_tree("build/lib/pkgconfig", prefix.lib + "/pkgconfig")
         install_tree("build/include", prefix.include)
+
+    def __create_pkgconfig(self, spec, prefix):
+
+        version = self.spec.version.string
+
+        # Location to install pkgconf file
+        pkgdir = "build/lib/pkgconfig"
+        mkdirp(pkgdir)
+
+        for k in ["gcom"]:
+
+            lib = f"{k}"
+            text = f"""\
+prefix={prefix}
+exec_prefix=${{prefix}}
+libdir=${{exec_prefix}}/lib
+includedir=${{prefix}}/include
+
+Name: lib{lib}
+Description: GCOM {version} lib{lib} Library for Fortran
+Version: {version}
+Libs: -L${{libdir}} -l{lib}
+Cflags: -I${{includedir}}
+"""
+            pcpath = join_path(pkgdir, f"lib{k}.pc")
+            with open(pcpath, "w", encoding="utf-8") as pc:
+                nchars_written = pc.write(text)
+
+            if nchars_written < len(text):
+                raise OSError
