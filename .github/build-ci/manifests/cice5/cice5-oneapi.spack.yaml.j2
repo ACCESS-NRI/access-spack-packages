@@ -1,0 +1,17 @@
+spack:
+  specs:
+  - 'cice5 model=access-om2' #makefile
+  - 'cice5 model=access-esm1.6' #makefile
+  - 'cice5 {{ cice5_om2 }}' #cmake
+  - 'cice5 {{ cice5_esm1p6 }}' #cmake
+  packages:
+    intel-oneapi-compilers:
+      require:
+      - '{{ oneapi_compiler_ver }}'
+    all:
+      prefer:
+      - '%access_oneapi'
+      - 'target={{ target }}'
+  concretizer:
+    unify: false
+  view: false
