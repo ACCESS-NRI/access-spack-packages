@@ -2,8 +2,8 @@ spack:
   specs:
   - 'cice5 model=access-om2' #makefile
   - 'cice5 model=access-esm1.6' #makefile
-  - 'cice5 {{ cice5_om2 }}' #cmake
-  - 'cice5 {{ cice5_esm1p6 }}' #cmake
+  - 'access-om2 ^cice5 {{ cice5_om2 }}' #cmake
+  - 'access-esm1.6 ^cice5 {{ cice5_esm1p6 }}' #cmake
   packages:
     intel-oneapi-compilers:
       require:
