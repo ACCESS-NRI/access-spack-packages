@@ -86,23 +86,19 @@ class Issm(AutotoolsPackage):
 
     # Conditional dependencies
     # --------------------------------------------------------------------
-    # PETSc is used for linear algebra in all builds
-    with when("~ad"):
-        depends_on("petsc~examples+metis+mumps+scalapack")
+    # PETSc is the linear algebra backend for all flavours.
+    depends_on("petsc~examples+metis+mumps+scalapack", when="~ad")
+    depends_on("petsc", when="+ad")
 
-    # When building with AD support, add CoDiPack + MediPack + adjointpetsc dependencies
-    with when("+ad"):
-        depends_on("codipack")
-        depends_on("medipack")
-        depends_on("petsc")
-        depends_on("adjoint-petsc")
-        
+    # +ad enables the AD-capable linear algebra stack.
+    depends_on("codipack", when="+ad")
+    depends_on("medipack", when="+ad")
+    depends_on("adjoint-petsc", when="+ad")
 
-    # When building with Python wrappers, need access-triangle, Python, and NumPy
-    with when("+wrappers"):
-        depends_on("access-triangle")
-        depends_on("python", type=("build", "run"))
-        depends_on("py-numpy", type=("build", "run"))
+    # +wrappers requires triangle and Python dependencies.
+    depends_on("access-triangle", when="+wrappers")
+    depends_on("python", when="+wrappers", type=("build", "run"))
+    depends_on("py-numpy", when="+wrappers", type=("build", "run"))
 
     # Unconditional dependencies
     # --------------------------------------------------------------------
@@ -170,7 +166,8 @@ class Issm(AutotoolsPackage):
             "--without-Love",
         ]
 
-        # Linear-algebra backend (PETSc used in all builds)
+        # Configure cannot reliably discover PETSc from non-system prefixes.
+        # Pass the explicit PETSc prefix so both classic and +ad builds resolve correctly.
         args += [
             f"--with-petsc-dir={self.spec['petsc'].prefix}",
         ]
@@ -185,10 +182,6 @@ class Issm(AutotoolsPackage):
         else:
             # Classic build with PETSc
             args += [
-                f"--with-petsc-dir={self.spec['petsc'].prefix}",
-                f"--with-triangle-dir={self.spec['access-triangle'].prefix}",
-                f"--with-python-dir={self.spec['python'].prefix}",
-                f"--with-python-numpy-dir={self.spec['py-numpy'].prefix}",
                 "--enable-tape-alloc",
                 "--with-numthreads=4",
             ]

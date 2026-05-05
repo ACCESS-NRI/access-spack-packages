@@ -22,6 +22,10 @@ class AdjointPetsc(CMakePackage):
 
     Current restriction:
       - hard-coded to use CoDiPack
+
+    This recipe is intentionally ACCESS-local rather than upstreamed because it
+    currently targets ISSM-specific AD workflows and carries local compiler
+    constraints that are not broadly useful to the wider Spack ecosystem.
     """
 
     homepage = "https://github.com/SciCompKL/adjoint-PETSc"
@@ -35,28 +39,31 @@ class AdjointPetsc(CMakePackage):
 
     variant("shared", default=True, description="Build shared libraries")
     variant("examples", default=False, description="Build examples")
-    variant("tests", default=False, description="Build tests")
+    variant("build-tests", default=False, description="Enable CMake BUILD_TESTING targets")
 
     depends_on("cmake@3.20:", type="build")
     depends_on("pkgconfig", type="build")
     depends_on("cxx", type="build")
 
-    # dependencies required for adjoint-PETSc, but not necessarily for PETSc itself. 
-    # These are not optional because adjoint-PETSc is not useful without them.
+    # dependencies required for adjoint-PETSc, but not necessarily for PETSc itself.
+    # This PETSc variant set reflects what adjoint-PETSc and ISSM AD builds need;
+    # upstream source does not expose a robust feature matrix for weaker PETSc configs.
     depends_on("petsc~examples+metis+mumps+scalapack")
     depends_on("codipack")
 
     # adjoint-PETSc requires C++23 support
-    # Note: GCC 11+ supports C++23, but full support is not available until GCC 12. Clang 15+ and Apple Clang 16+ support C++23.
-    conflicts("%gcc@:10", msg="adjoint-PETSc requires C++23 support (GCC 11+)")
-    conflicts("%clang@:14", msg="adjoint-PETSc requires C++23 support (Clang 15+)")
-    conflicts("%apple-clang@:15", msg="adjoint-PETSc requires C++23 support (Apple Clang 16+)")
+    # Note: GCC 11+ supports C++23, but full support is not available until GCC 12.
+    conflicts("%gcc@:10", msg="adjoint-PETSc requires C++23 support (GCC 11+). Release notes: https://gcc.gnu.org/projects/cxx-status.html#cxx23")
+    conflicts("%clang@:14", msg="adjoint-PETSc requires C++23 support (Clang 15+). Release notes: https://clang.llvm.org/cxx_status.html#cxx23")
+    conflicts("%apple-clang@:15", msg="adjoint-PETSc requires C++23 support (Apple Clang 16+). Release notes: https://developer.apple.com/documentation/xcode-release-notes")
+    conflicts("%intel", msg="adjoint-PETSc is not supported with classic Intel compilers in this recipe. Release notes: https://www.intel.com/content/www/us/en/developer/articles/release-notes/oneapi-dpcpp-cpp-compiler-release-notes.html")
+    conflicts("%oneapi", msg="adjoint-PETSc is not currently supported with oneAPI in this recipe. Release notes: https://www.intel.com/content/www/us/en/developer/articles/release-notes/oneapi-dpcpp-cpp-compiler-release-notes.html")
 
     def cmake_args(self):
         args = [
             self.define_from_variant("BUILD_SHARED_LIBS", "shared"),
             self.define_from_variant("BUILD_EXAMPLES", "examples"),
-            self.define_from_variant("BUILD_TESTING", "tests"),
+            self.define_from_variant("BUILD_TESTING", "build-tests"),
             self.define("CoDiPack_DIR", join_path(self.spec["codipack"].prefix, "share", "CoDiPack", "cmake")),
             self.define("PETSc_DIR", self.spec["petsc"].prefix),
             self.define("CMAKE_CXX_STANDARD", 23),

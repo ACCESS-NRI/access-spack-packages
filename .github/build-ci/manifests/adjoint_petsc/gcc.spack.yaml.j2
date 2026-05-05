@@ -1,5 +1,6 @@
-# Adjoint-PETSc cannot be built with oneAPI and intel compilers, so we will use gcc for this package. 
-# We will also use the same manifest for all versions of adjoint-PETSc, since the dependencies and compiler requirements are the same for all versions.
+# Dedicated CI manifest for adjoint-petsc.
+# This file exists because the recipe currently conflicts with %intel and %oneapi,
+# so CI must force a GCC concretization for this package.
 
 spack:
   specs:
