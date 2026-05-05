@@ -1,4 +1,6 @@
-# This manifest is used by default for packages without a specific manifest under .github/build-ci/manifests/PACKAGE/*.j2
+# Adjoint-PETSc cannot be built with oneAPI and intel compilers, so we will use gcc for this package. 
+# We will also use the same manifest for all versions of adjoint-PETSc, since the dependencies and compiler requirements are the same for all versions.
+
 spack:
   specs:
   # package is defined in the workflows inputs.spack-manifest-data-pairs
