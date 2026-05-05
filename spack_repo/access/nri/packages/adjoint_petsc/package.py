@@ -26,9 +26,9 @@ class AdjointPetsc(CMakePackage):
 
     maintainers("justinh2002")
 
-    license("LGPL-3.0-only")
+    license("LGPL-3.0-only", checked_by="justinh2002")
 
-    version("main", branch="master")
+    version("stable", branch="master", prefered=True)
 
     variant("shared", default=True, description="Build shared libraries")
     variant("examples", default=False, description="Build examples")
