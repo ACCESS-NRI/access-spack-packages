@@ -29,7 +29,7 @@ class AdjointPetsc(CMakePackage):
 
     license("LGPL-3.0-only", checked_by="justinh2002")
 
-    version("stable", branch="master", prefered=True)
+    version("stable", branch="master", preferred=True)
 
     variant("shared", default=True, description="Build shared libraries")
     variant("examples", default=False, description="Build examples")
@@ -39,10 +39,13 @@ class AdjointPetsc(CMakePackage):
     depends_on("pkgconfig", type="build")
     depends_on("cxx", type="build")
 
+    # dependencies required for adjoint-PETSc, but not necessarily for PETSc itself. 
+    # These are not optional because adjoint-PETSc is not useful without them.
     depends_on("petsc~examples+metis+mumps+scalapack")
     depends_on("codipack")
 
     # adjoint-PETSc requires C++23 support
+    # Note: GCC 11+ supports C++23, but full support is not available until GCC 12. Clang 15+ and Apple Clang 16+ support C++23.
     conflicts("%gcc@:10", msg="adjoint-PETSc requires C++23 support (GCC 11+)")
     conflicts("%clang@:14", msg="adjoint-PETSc requires C++23 support (Clang 15+)")
     conflicts("%apple-clang@:15", msg="adjoint-PETSc requires C++23 support (Apple Clang 16+)")
