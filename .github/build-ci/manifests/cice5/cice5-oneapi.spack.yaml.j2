@@ -3,7 +3,7 @@ spack:
   - 'cice5 model=access-om2' #makefile
   - 'cice5 model=access-esm1.6' #makefile
   - 'access-om2 ^cice5 build_system=cmake' #cmake
-  - 'access-esm1p6 ^cice5 build_system=cmake ^cable library=access-esm1.6' #cmake
+  - 'access-esm1p6 ^cice5 build_system=cmake ^cable@2025.11.000 library=access-esm1.6' #cmake
   packages:
     intel-oneapi-compilers:
       require:
