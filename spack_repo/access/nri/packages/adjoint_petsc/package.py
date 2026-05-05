@@ -9,7 +9,8 @@ from spack.package import *
 class AdjointPetsc(CMakePackage):
     """adjoint-PETSc is a beta library that provides algorithmic
     differentiation support for PETSc, currently targeting the subset
-    of functionality required by ISSM.
+    of functionality required by ISSM. This library is no longer under active development, 
+    but is available for use in ISSM for users who need it.
 
     Features:
       - vector mode support
