@@ -164,17 +164,21 @@ class Issm(AutotoolsPackage):
         # Production build: optimized release flags
         if "+production" in self.spec:
             for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
-                env.append_flags(var, "-O2 -DNDEBUG")
+                env.append_flags(var, "-O3 -DNDEBUG -fPIC")
             if self.spec.satisfies("%intel") or self.spec.satisfies("%oneapi"):
                 for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
-                    env.append_flags(var, "-fp-model precise")
+                    env.append_flags(var, "-fp-model precise -xHost")
+            elif self.spec.satisfies("%gcc") or self.spec.satisfies("%clang"):
+                for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
+                    env.append_flags(var, "-march=native -mtune=native")
+            env.append_flags("FFLAGS", "-funroll-loops")
 
         # Automatic Differentiation extras
         if "+ad" in self.spec:
             # CoDiPack's performance tips: force inlining & keep full symbols
             env.append_flags(
                 "CXXFLAGS",
-                f"-g -O3 -fPIC {self.compiler.cxx11_flag} -DCODI_ForcedInlines",  # https://issm.ess.uci.edu/trac/issm/wiki/totten#InstallingISSMwithCoDiPackAD
+                f"-O3 -fPIC {self.compiler.cxx11_flag} -DCODI_ForcedInlines",  # https://issm.ess.uci.edu/trac/issm/wiki/totten#InstallingISSMwithCoDiPackAD
             )
 
     # --------------------------------------------------------------------
