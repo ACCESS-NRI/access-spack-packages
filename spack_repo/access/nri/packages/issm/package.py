@@ -86,18 +86,20 @@ class Issm(AutotoolsPackage):
 
     # Conditional dependencies
     # --------------------------------------------------------------------
-    # PETSc is the linear algebra backend for all flavours.
+    # PETSc is used for linear algebra in all builds
     depends_on("petsc~examples+metis+mumps+scalapack")
 
-    # +ad enables the AD-capable linear algebra stack.
-    depends_on("codipack", when="+ad")
-    depends_on("medipack", when="+ad")
-    depends_on("adjoint-petsc", when="+ad")
+    # When building with AD support, add CoDiPack + MediPack + adjointpetsc dependencies
+    with when("+ad"):
+        depends_on("codipack")
+        depends_on("medipack")
+        depends_on("adjoint-petsc")
 
-    # +wrappers requires triangle and Python dependencies.
-    depends_on("access-triangle", when="+wrappers")
-    depends_on("python", when="+wrappers", type=("build", "run"))
-    depends_on("py-numpy", when="+wrappers", type=("build", "run"))
+    # When building with Python wrappers, need access-triangle, Python, and NumPy
+    with when("+wrappers"):
+        depends_on("access-triangle")
+        depends_on("python", type=("build", "run"))
+        depends_on("py-numpy", type=("build", "run"))
 
     # Unconditional dependencies
     # --------------------------------------------------------------------
