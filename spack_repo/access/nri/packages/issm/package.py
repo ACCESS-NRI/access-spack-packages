@@ -160,7 +160,7 @@ class Issm(AutotoolsPackage):
                 env.append_flags(var, "-O3 -DNDEBUG -fPIC")
             if self.spec.satisfies("%intel") or self.spec.satisfies("%oneapi"):
                 for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
-                    env.append_flags(var, "-fp-model precise -xHost")
+                    env.append_flags(var, "-fp-model precise")
             elif self.spec.satisfies("%gcc") or self.spec.satisfies("%clang"):
                 for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
                     env.append_flags(var, "-march=native -mtune=native")
