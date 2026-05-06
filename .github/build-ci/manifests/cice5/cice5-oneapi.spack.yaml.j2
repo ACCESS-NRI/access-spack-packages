@@ -9,7 +9,7 @@ spack:
       require:
       - '{{ oneapi_compiler_ver }}'
     all:
-      prefer:
+      require:
       - '%access_oneapi'
       - 'target={{ target }}'
   concretizer:
