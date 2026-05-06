@@ -95,18 +95,13 @@ class Issm(AutotoolsPackage):
     # Conditional dependencies
     # --------------------------------------------------------------------
 
-    # When building "default" ISSM, use Petsc (with metis [incl. parmetis], mumps, and scalapack variants)
-    with when("~ad"):
-        depends_on("access-petsc~examples+metis+mumps+scalapack", when="~production")
-        depends_on("access-petsc~debug~examples+metis+mumps+scalapack", when="+production")
-
     # PETSc is used for linear algebra in all builds
     depends_on("petsc~examples+metis+mumps+scalapack")
 
     # When building "production" ISSM, use a PETSc variant with optimizations and no debug symbols. 
     # This is the recommended configuration for production use, and ensures that users get the best performance out of the box.
     with when("+production"):
-    depends_on("petsc~debug~examples+metis+mumps+scalapack")
+        depends_on("petsc~debug~examples+metis+mumps+scalapack")
 
 
     # When building with AD support, add CoDiPack + MediPack + adjointpetsc dependencies
@@ -226,8 +221,7 @@ class Issm(AutotoolsPackage):
             # Classic build with PETSc
             args += [
                 "--enable-tape-alloc",
-                "--with-numthreads=4",
-                f"--with-petsc-dir={self.spec['access-petsc'].prefix}",
+                "--with-numthreads=4"
             ]
         args.append(f"--with-parmetis-dir={self.spec['parmetis'].prefix}")
         args.append(f"--with-metis-dir={self.spec['metis'].prefix}")
