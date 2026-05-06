@@ -87,8 +87,7 @@ class Issm(AutotoolsPackage):
     # Conditional dependencies
     # --------------------------------------------------------------------
     # PETSc is the linear algebra backend for all flavours.
-    depends_on("petsc~examples+metis+mumps+scalapack", when="~ad")
-    depends_on("petsc", when="+ad")
+    depends_on("petsc~examples+metis+mumps+scalapack")
 
     # +ad enables the AD-capable linear algebra stack.
     depends_on("codipack", when="+ad")
