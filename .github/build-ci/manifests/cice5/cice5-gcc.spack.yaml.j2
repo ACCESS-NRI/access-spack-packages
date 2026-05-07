@@ -1,0 +1,17 @@
+spack:
+  specs:
+  - 'cice5 model=access-om2' #makefile
+  - 'cice5 model=access-esm1.6' #makefile
+  - 'cice5 {{ cice5_om2 }}' #cmake
+  - 'cice5 {{ cice5_esm1p6 }}' #cmake
+  packages:
+    gcc:
+      require:
+        - '{{ gcc_compiler_ver }}'
+    all:
+      require:
+        - '%access_gcc'
+        - 'target={{ target }}'
+  concretizer:
+    unify: false
+  view: false
