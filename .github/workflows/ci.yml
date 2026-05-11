@@ -26,6 +26,11 @@ on:
         description: 'spack ref to use'
         required: true
         type: string
+      container-image-version:
+        description: 'Docker Image Tag to use'
+        required: true
+        type: string
+        default: ':rocky'
 jobs:
   setup-ci:
     name: Setup CI
@@ -40,6 +45,7 @@ jobs:
       access-spack-packages-ref: ${{ inputs.access-spack-packages-ref || github.event.pull_request.head.sha }}
       spack-config-ref: ${{ inputs.spack-config-ref || steps.defaults.outputs.spack-config-ref }}
       spack-ref: ${{ inputs.spack-ref || steps.defaults.outputs.spack-ref }}
+      container-image-version: ${{ inputs.container-image-version || steps.defaults.outputs.container-image-version }}
     steps:
       - name: Checkout spack-packages
         uses: actions/checkout@v4
@@ -138,11 +144,13 @@ jobs:
         run: |
           default_spack_ref=$(yq '.on.workflow_call.inputs."spack-ref".default' .github/workflows/ci.yml)
           default_spack_config_ref=$(yq '.on.workflow_call.inputs."spack-config-ref".default' .github/workflows/ci.yml)
+          default_container_image_version=$(yq '.on.workflow_call.inputs."container-image-version".default' .github/workflows/ci.yml)
 
-          echo "Default refs from ${{ env.BUILD_CI_WORKFLOW_VERSION }}: spack-ref=$default_spack_ref, spack-config=$default_spack_config_ref"
+          echo "Default refs from ${{ env.BUILD_CI_WORKFLOW_VERSION }}: spack-ref=$default_spack_ref, spack-config=$default_spack_config_ref,container-image-version=$default_container_image_version"
 
           echo "spack-ref=$default_spack_ref" >> $GITHUB_OUTPUT
           echo "spack-config-ref=$default_spack_config_ref" >> $GITHUB_OUTPUT
+          echo "container-image-version=$default_container_image_version" >> $GITHUB_OUTPUT
 
   ci:
     name: CI
@@ -176,6 +184,6 @@ jobs:
       spack-config-ref: ${{ needs.setup-ci.outputs.spack-config-ref }}
       spack-ref: ${{ needs.setup-ci.outputs.spack-ref }}
       allow-ssh-into-spack-install: false
-      # container-image-version: :rocky
+      container-image-version: ${{ needs.setup-ci.outputs.container-image-version }}
     secrets:
       spack-install-command-pat: ${{ secrets.SPACK_INSTALL_COMMAND_PAT }}
