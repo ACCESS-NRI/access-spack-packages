@@ -24,6 +24,7 @@ class Um7(Package):
     version("access-esm1.6", branch="dev-access-esm1.6", preferred=True)
     version("access-esm1.5", branch="access-esm1.5")
 
+    # Comment to trigger CI for UM7
     maintainers("penguian", "Whyborn")
 
     depends_on("c", type="build")
