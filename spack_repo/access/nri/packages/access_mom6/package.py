@@ -46,6 +46,8 @@ class AccessMom6(CMakePackage):
         when="@2025.07.001:"
     )
 
+    conflicts("~access3", when="~mom6_solo", msg="At least one of access3 or mom6_solo must be enabled")
+
     depends_on("c", type="build")
     depends_on("fortran", type="build")
 
