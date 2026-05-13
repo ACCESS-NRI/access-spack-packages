@@ -28,6 +28,7 @@ class Cable(CMakePackage):
         description="Build MPI executable.",
     )
 
+    # Different library definition for each application
     variant(
         "library",
         default="none",
