@@ -136,7 +136,7 @@ jobs:
     with:
       spack-manifest-repository: ${{ matrix.package.repository }}
       spack-manifest-path: ${{ matrix.package.filepath }}
-      spack-manifest-data-path: .github/build-ci/data/standard_definitions.json
+      spack-manifest-data-path: .github/build-ci/data/standard.json
       spack-manifest-data-pairs: |-
         package ${{ matrix.package.template_value }}
       builtin-spack-packages-ref: ${{ needs.setup-ci.outputs.builtin-spack-packages-ref }}
