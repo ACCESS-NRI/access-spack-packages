@@ -1,27 +1,33 @@
 # Generate Manifest Matrix
 
-Action that generates a GitHub Actions matrix of manifest paths and package names for spack package testing.
+Action that generates a GitHub Actions matrix of repository, manifest path, and package tuples for passing to `ACCESS-NRI/build-ci`.
 
 ## Description
 
-For each provided package, this action discovers spack build manifests by:
+For each provided package, this action discovers build manifests in the following order:
 
-1. Looking for package-specific manifests in this repository under `.github/build-ci/manifests/<package>/`
-2. Falling back to default manifests in this repository under `.github/build-ci/manifests/`
+1. Read `git = "..."` from the package's `package.py`, if it exists, clone that repository and search for manifests under `.github/build-ci/manifests`.
+2. If none are found, search this repository under `.github/build-ci/manifests/<package>/`.
+3. If still none are found, use default manifests under `.github/build-ci/manifests/`.
 
-The action returns a matrix suitable for use with `strategy.matrix` in a GitHub Actions workflow, where each entry contains the package name, and manifest file path.
+Each matrix entry contains:
+
+- `template_value`: package name with underscores converted to hyphens, suitable for jinja templating the package name in the manifest
+- `repository`: source repository in `owner/repo` format
+- `filepath`: path to the selected manifest template, relative to the repository
 
 ## Inputs
 
-| Name | Type | Description | Required | Default |
-| ---- | ---- | ----------- | -------- | ------- |
-| `packages` | string (space-separated) | Space-separated list of spack package names to generate matrix entries for | true | N/A |
+| Name | Type | Description | Required | Default | Examples |
+| ---- | ---- | ----------- | -------- | ------- | -------- |
+| `packages` | `string` (space-separated) | Space-separated list of spack package names to generate matrix entries for | `true` | N/A | `"mom5 cice5 cable"` |
+| `packages-root-dir` | `string` (path) | Path to the package root directory containing per-package `package.py` files, relative to this repository | `true` | N/A | `"/spack_repo/access/nri/packages"` |
 
 ## Outputs
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `matrix` | JSON array | A GitHub Actions matrix of `{template_value, filepath}` tuples |
+| `matrix` | JSON array | A GitHub Actions matrix of `{template_value, repository, filepath}` tuples |
 
 ## Example
 
@@ -39,7 +45,8 @@ jobs:
       - id: gen-matrix
         uses: ./.github/build-ci/actions/generate-manifest-matrix
         with:
-          packages: "mom5 cice5 cable"
+          packages: "mom5 cice5"
+          packages-root-dir: spack_repo/access/nri/packages
 
   test:
     needs: setup
@@ -48,6 +55,7 @@ jobs:
         config: ${{ fromJson(needs.setup.outputs.matrix) }}
     uses: access-nri/build-ci/.github/workflows/ci.yml@v3
     with:
+      spack-manifest-repository: ${{ matrix.config.repository }}
       spack-manifest-path: ${{ matrix.config.filepath }}
       spack-manifest-data-pairs: |-
         package ${{ matrix.config.template_value }}
@@ -55,17 +63,27 @@ jobs:
 
 ## Example Output
 
-For packages with git URLs defined in their `package.py`:
-
 ```json
 [
-  {"template_value": "mom5", "filepath": ".github/build-ci/manifests/intel.spack.yaml.j2"},
-  {"template_value": "mom5", "filepath": ".github/build-ci/manifests/gcc.spack.yaml.j2"},
-  {"template_value": "cice5", "filepath": ".github/build-ci/manifests/cice5/spack.yaml.j2"},
-  {"template_value": "cable", "filepath": ".github/build-ci/manifests/cable/intel.spack.yaml.j2"}
+  {
+    "template_value": "mom5",
+    "repository": "ACCESS-NRI/MOM5",
+    "filepath": ".github/build-ci/manifests/intel.spack.yaml.j2"
+  },
+  {
+    "template_value": "cice5",
+    "repository": "ACCESS-NRI/access-spack-packages",
+    "filepath": ".github/build-ci/manifests/cice5/intel.spack.yaml.j2"
+  },
+  {
+    "template_value": "cice5",
+    "repository": "access-nri/access-spack-packages",
+    "filepath": ".github/build-ci/manifests/cice5/gcc.spack.yaml.j2"
+  }
 ]
 ```
 
 ## Notes
 
-- The action automatically handles package name normalization (underscores to hyphens for `template_value`)
+- `repository` is extracted from HTTPS git URLs in `owner/repo` format.
+- Manifest discovery supports `.yml`, `.yaml`, and `.j2`.

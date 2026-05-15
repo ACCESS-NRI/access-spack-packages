@@ -134,6 +134,7 @@ jobs:
           - package: {template_value: "gcom4"}
     uses: access-nri/build-ci/.github/workflows/ci.yml@v3
     with:
+      spack-manifest-repository: ${{ matrix.package.repository }}
       spack-manifest-path: ${{ matrix.package.filepath }}
       spack-manifest-data-path: .github/build-ci/data/standard_definitions.json
       spack-manifest-data-pairs: |-
