@@ -1,0 +1,62 @@
+name: Generate Manifest Matrix
+description: Action that returns a matrix of repository, manifest path, package name tuples, suitable to be passed to build-ci entrypoint inputs.
+author: Tommy Gatti
+inputs:
+  packages:
+    required: true
+    description: Space-separated list of spack packages to generate matrix entries for.
+outputs:
+  matrix:
+    description: |
+      A GitHub Actions matrix of repository, manifest path, and package name tuples.
+    value: ${{ steps.gen.outputs.matrix }}
+runs:
+  using: composite
+  steps:
+    - name: Checkout fallback repository
+      uses: actions/checkout@v6
+      with:
+        repository: ACCESS-NRI/access-spack-packages
+
+    - name: Generate matrix
+      id: gen
+      # Get all packages that will be tested, then
+      # Get file paths to manifests for each package from this repository's package-specific manifests, and finally from defaults, then
+      # Convert into a JSON array for the matrix, one of the form:
+      # [
+      #   {"template_value": "mom5", "filepath": ".github/build-ci/manifests/intel.spack.yaml.j2"},
+      #   {"template_value": "mom5", "filepath": ".github/build-ci/manifests/gcc.spack.yaml.j2"},
+      #   {"template_value": "cice5", "filepath": ".github/build-ci/manifests/cice5/spack.yaml.j2"},
+      #   ...
+      # ]
+      shell: bash
+      run: |
+        run: |
+          pkgs="${{ inputs.packages }}"
+
+          for pkg in $pkgs; do
+            # We want each manifest to have an associated injection of {{ package }} to $pkg
+            # Replace underscores with hyphens for the template value, as spack converts directory underscores to package name hyphens
+            template_value="${pkg//_/-}"
+
+            if [ -d ".github/build-ci/manifests/$pkg" ]; then  # Look for specific manifests for the package
+              # We space-separate the paths as we later use them in a for loop
+              manifest_paths=$(find .github/build-ci/manifests/$pkg -iname '*.j2' -type f -printf '%p ')
+            fi
+
+            if [[ -z "$manifest_paths" ]]; then  # Use the default templates if no specific manifests exist for the package
+              # Similarly, space-separate the paths for a later for loop. Default manifests are always directly under .github/build-ci/manifests
+              manifest_paths=$(find .github/build-ci/manifests/ -maxdepth 1 -type f -iname '*.j2' -printf '%p ')
+            fi
+
+            for manifest_path in $manifest_paths; do
+              json_entry=$(printf '{"template_value": "%s", "filepath": "%s"}' "$template_value" "$manifest_path")
+              json_entries+="${json_entry},"
+            done
+            unset manifest_paths
+          done
+
+          echo "$json_entries"
+
+          # Remove the trailing comma and wrap in square brackets
+          echo "matrix=[${json_entries%,}]" >> $GITHUB_OUTPUT

@@ -84,50 +84,17 @@ jobs:
 
       - name: Setup Matrix
         id: set-matrix
-        # Get all packages that will be tested, then
-        # Get file paths to manifests for each package, and a template, then finally
-        # Convert into a JSON array for the matrix, one of the form:
-        # [
-        #   {"template_value": "mom5", "filepath": ".github/build-ci/manifests/mom5/intel.spack.yaml.j2"},
-        #   {"template_value": "mom5", "filepath": ".github/build-ci/manifests/mom5/gcc.spack.yaml.j2"},
-        #   {"template_value": "cice5", "filepath": ".github/build-ci/manifests/cice5/spack.yaml.j2"},
-        #   ...
-        # ]
-        run: |
-          pkgs="${{ steps.set-matrix-pr.outputs.all_changed_files || steps.set-matrix-dispatch.outputs.pkgs }}"
-
-          for pkg in $pkgs; do
-            # We want each manifest to have an associated injection of {{ package }} to $pkg
-            # Replace underscores with hyphens for the template value, as spack converts directory underscores to package name hyphens
-            template_value="${pkg//_/-}"
-
-            if [ -d ".github/build-ci/manifests/$pkg" ]; then  # Look for specific manifests for the package
-              # We space-separate the paths as we later use them in a for loop
-              manifest_paths=$(find .github/build-ci/manifests/$pkg -iname '*.j2' -type f -printf '%p ')
-            fi
-
-            if [[ -z "$manifest_paths" ]]; then  # Use the default templates if no specific manifests exist for the package
-              # Similarly, space-separate the paths for a later for loop. Default manifests are always directly under .github/build-ci/manifests
-              manifest_paths=$(find .github/build-ci/manifests/ -maxdepth 1 -type f -iname '*.j2' -printf '%p ')
-            fi
-
-            for manifest_path in $manifest_paths; do
-              json_entry=$(printf '{"template_value": "%s", "filepath": "%s"}' "$template_value" "$manifest_path")
-              json_entries+="${json_entry},"
-            done
-            unset manifest_paths
-          done
-
-          echo "$json_entries"
-
-          # Remove the trailing comma and wrap in square brackets
-          echo "matrix=[${json_entries%,}]" >> $GITHUB_OUTPUT
+        uses: ./.github/build-ci/actions/generate-manifest-matrix
+        with:
+          packages: ${{ steps.set-matrix-pr.outputs.all_changed_files || steps.set-matrix-dispatch.outputs.pkgs }}
+          packages-root-dir: ${{ env.PACKAGES_ROOT_DIR }}
 
       - name: Checkout build-ci
         uses: actions/checkout@v4
         with:
           repository: access-nri/build-ci
           ref: ${{ env.BUILD_CI_WORKFLOW_VERSION }}
+          path: build-ci
 
       - name: Get default refs from build-ci workflow
         id: defaults
@@ -136,8 +103,8 @@ jobs:
         # So we are getting the default values from the workflow file itself, and passing them back into the workflow
         # builtin-spack-packages-ref does not need this as the input handles the empty string default.
         run: |
-          default_spack_ref=$(yq '.on.workflow_call.inputs."spack-ref".default' .github/workflows/ci.yml)
-          default_spack_config_ref=$(yq '.on.workflow_call.inputs."spack-config-ref".default' .github/workflows/ci.yml)
+          default_spack_ref=$(yq '.on.workflow_call.inputs."spack-ref".default' build-ci/.github/workflows/ci.yml)
+          default_spack_config_ref=$(yq '.on.workflow_call.inputs."spack-config-ref".default' build-ci/.github/workflows/ci.yml)
 
           echo "Default refs from ${{ env.BUILD_CI_WORKFLOW_VERSION }}: spack-ref=$default_spack_ref, spack-config=$default_spack_config_ref"
 
