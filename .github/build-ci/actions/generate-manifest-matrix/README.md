@@ -14,6 +14,7 @@ Each matrix entry contains:
 
 - `template_value`: package name with underscores converted to hyphens, suitable for jinja templating the package name in the manifest
 - `repository`: source repository in `owner/repo` format
+- `ref`: Git commit checked out from the above repository
 - `filepath`: path to the selected manifest template, relative to the repository
 
 ## Inputs
@@ -27,7 +28,7 @@ Each matrix entry contains:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `matrix` | JSON array | A GitHub Actions matrix of `{template_value, repository, filepath}` tuples |
+| `matrix` | JSON array | A GitHub Actions matrix of `{template_value, repository, ref, filepath}` tuples |
 
 ## Example
 
@@ -57,6 +58,7 @@ jobs:
     with:
       spack-manifest-repository: ${{ matrix.config.repository }}
       spack-manifest-path: ${{ matrix.config.filepath }}
+      ref: ${{ matrix.config.ref }}
       spack-manifest-data-pairs: |-
         package ${{ matrix.config.template_value }}
 ```
@@ -73,11 +75,13 @@ jobs:
   {
     "template_value": "cice5",
     "repository": "ACCESS-NRI/access-spack-packages",
+    "ref": "5557fe2567e1f708080e2c042942df1f405f59df",
     "filepath": ".github/build-ci/manifests/cice5/intel.spack.yaml.j2"
   },
   {
     "template_value": "cice5",
     "repository": "access-nri/access-spack-packages",
+    "ref": "5557fe2567e1f708080e2c042942df1f405f59df",
     "filepath": ".github/build-ci/manifests/cice5/gcc.spack.yaml.j2"
   }
 ]

@@ -135,6 +135,7 @@ jobs:
     uses: access-nri/build-ci/.github/workflows/ci.yml@v3
     with:
       spack-manifest-repository: ${{ matrix.package.repository }}
+      spack-manifest-repository-ref: ${{ matrix.package.ref }}
       spack-manifest-path: ${{ matrix.package.filepath }}
       spack-manifest-data-path: .github/build-ci/data/standard.json
       spack-manifest-data-pairs: |-
@@ -143,6 +144,7 @@ jobs:
       access-spack-packages-ref: ${{ needs.setup-ci.outputs.access-spack-packages-ref }}
       spack-config-ref: ${{ needs.setup-ci.outputs.spack-config-ref }}
       spack-ref: ${{ needs.setup-ci.outputs.spack-ref }}
+      ref: ${{ matrix.package.ref }}
       allow-ssh-into-spack-install: false
       # container-image-version: :rocky
     secrets:

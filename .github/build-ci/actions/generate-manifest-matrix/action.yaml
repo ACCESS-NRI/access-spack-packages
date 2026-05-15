@@ -28,9 +28,9 @@ runs:
       # then from this repository's package-specific manifests, and finally from defaults, then
       # Convert into a JSON array for the matrix, one of the form:
       # [
-      #   {"template_value": "mom5", "repository": "ACCESS-NRI/MOM5", "filepath": ".github/build-ci/manifests/intel.spack.yaml.j2"},
-      #   {"template_value": "mom5", "repository": "ACCESS-NRI/MOM5", "filepath": ".github/build-ci/manifests/gcc.spack.yaml.j2"},
-      #   {"template_value": "cice5", "repository": "ACCESS-NRI/access-spack-packages", "filepath": ".github/build-ci/manifests/cice5/spack.yaml.j2"},
+      #   {"template_value": "mom5", "repository": "ACCESS-NRI/MOM5", "ref": "5557fe2567e1f708080e2c042942df1f405f59df", "filepath": ".github/build-ci/manifests/intel.spack.yaml.j2"},
+      #   {"template_value": "mom5", "repository": "ACCESS-NRI/MOM5", "ref": "5557fe2567e1f708080e2c042942df1f405f59df", "filepath": ".github/build-ci/manifests/gcc.spack.yaml.j2"},
+      #   {"template_value": "cice5", "repository": "ACCESS-NRI/access-spack-packages", "ref": "39bdb56532ae62e9077f1196b7dbb9166af3e112", "filepath": ".github/build-ci/manifests/cice5/spack.yaml.j2"},
       #   ...
       # ]
       shell: bash
@@ -58,6 +58,7 @@ runs:
                 # Use any manifests from the package's source repository first.
                 cd $cloned_repo_path
                 manifest_paths=$(find .github/build-ci/manifests -iname '*.j2' -type f -printf '%p ')
+                ref=$(git rev-parse HEAD)
                 cd -
               fi
             fi
@@ -67,16 +68,18 @@ runs:
             # We space-separate the paths as we later use them in a for loop
             manifest_paths=$(find ".github/build-ci/manifests/$pkg" -iname '*.j2' -type f -printf '%p ')
             repository="access-nri/access-spack-packages"
+            ref=$(git rev-parse HEAD)
           fi
 
           if [[ -z "${manifest_paths:-}" ]]; then  # Use the default templates if no specific manifests exist for the package
             # Similarly, space-separate the paths for a later for loop. Default manifests are always directly under .github/build-ci/manifests
             manifest_paths=$(find ".github/build-ci/manifests" -maxdepth 1 -iname '*.j2' -type f -printf '%p ')
             repository="access-nri/access-spack-packages"
+            ref=$(git rev-parse HEAD)
           fi
 
           for manifest_path in $manifest_paths; do
-            json_entry=$(printf '{"template_value": "%s", "repository": "%s", "filepath": "%s"}' "$template_value" "$repository" "$manifest_path")
+            json_entry=$(printf '{"template_value": "%s", "repository": "%s", "ref": "%s", "filepath": "%s"}' "$template_value" "$repository" "$ref" "$manifest_path")
             json_entries+="${json_entry},"
           done
           unset manifest_paths git_url cloned_repo_path repo_manifest_root
