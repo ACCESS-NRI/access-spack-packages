@@ -23,6 +23,7 @@ Each matrix entry contains:
 | ---- | ---- | ----------- | -------- | ------- | -------- |
 | `packages` | `string` (space-separated) | Space-separated list of spack package names to generate matrix entries for | `true` | N/A | `"mom5 cice5 cable"` |
 | `packages-root-dir` | `string` (path) | Path to the package root directory containing per-package `package.py` files, relative to this repository | `true` | N/A | `"/spack_repo/access/nri/packages"` |
+| `ref` | `string` (git ref) | Ref for the fallback access-spack-packages repository to checkout | `true` | N/A | `api-v2` |
 
 ## Outputs
 
@@ -70,18 +71,19 @@ jobs:
   {
     "template_value": "mom5",
     "repository": "ACCESS-NRI/MOM5",
+    "ref": "main",
     "filepath": ".github/build-ci/manifests/intel.spack.yaml.j2"
   },
   {
     "template_value": "cice5",
     "repository": "ACCESS-NRI/access-spack-packages",
-    "ref": "5557fe2567e1f708080e2c042942df1f405f59df",
+    "ref": "main",
     "filepath": ".github/build-ci/manifests/cice5/intel.spack.yaml.j2"
   },
   {
     "template_value": "cice5",
     "repository": "access-nri/access-spack-packages",
-    "ref": "5557fe2567e1f708080e2c042942df1f405f59df",
+    "ref": "main",
     "filepath": ".github/build-ci/manifests/cice5/gcc.spack.yaml.j2"
   }
 ]

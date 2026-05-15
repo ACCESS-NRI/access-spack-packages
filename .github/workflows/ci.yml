@@ -88,6 +88,7 @@ jobs:
         with:
           packages: ${{ steps.set-matrix-pr.outputs.all_changed_files || steps.set-matrix-dispatch.outputs.pkgs }}
           packages-root-dir: ${{ env.PACKAGES_ROOT_DIR }}
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.event.repository.default_branch }}
 
       - name: Checkout build-ci
         uses: actions/checkout@v4
