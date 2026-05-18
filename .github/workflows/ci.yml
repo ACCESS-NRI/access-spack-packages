@@ -42,12 +42,12 @@ jobs:
       spack-ref: ${{ inputs.spack-ref || steps.defaults.outputs.spack-ref }}
     steps:
       - name: Checkout spack-packages
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: PR - Get packages
         id: set-matrix-pr
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c  # v46.0.5
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
         with:
           # We only care about the directory names under the env.PACKAGES_ROOT_DIR - since they are also the package names
           # and we want to find changes to the package.py files in those directories
@@ -91,7 +91,7 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.event.repository.default_branch }}
 
       - name: Checkout build-ci
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: access-nri/build-ci
           ref: ${{ env.BUILD_CI_WORKFLOW_VERSION }}
