@@ -20,7 +20,7 @@ class Um(UmBasePackage):
     # Defined in parent class and overridden here.
     github_models = ("vn13", "vn13p1-am")
 
-    variant("access3", default=True,
+    variant("access3", default=False,
         description="Install UM as library for Access3 models")
 
     # List of projects to be used by this package.
