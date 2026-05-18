@@ -12,6 +12,7 @@ from spack.package import *
 import spack.llnl.util.tty as tty
 import spack.util.git
 import spack.fetch_strategy as fs
+from os.path import exists
 
 class UmBasePackage(Package):
     """
@@ -592,7 +593,7 @@ class UmBasePackage(Package):
         libdir = f"{self.build_dir()}/build-{k}/lib"
         lib = f"lib{k}"
 
-        if os.path.exists(f"{libdir}/{lib}.a"):            # Location to install pkgconfig file
+        if exists(f"{libdir}/{lib}.a"):            # Location to install pkgconfig file
 
             pkgdir = f"{libdir}/pkgconfig"
             mkdirp(pkgdir)
