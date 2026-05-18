@@ -20,7 +20,7 @@ ESM1P6_LAYOUTS = [
 
 
 def _int_validator(s):
-    """Test a string variant is a valid integer """
+    """Test a string variant is a valid integer"""
     if (s != "none"):
         if (s.isdigit() and int(s) > 0):
             return True

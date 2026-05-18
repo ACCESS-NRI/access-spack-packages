@@ -13,6 +13,7 @@ class Um(UmBasePackage):
     UM is a numerical weather prediction and climate modelling software package.
     """
 
+    # Gets URL from the base package
     variant("model", default="vn13", description="Model configuration.",
         values=("vn13", "vn13p0-rns", "vn13p1-am", "vn13p5-rns"), multi=False)
 
