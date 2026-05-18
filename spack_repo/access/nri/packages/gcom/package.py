@@ -97,29 +97,29 @@ class Gcom(Package):
     def __create_pkgconfig(self, spec, prefix):
 
         version = self.spec.version.string
+        # This version string doesn't exist in GitVersion, see https://github.com/ACCESS-NRI/access-spack-packages/blob/5e68b837acde61a0160fa9fde15221c43e46a2cb/spack_repo/access/nri/packages/mom5/package.py#L121-L122
 
         # Location to install pkgconf file
         pkgdir = "build/lib/pkgconfig"
         mkdirp(pkgdir)
 
-        for k in ["gcom"]:
-
-            lib = f"{k}"
-            text = f"""\
+        k = "gcom"
+        lib = f"lib{k}"
+        text = f"""\
 prefix={prefix}
 exec_prefix=${{prefix}}
 libdir=${{exec_prefix}}/lib
 includedir=${{prefix}}/include
 
-Name: lib{lib}
-Description: GCOM {version} lib{lib} Library for Fortran
+Name: {lib}
+Description: GCOM {version} {lib} Library for Fortran
 Version: {version}
-Libs: -L${{libdir}} -l{lib}
+Libs: -L${{libdir}} -l{k}
 Cflags: -I${{includedir}}
 """
-            pcpath = join_path(pkgdir, f"lib{k}.pc")
-            with open(pcpath, "w", encoding="utf-8") as pc:
-                nchars_written = pc.write(text)
+        pcpath = join_path(pkgdir, f"{lib}.pc")
+        with open(pcpath, "w", encoding="utf-8") as pc:
+            nchars_written = pc.write(text)
 
-            if nchars_written < len(text):
-                raise OSError
+        if nchars_written < len(text):
+            raise OSError
