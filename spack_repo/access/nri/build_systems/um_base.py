@@ -8,7 +8,6 @@
 import configparser
 from spack_repo.builtin.build_systems.generic import Package
 from spack.util.executable import ProcessError
-from spack.version.version_types import StandardVersion
 from spack.package import *
 import spack.llnl.util.tty as tty
 import spack.util.git
