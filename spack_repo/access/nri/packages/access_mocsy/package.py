@@ -42,6 +42,7 @@ class AccessMocsy(CMakePackage, MakefilePackage):
     )
 
     with when("build_system=cmake"):
+        depends_on("cmake@3.22:", type="build")
         variant(
             "build_type",
             default="RelWithDebInfo",

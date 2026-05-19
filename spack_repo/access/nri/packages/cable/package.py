@@ -49,6 +49,7 @@ class Cable(CMakePackage):
     depends_on("cxx", type="build")
     depends_on("fortran", type="build")
 
+    depends_on("cmake@3.24.2:", type="build")
     depends_on("netcdf-fortran@4.5.2:")
     depends_on("mpi", when="+mpi")
 

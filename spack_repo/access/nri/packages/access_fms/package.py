@@ -42,6 +42,7 @@ class AccessFms(CMakePackage):
     depends_on("cxx", type="build")
     depends_on("fortran", type="build")
 
+    depends_on("cmake@3.12:", type="build")
     depends_on("netcdf-c")
     depends_on("netcdf-fortran")
     depends_on("mpi")
