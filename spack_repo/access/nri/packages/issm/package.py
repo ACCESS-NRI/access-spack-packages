@@ -35,6 +35,7 @@ class Issm(AutotoolsPackage):
     version("main", branch="main")
     version("access-release", branch="access-release", preferred=True)
     version("access-development", branch="access-development")
+    version("issm-nuopc-v1", branch="issm-nuopc-v1")
 
     # --------------------------------------------------------------------
     # Variants
@@ -69,6 +70,12 @@ class Issm(AutotoolsPackage):
         description="Install ISSM python files under <prefix>/python-tools",
     )
 
+    variant(
+        "nuopc",
+        default=False,
+        description="Build the in-process NUOPC cap and C API with ESMF support",
+    )
+
     # --------------------------------------------------------------------
     # Dependencies
     # --------------------------------------------------------------------
@@ -100,6 +107,9 @@ class Issm(AutotoolsPackage):
         depends_on("access-triangle")
         depends_on("python", type=("build", "run"))
         depends_on("py-numpy", type=("build", "run"))
+
+    with when("+nuopc"):
+        depends_on("esmf@8.7.0:")
 
     # Unconditional dependencies
     # --------------------------------------------------------------------
@@ -214,6 +224,14 @@ class Issm(AutotoolsPackage):
             ]
         else:
             args.append("--with-wrappers=no")
+
+        if "+nuopc" in self.spec:
+            esmf = self.spec["esmf"].prefix
+            args += [
+                f"--with-esmf-dir={esmf}",
+                f"--with-esmf-moddir={esmf.include}",
+                f"--with-esmf-libdir={esmf.lib}",
+            ]
 
         return args
 
