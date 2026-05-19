@@ -12,6 +12,7 @@ from spack.package import *
 import spack.llnl.util.tty as tty
 import spack.util.git
 import spack.fetch_strategy as fs
+from spack.version.version_types import GitVersion, StandardVersion
 from os.path import exists
 
 class UmBasePackage(Package):
@@ -585,18 +586,24 @@ class UmBasePackage(Package):
         tty.msg(f"{ref} checked out from {url} to {dst_dir}")
 
     def __create_pkgconfig(self, spec, prefix):
-
-        um_version = self.spec.version.string
-        # This version string doesn't exist in GitVersion, see https://github.com/ACCESS-NRI/access-spack-packages/blob/5e68b837acde61a0160fa9fde15221c43e46a2cb/spack_repo/access/nri/packages/mom5/package.py#L121-L122
-
+        """
+        If a um-atmos library has been created, make a pkgconfig file for it
+        """
         k = "um-atmos"
-        libdir = f"{self.build_dir()}/build-{k}/lib"
+        libdir = f"{self.build_dir()}/build-atmos/lib"
         lib = f"lib{k}"
 
-        if exists(f"{libdir}/{lib}.a"):            # Location to install pkgconfig file
+        if exists(f"{libdir}/{lib}.a"):
 
             pkgdir = f"{libdir}/pkgconfig"
             mkdirp(pkgdir)
+
+            # Workaround for https://github.com/spack/spack/issues/50118
+            Version = self.spec.version
+            if isinstance(Version, StandardVersion):
+                version_str = Version.string
+            else:
+                version_str = "unknown"
 
             text = f"""\
 prefix={prefix}
@@ -605,8 +612,8 @@ libdir=${{exec_prefix}}/lib
 includedir=${{prefix}}/include
 
 Name: {lib}
-Description: UM {um_version} {lib} Library for Fortran
-Version: {um_version}
+Description: UM {version_str} {lib} Library for Fortran
+Version: {version_str}
 Requires: libgcom
 Libs: -L${{libdir}} -l{k}
 Cflags: -I${{includedir}}

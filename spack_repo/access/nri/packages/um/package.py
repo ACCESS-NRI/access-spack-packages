@@ -53,13 +53,17 @@ class Um(UmBasePackage):
         Set the built path into the environment.
         """
         # Add the built executables to the path
-        env.prepend_path("PATH", join_path(self.prefix, "build-atmos", "bin"))
+        if not self.spec.variants["access3"].value:
+            env.prepend_path("PATH", join_path(self.prefix, "build-atmos", "bin"))
         env.prepend_path("PATH", join_path(self.prefix, "build-recon", "bin"))
 
 
     def install(self, spec, prefix):
         """
         Install executables and libraries into spack release folder (prefix)
+        When ~access3, this package installs um-atmos.exe
+        When +access3, the package installs libum-atmos.a
+        um-recon.exe is always installed.
         """
 
         # Always install recon exectuable
@@ -67,7 +71,7 @@ class Um(UmBasePackage):
 
         if self.spec.variants["access3"].value:
             # Install library files from build-atmos directory straight into prefix path
-            # so it is in the default path added CMAKE_PREFIX_PATH for dependents
+            # so it is in the expected CMAKE_PREFIX_PATH for dependents
             for dir_name in ["lib", "include"]:
                 dir_path = join_path("build-atmos", dir_name)
                 build_dir = join_path(self.build_dir(), dir_path)

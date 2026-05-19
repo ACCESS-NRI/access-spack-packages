@@ -5,8 +5,8 @@
 # Copyright 2024-2026 ACCESS-NRI
 
 from spack_repo.builtin.build_systems.generic import Package
+from spack.version.version_types import GitVersion, StandardVersion
 from spack.package import *
-
 
 class Gcom(Package):
     """
@@ -96,8 +96,14 @@ class Gcom(Package):
 
     def __create_pkgconfig(self, spec, prefix):
 
-        version = self.spec.version.string
-        # This version string doesn't exist in GitVersion, see https://github.com/ACCESS-NRI/access-spack-packages/blob/5e68b837acde61a0160fa9fde15221c43e46a2cb/spack_repo/access/nri/packages/mom5/package.py#L121-L122
+        # Workaround for https://github.com/spack/spack/issues/50118
+        Version = self.spec.version
+        if isinstance(Version, GitVersion):
+            version_str = Version.ref_version.string
+        elif isinstance(Version, StandardVersion):
+            version_str = Version.string
+        else:
+            version_str = "unknown"
 
         # Location to install pkgconf file
         pkgdir = "build/lib/pkgconfig"
@@ -112,8 +118,8 @@ libdir=${{exec_prefix}}/lib
 includedir=${{prefix}}/include
 
 Name: {lib}
-Description: GCOM {version} {lib} Library for Fortran
-Version: {version}
+Description: GCOM {version_str} {lib} Library for Fortran
+Version: {version_str}
 Libs: -L${{libdir}} -l{k}
 Cflags: -I${{includedir}}
 """
