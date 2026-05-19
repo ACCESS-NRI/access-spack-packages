@@ -81,7 +81,7 @@ class Access3(CMakePackage):
         if "WW3" in conf:
             depends_on("access-ww3@2025.03.0: +access3", when=f"configurations={conf}")
         if "UM13" in conf:
-            conflicts('@:2026.04')
+            conflicts('@:2026.03.001')
             depends_on("um +access3+netcdf~eccodes~DR_HOOK", when=f"configurations={conf}")
         if "CICE6" in conf and "UM13" in conf:
             # Set the driver variant for the UM-CICE coupling code
