@@ -48,6 +48,9 @@ class Um(UmBasePackage):
         depends_on("esmf@8.7.0:")
         conflicts("~netcdf")
 
+    phases = ["build", "create_pkgconfig", "install"]
+
+
     def setup_run_environment(self, env):
         """
         Set the built path into the environment.
@@ -92,3 +95,42 @@ class Um(UmBasePackage):
             mkdirp(install_bin_dir)
             install_tree(build_bin_dir, install_bin_dir)
 
+    def create_pkgconfig(self, spec, prefix):
+        """
+        If a um-atmos library has been created, make a pkgconfig file for it
+        """
+        k = "um-atmos"
+        libdir = f"{self.build_dir()}/build-atmos/lib"
+        lib = f"lib{k}"
+
+        if exists(f"{libdir}/{lib}.a"):
+
+            pkgdir = f"{libdir}/pkgconfig"
+            mkdirp(pkgdir)
+
+            # Workaround for https://github.com/spack/spack/issues/50118
+            Version = self.spec.version
+            if isinstance(Version, StandardVersion):
+                version_str = Version.string
+            else:
+                version_str = "unknown"
+
+            text = f"""\
+prefix={prefix}
+exec_prefix=${{prefix}}
+libdir=${{exec_prefix}}/lib
+includedir=${{prefix}}/include
+
+Name: {lib}
+Description: UM {version_str} {lib} Library for Fortran
+Version: {version_str}
+Requires: libgcom
+Libs: -L${{libdir}} -l{k}
+Cflags: -I${{includedir}}
+"""
+            pcpath = join_path(pkgdir, f"{lib}.pc")
+            with open(pcpath, "w", encoding="utf-8") as pc:
+                nchars_written = pc.write(text)
+
+            if nchars_written < len(text):
+                raise OSError
