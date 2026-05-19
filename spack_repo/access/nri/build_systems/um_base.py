@@ -12,7 +12,6 @@ from spack.package import *
 import spack.llnl.util.tty as tty
 import spack.util.git
 import spack.fetch_strategy as fs
-from os.path import exists
 
 class UmBasePackage(Package):
     """

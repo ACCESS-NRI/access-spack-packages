@@ -8,6 +8,7 @@
 from spack_repo.access.nri.build_systems.um_base import UmBasePackage
 from spack.version.version_types import StandardVersion
 from spack.package import *
+from os.path import exists
 
 class Um(UmBasePackage):
     """
