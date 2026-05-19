@@ -12,7 +12,7 @@ from spack.package import *
 import spack.llnl.util.tty as tty
 import spack.util.git
 import spack.fetch_strategy as fs
-from spack.version.version_types import GitVersion, StandardVersion
+from spack.version.version_types import StandardVersion
 from os.path import exists
 
 class UmBasePackage(Package):
