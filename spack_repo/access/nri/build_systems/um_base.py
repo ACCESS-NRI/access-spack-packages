@@ -8,11 +8,11 @@
 import configparser
 from spack_repo.builtin.build_systems.generic import Package
 from spack.util.executable import ProcessError
+from spack.version.version_types import StandardVersion
 from spack.package import *
 import spack.llnl.util.tty as tty
 import spack.util.git
 import spack.fetch_strategy as fs
-from spack.version.version_types import StandardVersion
 from os.path import exists
 
 class UmBasePackage(Package):
@@ -550,7 +550,7 @@ class UmBasePackage(Package):
             f"--directory={build_dir}",
             "--jobs=4")
 
-        # Upstream is missing a pkgconfig files, so we'll create them.
+        # Upstream is missing a pkgconfig file, so create it
         self.__create_pkgconfig(spec, prefix)
 
 

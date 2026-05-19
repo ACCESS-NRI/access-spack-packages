@@ -8,6 +8,7 @@ from spack_repo.builtin.build_systems.generic import Package
 from spack.version.version_types import GitVersion, StandardVersion
 from spack.package import *
 
+
 class Gcom(Package):
     """
     GCOM is a wrapper around multiprocessing libraries such as MPI

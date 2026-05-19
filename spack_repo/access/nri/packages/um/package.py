@@ -21,9 +21,6 @@ class Um(UmBasePackage):
     # Defined in parent class and overridden here.
     github_models = ("vn13", "vn13p1-am")
 
-    variant("access3", default=False,
-        description="Install UM as library for Access3 models")
-
     # List of projects to be used by this package.
     # Defined in parent class as all projects and left to default here.
     # projects_needed = super().projects_needed
@@ -43,6 +40,9 @@ class Um(UmBasePackage):
     # https://github.com/ACCESS-NRI/access-spack-packages/issues/293
     variant("mpi", default=True, description="Build with MPI")
     depends_on("mpi", when="+mpi", type=("build", "link", "run"))
+
+    variant("access3", default=False,
+        description="Install UM as library for Access3 models")
 
     with when("+access3"):
         depends_on("esmf@8.7.0:")
@@ -66,7 +66,7 @@ class Um(UmBasePackage):
         um-recon.exe is always installed.
         """
 
-        # Always install recon exectuable
+        # List of executables to install, always install recon
         um_exe = ["recon"]
 
         if self.spec.variants["access3"].value:
