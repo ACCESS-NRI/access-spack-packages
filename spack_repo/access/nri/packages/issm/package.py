@@ -121,7 +121,6 @@ class Issm(AutotoolsPackage):
     depends_on("mumps~openmp", when="~openmp")
     depends_on("mumps+openmp", when="+openmp")
     depends_on("scalapack")
-    depends_on("m1qn3")
 
     # --------------------------------------------------------------------
     # Conflicts
@@ -226,7 +225,6 @@ class Issm(AutotoolsPackage):
         args.append(f"--with-mumps-dir={self.spec['mumps'].prefix}")
 
         # Optimiser
-        args.append(f"--with-m1qn3-dir={self.spec['m1qn3'].prefix.lib}")
         args.append(f"--with-scalapack-dir={self.spec['scalapack'].prefix}")
 
         # MPI compilers & headers
