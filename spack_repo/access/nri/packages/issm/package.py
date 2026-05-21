@@ -95,7 +95,8 @@ class Issm(AutotoolsPackage):
     # Conditional dependencies
     # --------------------------------------------------------------------
     # PETSc is used for linear algebra in all builds
-    depends_on("petsc~examples+metis+mumps+scalapack")
+    with when("~production"):
+        depends_on("petsc~examples+metis+mumps+scalapack")
 
     # When building "production" ISSM, use a PETSc variant with optimizations and no debug symbols. 
     # This is the recommended configuration for production use, and ensures that users get the best performance out of the box.
@@ -160,10 +161,11 @@ class Issm(AutotoolsPackage):
             if self.spec.satisfies("%intel") or self.spec.satisfies("%oneapi"):
                 for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
                     env.append_flags(var, "-fp-model precise")
-            elif self.spec.satisfies("%gcc") or self.spec.satisfies("%clang"):
-                for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
-                    env.append_flags(var, "-march=native -mtune=native")
-            env.append_flags("FFLAGS", "-funroll-loops")
+            # flags can cause issues with some compilers/versions, so we leave them out for now
+            # elif self.spec.satisfies("%gcc") or self.spec.satisfies("%clang"):
+            #     for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
+            #         env.append_flags(var, "-march=native -mtune=native")
+            # env.append_flags("FFLAGS", "-funroll-loops") 
 
         # Automatic Differentiation extras
         if "+ad" in self.spec:
