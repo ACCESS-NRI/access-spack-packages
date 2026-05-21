@@ -35,8 +35,11 @@ class Issm(AutotoolsPackage):
     version("main", branch="main")
     version("access-release", branch="access-release")
     version("access-development", branch="access-development")
-
-    version("2026.04.16", tag="2026.04.16", preferred=True)
+    
+    # same version string as the tag, so users can easily specify a specific tagged version if desired.
+    # This is the recommended way to specify versions for reproducibility.
+    version("2026.04.16", tag="2026.04.16")
+    version("2026.05.18", tag="2026.05.18", preferred=True)
 
     # --------------------------------------------------------------------
     # Variants
