@@ -206,7 +206,7 @@ class Issm(AutotoolsPackage):
         else:
             args += [
                 "--enable-debugging",
-                "--enable-development",
+                "--disable-development",
             ]
 
         # Linear-algebra backend
