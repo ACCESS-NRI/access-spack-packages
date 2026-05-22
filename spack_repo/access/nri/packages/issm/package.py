@@ -38,8 +38,8 @@ class Issm(AutotoolsPackage):
     
     # same version string as the tag, so users can easily specify a specific tagged version if desired.
     # This is the recommended way to specify versions for reproducibility.
-    version("2026.04.16", tag="2026.04.16")
     version("2026.05.18", tag="2026.05.18", preferred=True)
+    version("2026.04.16", tag="2026.04.16")
 
     # --------------------------------------------------------------------
     # Variants
@@ -153,25 +153,22 @@ class Issm(AutotoolsPackage):
     # --------------------------------------------------------------------
     def setup_build_environment(self, env):
         # OpenMP support
-        if "+openmp" in self.spec:
+        if self.spec.satisfies("+openmp"):
             for var in ("CFLAGS", "CXXFLAGS", "FFLAGS", "LDFLAGS"):
                 env.append_flags(var, self.compiler.openmp_flag)
 
         # Production build: optimized release flags
-        if "+production" in self.spec:
+        if self.spec.satisfies("+production"):
             for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
                 env.append_flags(var, "-O3 -DNDEBUG -fPIC")
             if self.spec.satisfies("%intel") or self.spec.satisfies("%oneapi"):
                 for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
                     env.append_flags(var, "-fp-model precise")
-            # flags can cause issues with some compilers/versions, so we leave them out for now
-            # elif self.spec.satisfies("%gcc") or self.spec.satisfies("%clang"):
-            #     for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
-            #         env.append_flags(var, "-march=native -mtune=native")
-            # env.append_flags("FFLAGS", "-funroll-loops") 
+            # Architecture tuning (e.g. -march/-mtune) should be set via the
+            # `target:` field in spack.yaml rather than hardcoded here.
 
         # Automatic Differentiation extras
-        if "+ad" in self.spec:
+        if self.spec.satisfies("+ad"):
             # CoDiPack's performance tips: force inlining & keep full symbols
             env.append_flags(
                 "CXXFLAGS",
@@ -201,19 +198,19 @@ class Issm(AutotoolsPackage):
         ]
         
         # Production specific options
-        if "+production" in self.spec:
+        if self.spec.satisfies("+production"):
             args += [
                 "--disable-debugging",
-                "--enable-development",
+                "--disable-development",
             ]
         else:
             args += [
                 "--enable-debugging",
-                "--disable-development",
+                "--enable-development",
             ]
 
         # Linear-algebra backend
-        if "+ad" in self.spec:
+        if self.spec.satisfies("+ad"):
             args += [
                 f"--with-codipack-dir={self.spec['codipack'].prefix}",
                 f"--with-medipack-dir={self.spec['medipack'].prefix}",
@@ -243,7 +240,7 @@ class Issm(AutotoolsPackage):
         ]
 
         # Optional wrappers
-        if "+wrappers" in self.spec:
+        if self.spec.satisfies("+wrappers"):
             args.append("--with-wrappers=yes")
             args.append(f"--with-triangle-dir={self.spec['access-triangle'].prefix}")
 
@@ -269,13 +266,13 @@ class Issm(AutotoolsPackage):
         make("install", parallel=False)
 
         # Optionally install examples directory
-        if "+examples" in self.spec:
+        if self.spec.satisfies("+examples"):
             examples_src = join_path(self.stage.source_path, "examples")
             examples_dst = join_path(prefix, "examples")
             install_tree(examples_src, examples_dst)
 
         # Optionally install Python (.py) files as a zip archive
-        if "+py-tools" in self.spec:
+        if self.spec.satisfies("+py-tools"):
             py_src = join_path(self.stage.source_path, "src", "m")
             py_dst = join_path(prefix, "python-tools.zip")
 
@@ -347,6 +344,6 @@ class Issm(AutotoolsPackage):
         env.set('ISSM_DIR', issm_dir)
 
         # Add ISSM python files (and shared libraries) to PYTHONPATH if +py-tools
-        if "+py-tools" in self.spec:
+        if self.spec.satisfies("+py-tools"):
             env.prepend_path("PYTHONPATH", join_path(self.prefix, "python-tools.zip"))
             env.prepend_path("PYTHONPATH", join_path(self.prefix, "lib"))
