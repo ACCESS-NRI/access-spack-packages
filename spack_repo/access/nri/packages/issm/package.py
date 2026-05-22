@@ -197,17 +197,17 @@ class Issm(AutotoolsPackage):
             f"--with-petsc-dir={self.spec['petsc'].prefix}",
         ]
         
+        # Always use --enable-development: ISSM's script-install machinery
+        # (the if !DEVELOPMENT block in src/m/Makefile.am) requires $ISSM_DIR
+        # to be set to the source tree at make time, which Spack does not do.
+        # Python scripts are handled separately by the +py-tools variant.
+        args.append("--enable-development")
+
         # Production specific options
         if self.spec.satisfies("+production"):
-            args += [
-                "--disable-debugging",
-                "--disable-development",
-            ]
+            args.append("--disable-debugging")
         else:
-            args += [
-                "--enable-debugging",
-                "--enable-development",
-            ]
+            args.append("--enable-debugging")
 
         # Linear-algebra backend
         if self.spec.satisfies("+ad"):
