@@ -259,6 +259,8 @@ class UmBasePackage(Package):
             url = cfg["url"]
             ref = self._project_ref(project)
             if _is_commit(ref):
+                fetcher = fs.from_kwargs(git=url, commit=ref)
+                print(f"The created fetcher is {fetcher}")
                 return fs.from_kwargs(git=url, commit=ref)
             else:
                 return fs.from_kwargs(git=url, tag=ref)
@@ -575,6 +577,7 @@ class UmBasePackage(Package):
         project : str
             Project name (e.g. 'jules').
         """
+        print("Got to the _dynamic_resource stage")
         project_cfg = self._project_cfg[project]
         url = project_cfg["url"]
         ref = self._project_ref(project)
