@@ -231,7 +231,7 @@ class UmBasePackage(Package):
         """
         return join_path(self.stage.source_path, "resources", project)
 
-    def _is_commit(ref):
+    def _is_commit(self, ref):
         """
         Treat ref as a version string and determine
         if it represents a Git commit.
