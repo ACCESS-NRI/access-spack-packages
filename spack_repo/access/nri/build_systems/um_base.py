@@ -258,7 +258,7 @@ class UmBasePackage(Package):
             cfg = self._project_cfg[project]
             url = cfg["url"]
             ref = self._project_ref(project)
-            if _is_commit(ref):
+            if self._is_commit(ref):
                 fetcher = fs.from_kwargs(git=url, commit=ref)
                 print(f"The created fetcher is {fetcher}")
                 return fs.from_kwargs(git=url, commit=ref)
