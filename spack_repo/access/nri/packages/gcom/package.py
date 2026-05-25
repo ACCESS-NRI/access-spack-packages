@@ -98,20 +98,22 @@ class Gcom(Package):
     def __create_pkgconfig(self, spec, prefix):
 
         # Workaround for https://github.com/spack/spack/issues/50118
-        Version = self.spec.version
-        if isinstance(Version, GitVersion):
-            version_str = Version.ref_version.string
-        elif isinstance(Version, StandardVersion):
-            version_str = Version.string
+        spec_version = self.spec.version
+        if isinstance(spec_version, GitVersion):
+            version_str = spec_version.ref_version.string
+        elif isinstance(spec_version, StandardVersion):
+            version_str = spec_version.string
         else:
-            version_str = "unknown"
+            raise RuntimeError(
+                f"{dtype(spec_version)} is not a recognised spack version type"
+            )
 
         # Location to install pkgconf file
         pkgdir = "build/lib/pkgconfig"
         mkdirp(pkgdir)
 
-        k = "gcom"
-        lib = f"lib{k}"
+        pkg = "gcom"
+        lib = f"lib{pkg}"
         text = f"""\
 prefix={prefix}
 exec_prefix=${{prefix}}
@@ -121,7 +123,7 @@ includedir=${{prefix}}/include
 Name: {lib}
 Description: GCOM {version_str} {lib} Library for Fortran
 Version: {version_str}
-Libs: -L${{libdir}} -l{k}
+Libs: -L${{libdir}} -l{pkg}
 Cflags: -I${{includedir}}
 """
         pcpath = join_path(pkgdir, f"{lib}.pc")

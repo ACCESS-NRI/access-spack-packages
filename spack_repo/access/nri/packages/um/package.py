@@ -101,9 +101,9 @@ class Um(UmBasePackage):
         """
         If a um-atmos library has been created, make a pkgconfig file for it
         """
-        k = "um-atmos"
+        pkg = "um-atmos"
         libdir = f"{self.build_dir()}/build-atmos/lib"
-        lib = f"lib{k}"
+        lib = f"lib{pkg}"
 
         if exists(f"{libdir}/{lib}.a"):
 
@@ -111,11 +111,13 @@ class Um(UmBasePackage):
             mkdirp(pkgdir)
 
             # Workaround for https://github.com/spack/spack/issues/50118
-            Version = self.spec.version
-            if isinstance(Version, StandardVersion):
-                version_str = Version.string
+            spec_version = self.spec.version
+            if isinstance(spec_version, StandardVersion):
+                version_str = spec_version.string
             else:
-                version_str = "unknown"
+                raise RuntimeError(
+                    f"{dtype(spec_version)} is not a recognised spack version type"
+                )
 
             text = f"""\
 prefix={prefix}
@@ -127,7 +129,7 @@ Name: {lib}
 Description: UM {version_str} {lib} Library for Fortran
 Version: {version_str}
 Requires: libgcom
-Libs: -L${{libdir}} -l{k}
+Libs: -L${{libdir}} -l{pkg}
 Cflags: -I${{includedir}}
 """
             pcpath = join_path(pkgdir, f"{lib}.pc")
