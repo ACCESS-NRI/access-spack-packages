@@ -33,8 +33,13 @@ class Issm(AutotoolsPackage):
     # --------------------------------------------------------------------
     version("upstream", branch="main", git="https://github.com/ISSMteam/ISSM.git")
     version("main", branch="main")
-    version("access-release", branch="access-release", preferred=True)
+    version("access-release", branch="access-release")
     version("access-development", branch="access-development")
+    
+    # same version string as the tag, so users can easily specify a specific tagged version if desired.
+    # This is the recommended way to specify versions for reproducibility.
+    version("2026.05.18", tag="2026.05.18", preferred=True)
+    version("2026.04.16", tag="2026.04.16")
 
     # --------------------------------------------------------------------
     # Variants
@@ -64,6 +69,12 @@ class Issm(AutotoolsPackage):
     )
 
     variant(
+        "production",
+        default=True,
+        description="Build ISSM in production mode with optimized PETSc and release flags",
+    )
+
+    variant(
         "py-tools",
         default=False,
         description="Install ISSM python files under <prefix>/python-tools",
@@ -87,7 +98,13 @@ class Issm(AutotoolsPackage):
     # Conditional dependencies
     # --------------------------------------------------------------------
     # PETSc is used for linear algebra in all builds
-    depends_on("petsc~examples+metis+mumps+scalapack")
+    with when("~production"):
+        depends_on("petsc~examples+metis+mumps+scalapack")
+
+    # When building "production" ISSM, use a PETSc variant with optimizations and no debug symbols. 
+    # This is the recommended configuration for production use, and ensures that users get the best performance out of the box.
+    with when("+production"):
+        depends_on("petsc~debug~examples+metis+mumps+scalapack")
 
     # When building with AD support, add CoDiPack + MediPack + adjointpetsc dependencies
     with when("+ad"):
@@ -108,7 +125,6 @@ class Issm(AutotoolsPackage):
     depends_on("mumps~openmp", when="~openmp")
     depends_on("mumps+openmp", when="+openmp")
     depends_on("scalapack")
-    depends_on("m1qn3")
 
     # --------------------------------------------------------------------
     # Conflicts
@@ -137,12 +153,22 @@ class Issm(AutotoolsPackage):
     # --------------------------------------------------------------------
     def setup_build_environment(self, env):
         # OpenMP support
-        if "+openmp" in self.spec:
+        if self.spec.satisfies("+openmp"):
             for var in ("CFLAGS", "CXXFLAGS", "FFLAGS", "LDFLAGS"):
                 env.append_flags(var, self.compiler.openmp_flag)
 
+        # Production build: optimized release flags
+        if self.spec.satisfies("+production"):
+            for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
+                env.append_flags(var, "-O3 -DNDEBUG -fPIC")
+            if self.spec.satisfies("%intel") or self.spec.satisfies("%oneapi"):
+                for var in ("CFLAGS", "CXXFLAGS", "FFLAGS"):
+                    env.append_flags(var, "-fp-model precise")
+            # Architecture tuning (e.g. -march/-mtune) should be set via the
+            # `target:` field in spack.yaml rather than hardcoded here.
+
         # Automatic Differentiation extras
-        if "+ad" in self.spec:
+        if self.spec.satisfies("+ad"):
             # CoDiPack's performance tips: force inlining & keep full symbols
             env.append_flags(
                 "CXXFLAGS",
@@ -160,8 +186,6 @@ class Issm(AutotoolsPackage):
     # --------------------------------------------------------------------
     def configure_args(self):
         args = [
-            "--enable-debugging",
-            "--enable-development",
             "--enable-shared",
             "--without-kriging",
             "--without-Love",
@@ -173,8 +197,20 @@ class Issm(AutotoolsPackage):
             f"--with-petsc-dir={self.spec['petsc'].prefix}",
         ]
         
-        # Automatic Differentiation specific options
-        if "+ad" in self.spec:
+        # Always use --enable-development: ISSM's script-install machinery
+        # (the if !DEVELOPMENT block in src/m/Makefile.am) requires $ISSM_DIR
+        # to be set to the source tree at make time, which Spack does not do.
+        # Python scripts are handled separately by the +py-tools variant.
+        args.append("--enable-development")
+
+        # Production specific options
+        if self.spec.satisfies("+production"):
+            args.append("--disable-debugging")
+        else:
+            args.append("--enable-debugging")
+
+        # Linear-algebra backend
+        if self.spec.satisfies("+ad"):
             args += [
                 f"--with-codipack-dir={self.spec['codipack'].prefix}",
                 f"--with-medipack-dir={self.spec['medipack'].prefix}",
@@ -191,7 +227,6 @@ class Issm(AutotoolsPackage):
         args.append(f"--with-mumps-dir={self.spec['mumps'].prefix}")
 
         # Optimiser
-        args.append(f"--with-m1qn3-dir={self.spec['m1qn3'].prefix.lib}")
         args.append(f"--with-scalapack-dir={self.spec['scalapack'].prefix}")
 
         # MPI compilers & headers
@@ -205,7 +240,7 @@ class Issm(AutotoolsPackage):
         ]
 
         # Optional wrappers
-        if "+wrappers" in self.spec:
+        if self.spec.satisfies("+wrappers"):
             args.append("--with-wrappers=yes")
             args.append(f"--with-triangle-dir={self.spec['access-triangle'].prefix}")
 
@@ -231,13 +266,13 @@ class Issm(AutotoolsPackage):
         make("install", parallel=False)
 
         # Optionally install examples directory
-        if "+examples" in self.spec:
+        if self.spec.satisfies("+examples"):
             examples_src = join_path(self.stage.source_path, "examples")
             examples_dst = join_path(prefix, "examples")
             install_tree(examples_src, examples_dst)
 
         # Optionally install Python (.py) files as a zip archive
-        if "+py-tools" in self.spec:
+        if self.spec.satisfies("+py-tools"):
             py_src = join_path(self.stage.source_path, "src", "m")
             py_dst = join_path(prefix, "python-tools.zip")
 
@@ -309,6 +344,6 @@ class Issm(AutotoolsPackage):
         env.set('ISSM_DIR', issm_dir)
 
         # Add ISSM python files (and shared libraries) to PYTHONPATH if +py-tools
-        if "+py-tools" in self.spec:
+        if self.spec.satisfies("+py-tools"):
             env.prepend_path("PYTHONPATH", join_path(self.prefix, "python-tools.zip"))
             env.prepend_path("PYTHONPATH", join_path(self.prefix, "lib"))
