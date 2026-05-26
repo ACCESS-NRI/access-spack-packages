@@ -259,7 +259,6 @@ class UmBasePackage(Package):
             url = cfg["url"]
             ref = self._project_ref(project)
             if self._is_commit(ref):
-                fetcher = fs.from_kwargs(git=url, commit=ref)
                 return fs.from_kwargs(git=url, commit=ref)
             else:
                 return fs.from_kwargs(git=url, tag=ref)
