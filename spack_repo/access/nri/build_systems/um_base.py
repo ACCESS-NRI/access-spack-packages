@@ -180,6 +180,7 @@ class UmBasePackage(Package):
         when="+eccodes")
     depends_on("netcdf-fortran@4.5.2:", type=("build", "link", "run"),
         when="+netcdf")
+    depends_on("cable library='access3'", type=("build", "link"))
 
     phases = ["build", "install"]
 
@@ -203,7 +204,12 @@ class UmBasePackage(Package):
             "includes": ["include"],
             "dep_name": "netcdf-fortran",
             "fcm_name": "netcdf",
-            "fcm_ld_flags": "-lnetcdff -lnetcdf"}}
+            "fcm_ld_flags": "-lnetcdff -lnetcdf"},
+        "cable": {
+            "includes": ["include"],
+            "dep_name": "cable",
+            "fcm_name": "cable",
+            "fcm_ld_flags": ""}}
 
     # List of model variants that have Github sources.
     # Should be overridden by child classes.
