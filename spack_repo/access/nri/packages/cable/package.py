@@ -34,7 +34,8 @@ class Cable(CMakePackage):
         default="none",
         values=(
             "none",
-            "access-esm1.6"
+            "access-esm1.6",
+            "access3"
         ),
         description="Build CABLE science library object.",
     )
