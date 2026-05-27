@@ -58,7 +58,8 @@ class UmBasePackage(Package):
     _bool_variants = (
         "DR_HOOK",
         "eccodes",
-        "netcdf")
+        "netcdf",
+        "cable")
     for var in _bool_variants:
         variant(var, default=True, sticky=True, description=var)
 
