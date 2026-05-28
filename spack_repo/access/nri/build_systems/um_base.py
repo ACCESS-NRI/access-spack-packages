@@ -515,6 +515,7 @@ class UmBasePackage(Package):
         # Set environment variables based on config_env.
         for key in config_env:
             tty.info(f"{key}={config_env[key]}")
+            print(f"Debugging: {key}={config_env[key]}")
             env.set(key, config_env[key])
 
         # Add the location of the FCM executable to PATH.
