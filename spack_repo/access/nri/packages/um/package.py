@@ -110,9 +110,9 @@ class Um(UmBasePackage):
 
         if not exists(f"{libdir}/{lib}.a"):
             raise RuntimeError(f"""
-                {libdir}/{lib}.a does not exist. Confirm 'build-atmos.prop{keep-lib-o} = true' 
-                is set in fcm configuration.
-                """) # see https://github.com/ACCESS-NRI/UM/commit/970f0bda8416108819bf7cbc43efd279e2785b75
+                {libdir}/{lib}.a does not exist. Confirm 'build-atmos.prop{keep-lib-o}' 
+                is set  to true in fcm configuration.
+                """)  # see https://github.com/ACCESS-NRI/UM/commit/970f0bda8416108819bf7cbc43efd279e2785b75
 
         else:
             pkgdir = f"{libdir}/pkgconfig"
