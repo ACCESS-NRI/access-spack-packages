@@ -50,8 +50,6 @@ class Um(UmBasePackage):
         depends_on("esmf@8.7.0:")
         conflicts("~netcdf")
 
-    phases = ["build", "__create_pkgconfig", "install"]
-
 
     def setup_run_environment(self, env):
         """
@@ -75,6 +73,10 @@ class Um(UmBasePackage):
         um_exe = ["recon"]
 
         if self.spec.variants["access3"].value:
+
+            # Create a pkgconf file for the um library
+            self.__create_pkgconfig(spec, prefix)
+
             # Install library files from build-atmos directory straight into prefix path
             # so it is in the expected CMAKE_PREFIX_PATH for dependents
             for dir_name in ["lib", "include"]:
@@ -97,6 +99,7 @@ class Um(UmBasePackage):
             mkdirp(install_bin_dir)
             install_tree(build_bin_dir, install_bin_dir)
 
+
     def __create_pkgconfig(self, spec, prefix):
         """
         If a um-atmos library has been created, make a pkgconfig file for it
@@ -105,8 +108,13 @@ class Um(UmBasePackage):
         libdir = f"{self.build_dir()}/build-atmos/lib"
         lib = f"lib{pkg}"
 
-        if exists(f"{libdir}/{lib}.a"):
+        if not exists(f"{libdir}/{lib}.a"):
+            raise RuntimeError(f"""
+                {libdir}/{lib}.a does not exist. Confirm 'build-atmos.prop{keep-lib-o} = true' 
+                is set in fcm configuration.
+                """) # see https://github.com/ACCESS-NRI/UM/commit/970f0bda8416108819bf7cbc43efd279e2785b75
 
+        else:
             pkgdir = f"{libdir}/pkgconfig"
             mkdirp(pkgdir)
 
