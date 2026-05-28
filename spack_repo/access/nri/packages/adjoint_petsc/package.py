@@ -28,8 +28,8 @@ class AdjointPetsc(CMakePackage):
     constraints that are not broadly useful to the wider Spack ecosystem.
     """
 
-    homepage = "https://github.com/SciCompKL/adjoint-PETSc"
-    git      = "https://github.com/SciCompKL/adjoint-PETSc.git"
+    homepage = "https://github.com/justinh2002/adjoint-PETSc.git"
+    git      = "https://github.com/justinh2002/adjoint-PETSc.git"
 
     maintainers("justinh2002")
 
