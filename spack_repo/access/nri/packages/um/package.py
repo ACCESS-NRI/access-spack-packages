@@ -50,7 +50,7 @@ class Um(UmBasePackage):
         depends_on("esmf@8.7.0:")
         conflicts("~netcdf")
 
-    phases = ["build", "create_pkgconfig", "install"]
+    phases = ["build", "__create_pkgconfig", "install"]
 
 
     def setup_run_environment(self, env):
@@ -97,7 +97,7 @@ class Um(UmBasePackage):
             mkdirp(install_bin_dir)
             install_tree(build_bin_dir, install_bin_dir)
 
-    def create_pkgconfig(self, spec, prefix):
+    def __create_pkgconfig(self, spec, prefix):
         """
         If a um-atmos library has been created, make a pkgconfig file for it
         """
