@@ -8,6 +8,7 @@
 import configparser
 from spack_repo.builtin.build_systems.generic import Package
 from spack.util.executable import ProcessError
+from spack.version import ver, GitVersion
 from spack.package import *
 import spack.llnl.util.tty as tty
 import spack.util.git
@@ -230,6 +231,18 @@ class UmBasePackage(Package):
         """
         return join_path(self.stage.source_path, "resources", project)
 
+    def _is_commit(self, ref):
+        """
+        Treat ref as a version string and determine
+        if it represents a Git commit.
+        """
+        version = ver(ref)
+
+        if isinstance(version, GitVersion):
+            return version.is_commit
+        else:
+            return False
+
 
     @property
     def fetcher(self):
@@ -239,15 +252,19 @@ class UmBasePackage(Package):
         spec = self.spec
         model = spec.variants["model"].value
         if model in self.github_models:
-            # GitHub: Return a Git fetch strategy
+            # GitHub: Return a Git fetch strategy.
+            # Right now only tags and commits are supported.
             project = "um"
             cfg = self._project_cfg[project]
             url = cfg["url"]
             ref = self._project_ref(project)
-            return fs.from_kwargs(git=url, tag=ref)
+            if self._is_commit(ref):
+                return fs.from_kwargs(git=url, commit=ref)
+            else:
+                return fs.from_kwargs(git=url, tag=ref)
         else:
-            # Subversion: Return a Subversion fetch strategy
-            # Recover the revision from the version definition if available
+            # Subversion: Return a Subversion fetch strategy.
+            # Recover the revision from the version definition if available.
             rev = None
             if spec.version in self.versions:
                 rev = self.versions[spec.version].get("revision")
