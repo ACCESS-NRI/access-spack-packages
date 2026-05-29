@@ -13,7 +13,7 @@ import time
 
 ZIPFILE_MIN_DATE = (1980, 1, 1, 0, 0, 0)
 
-class Issm(AutotoolsPackage):
+class Issm(AutotoolsPackage, CudaPackage):
     """Ice-sheet and Sea-Level System Model.
 
     This recipe supports two distinct build flavours:
@@ -103,14 +103,25 @@ class Issm(AutotoolsPackage):
 
     # Conditional dependencies
     # --------------------------------------------------------------------
-    # PETSc is used for linear algebra in all builds
-    with when("~production"):
+    # PETSc is used for linear algebra in all builds.
+    # The +cuda variant propagates through to PETSc so that GPU-accelerated
+    # KSP solves (via aijcusparse / CUDA vectors) are available at runtime.
+    with when("~production ~cuda"):
         depends_on("petsc~examples+metis+mumps+scalapack")
+    with when("~production +cuda"):
+        depends_on("petsc~examples+metis+mumps+scalapack+cuda")
 
-    # When building "production" ISSM, use a PETSc variant with optimizations and no debug symbols. 
+    # When building "production" ISSM, use a PETSc variant with optimizations and no debug symbols.
     # This is the recommended configuration for production use, and ensures that users get the best performance out of the box.
-    with when("+production"):
+    with when("+production ~cuda"):
         depends_on("petsc~debug~examples+metis+mumps+scalapack")
+    with when("+production +cuda"):
+        depends_on("petsc~debug~examples+metis+mumps+scalapack+cuda")
+
+    # Propagate cuda_arch to PETSc so the right GPU ISA is compiled
+    with when("+cuda"):
+        for _arch in CudaPackage.cuda_arch_values:
+            depends_on(f"petsc cuda_arch={_arch}", when=f"cuda_arch={_arch}")
 
     # When building with AD support, add CoDiPack + MediPack + adjointpetsc dependencies
     with when("+ad"):
@@ -141,6 +152,9 @@ class Issm(AutotoolsPackage):
 
     requires("+py-tools", when="+wrappers", msg="The +wrappers variant requires +py-tools")
     requires("+wrappers", when="+py-tools", msg="The +py-tools variant requires +wrappers for full functionality")
+
+    # CUDA and AD are not supported together (adjointpetsc is not CUDA-aware)
+    conflicts("+cuda", when="+ad", msg="+cuda and +ad cannot be used together: adjointpetsc does not support CUDA")
 
     # --------------------------------------------------------------------
     # Helper functions
