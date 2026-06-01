@@ -1,6 +1,6 @@
 # Copyright Spack Project Developers. See COPYRIGHT file for details.
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 from spack_repo.builtin.build_systems import cmake, makefile
 from spack_repo.builtin.build_systems.cmake import CMakePackage
@@ -30,8 +30,8 @@ def _int_validator(s):
 
 
 class Cice5(CMakePackage, MakefilePackage):
-    """The Los Alamos sea ice model (CICE) is the result of an effort to develop 
-    a computationally efficient sea ice component for a fully coupled 
+    """The Los Alamos sea ice model (CICE) is the result of an effort to develop
+    a computationally efficient sea ice component for a fully coupled
     atmosphere-land global climate model."""
 
     homepage = "https://www.access-nri.org.au"
@@ -160,7 +160,7 @@ class CMakeBuilder(cmake.CMakeBuilder):
 
     @property
     def build_dirname(self) -> str:
-        """Directory name to use when building the package. 
+        """Directory name to use when building the package.
         We modify this using _layout to ensure uniqueness with multiple builds
         """
         build = (
@@ -171,20 +171,20 @@ class CMakeBuilder(cmake.CMakeBuilder):
         return f"{super().build_dirname}/{build}"
 
     def set_layouts(self, pkg, spec, prefix):
-        """Layout of cice processors to use. If variants are set, use those. 
+        """Layout of cice processors to use. If variants are set, use those.
         Otherwise, use defaults."""
         layout_variants = OM2_LAYOUTS[0].keys()
 
         # if all 5 layouts variants are available, set the layouts dict
         if all([
-            self.spec.variants[variant].value != 'none' 
+            self.spec.variants[variant].value != 'none'
             for variant in layout_variants
         ]):
             layouts = [{variant: self.spec.variants[variant].value
                 for variant in layout_variants}]
         # else if no layout variants are available, use the defaults
         elif all([
-            self.spec.variants[variant].value == 'none' 
+            self.spec.variants[variant].value == 'none'
             for variant in layout_variants
         ]):
             if self.spec.variants["model"].value == "access-esm1.6":
@@ -256,7 +256,7 @@ class MakefileBuilder(makefile.MakefileBuilder):
         if self.spec.variants["model"].value == "access-esm1.6":
             # The integer represents environment variable NTASK
             # esm1.5 used 12 (cice4), cm2 used 16 (cice5), build both for testing
-            self.__targets = {12: {}, 16: {}} 
+            self.__targets = {12: {}, 16: {}}
             self.add_target(12, "access-esm1.6", "360x300", "12x1")
             self.add_target(16, "access-esm1.6", "360x300", "8x2")
 

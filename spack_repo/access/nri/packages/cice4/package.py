@@ -1,6 +1,6 @@
 # Copyright Spack Project Developers. See COPYRIGHT file for details.
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 # Based on packages/cice5/package.py and other sources noted below.
 

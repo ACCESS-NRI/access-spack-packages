@@ -1,6 +1,6 @@
 # Copyright Spack Project Developers. See COPYRIGHT file for details.
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 from spack_repo.builtin.build_systems.cmake import CMakePackage
 from spack.package import *
@@ -9,9 +9,9 @@ from spack.package import *
 class AdjointPetsc(CMakePackage):
     """adjoint-PETSc is a beta library that provides algorithmic
     differentiation support for PETSc, currently targeting the subset
-    of functionality required by ISSM. 
-    
-    Warning: This library is no longer under active development, 
+    of functionality required by ISSM.
+
+    Warning: This library is no longer under active development,
     but is available for use in ISSM for users who need it.
 
     Features:

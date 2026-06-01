@@ -5,7 +5,7 @@
 # Based on gcom/package.py by scottwales 2023
 # and https://github.com/coecms/access-esm-build-gadi/blob/master/Makefile
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 from spack_repo.builtin.build_systems.generic import Package
 from spack.package import *

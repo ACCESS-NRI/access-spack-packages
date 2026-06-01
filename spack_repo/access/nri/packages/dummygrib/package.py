@@ -4,7 +4,7 @@
 # Copyright 2024 ACCESS-NRI
 # Based on https://github.com/coecms/access-esm-build-gadi/blob/master/Makefile
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 from spack_repo.builtin.build_systems.makefile import MakefilePackage
 from spack.package import *
@@ -31,4 +31,3 @@ class Dummygrib(MakefilePackage):
         install(
             "libdummygrib.a",
             join_path(prefix.lib, "libdummygrib.a"))
-

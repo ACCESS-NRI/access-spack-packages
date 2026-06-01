@@ -1,6 +1,6 @@
 # Copyright Spack Project Developers. See COPYRIGHT file for details.
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 
 from spack_repo.builtin.build_systems.makefile import MakefilePackage
@@ -17,11 +17,11 @@ class AccessTriangle(MakefilePackage):
 
     homepage = "https://github.com/ACCESS-NRI/issm-triangle"
     git = 'https://github.com/ACCESS-NRI/issm-triangle.git'
-    
+
     maintainers("justinh2002")
 
     version("1.6.1", branch="main")
-    
+
     # variant for building the showme utility (requires X11).
     variant("showme", default=False,
             description="Build the showme utility (requires libX11).")
@@ -30,7 +30,7 @@ class AccessTriangle(MakefilePackage):
 
     # Make libX11 conditional on +showme
     depends_on("libx11", when="+showme", type="link")
-    
+
     def url_for_version(self, version):
         return "https://github.com/ACCESS-NRI/issm-triangle/archive/refs/heads/{0}.tar.gz".format(version)
 
@@ -41,13 +41,13 @@ class AccessTriangle(MakefilePackage):
         """
         src_dir = join_path(self.stage.source_path, "src")
         mkdirp(src_dir)
-        
+
         # Copy necessary files to src directory
         install("configs/makefile", src_dir)
         install("configs/linux/configure.make", src_dir)
         install("triangle.c", src_dir)
         install("triangle.h", src_dir)
-        
+
     def build(self, spec, prefix):
         """
         This is where we actually call `make shared`.
@@ -57,7 +57,7 @@ class AccessTriangle(MakefilePackage):
             make("shared")
             if "+showme" in spec:
                 make("showme")
-            
+
 
     def install(self, spec, prefix):
         """
@@ -73,15 +73,10 @@ class AccessTriangle(MakefilePackage):
             # Make sure we see what's actually there, for debugging:
             # ls_output = os.listdir('.')
             # print("Files in build directory:\n", ls_output)
-            
+
             install("triangle.h", prefix.include)
             install("libtriangle.so", prefix.lib)
-            
+
             # Install showme only if +showme is chosen
             if "+showme" in spec:
                 install("showme", prefix.bin)
-
-            
-
-
-            

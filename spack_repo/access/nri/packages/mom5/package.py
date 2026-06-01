@@ -2,7 +2,7 @@
 #
 # Copyright ACCESS-NRI
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 from spack_repo.builtin.build_systems import cmake, makefile
 from spack.version.version_types import GitVersion, StandardVersion
@@ -224,7 +224,7 @@ OPENMP =
 
 MAKEFLAGS += --jobs=$(shell grep '^processor' /proc/cpuinfo | wc -l)
 
-FPPFLAGS := 
+FPPFLAGS :=
 
 FFLAGS := -fcray-pointer -fdefault-real-8 -ffree-line-length-none -fno-range-check -Waliasing -Wampersand -Warray-bounds -Wcharacter-truncation -Wconversion -Wline-truncation -Wintrinsics-std -Wsurprising -Wno-tabs -Wunderflow -Wunused-parameter -Wintrinsic-shadow -Wno-align-commons -fallow-argument-mismatch -fallow-invalid-boz
 FFLAGS += {incs}
@@ -232,16 +232,16 @@ FFLAGS += -DGFORTRAN
 
 #
 FFLAGS_OPT = -O2
-FFLAGS_REPRO = 
-FFLAGS_DEBUG = -O0 -g -W -fbounds-check 
+FFLAGS_REPRO =
+FFLAGS_DEBUG = -O0 -g -W -fbounds-check
 FFLAGS_OPENMP = -fopenmp
-FFLAGS_VERBOSE = 
+FFLAGS_VERBOSE =
 
 CFLAGS := -D__IFC {incs}
 CFLAGS += $(shell nc-config --cflags)
 CFLAGS_OPT = -O2
 CFLAGS_OPENMP = -fopenmp
-CFLAGS_DEBUG = -O0 -g 
+CFLAGS_DEBUG = -O0 -g
 
 # Optional Testing compile flags.  Mutually exclusive from DEBUG, REPRO, and OPT
 # *_TEST will match the production if no new option(s) is(are) to be tested.
@@ -250,7 +250,7 @@ CFLAGS_TEST = -O2
 
 LDFLAGS :=
 LDFLAGS_OPENMP := -fopenmp
-LDFLAGS_VERBOSE := 
+LDFLAGS_VERBOSE :=
 
 ifneq ($(REPRO),)
 CFLAGS += $(CFLAGS_REPRO)
@@ -651,4 +651,3 @@ TMPFILES = .*.m *.T *.TT *.hpm *.i *.lst *.proc *.s
             prefix.bin
         )
         install(join_path("bin", "mppnccombine." + self.__platform), prefix.bin)
-

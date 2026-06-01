@@ -5,7 +5,7 @@
 # Based on https://github.com/nci/spack-repo/blob/main/packages/um/package.py
 # and https://github.com/coecms/access-esm-build-gadi
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 
 from spack_repo.builtin.build_systems.generic import Package

@@ -1,6 +1,6 @@
 # Copyright Spack Project Developers. See COPYRIGHT file for details.
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 # Copyright 2024-2026 ACCESS-NRI
 # Based on https://github.com/nci/spack-repo/blob/main/packages/um/package.py

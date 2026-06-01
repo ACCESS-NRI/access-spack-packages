@@ -2,7 +2,7 @@
 #
 # Copyright 2025 ACCESS-NRI
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 from spack_repo.builtin.build_systems.autotools import AutotoolsPackage
 from spack.package import *

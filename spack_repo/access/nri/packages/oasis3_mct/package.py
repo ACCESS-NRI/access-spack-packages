@@ -3,7 +3,7 @@
 #
 # Copyright 2022 ACCESS-NRI
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 from spack_repo.builtin.build_systems.makefile import MakefilePackage
 from spack.package import *
@@ -155,9 +155,9 @@ LD          = mpif90
 MCT_FCFLAGS =
 #
 # CPP keys and compiler options
-# 
+#
 CPPDEF    = -Duse_netCDF -Duse_comm_$(CHAN) -D__VERBOSE -DTREAT_OVERLAY
-F90FLAGS_1  = 
+F90FLAGS_1  =
 """
 
         # module load intel-compiler/2019.5.281
@@ -197,8 +197,8 @@ endif
 f90FLAGS_1  = $(F90FLAGS_1)
 FFLAGS_1    = $(F90FLAGS_1)
 fFLAGS_1    = $(F90FLAGS_1)
-CCFLAGS_1   = 
-LDFLAGS     = 
+CCFLAGS_1   =
+LDFLAGS     =
 #
 ###################
 #
@@ -210,7 +210,7 @@ BINDIR          = $(ARCHDIR)/bin
 # LIBBUILD      : contains a directory for each library
 LIBBUILD        = $(ARCHDIR)/build/lib
 # INCPSMILE     : includes all *o and *mod for each library
-INCPSMILE       = -I$(LIBBUILD)/psmile.$(CHAN) -I$(LIBBUILD)/mct 
+INCPSMILE       = -I$(LIBBUILD)/psmile.$(CHAN) -I$(LIBBUILD)/mct
 
 F90FLAGS  = $(F90FLAGS_1) $(INCPSMILE) $(CPPDEF)
 f90FLAGS  = $(f90FLAGS_1) $(INCPSMILE) $(CPPDEF)
@@ -251,4 +251,3 @@ CCFLAGS   = $(CCFLAGS_1) $(INCPSMILE) $(CPPDEF)
             h = find_all_headers(srcdir)
             for headerfile in h.headers:
                 install(headerfile, dstdir)
-

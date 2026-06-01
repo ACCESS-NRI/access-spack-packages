@@ -1,6 +1,6 @@
 # Copyright Spack Project Developers. See COPYRIGHT file for details.
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 from spack_repo.builtin.build_systems.cmake import CMakePackage
 from spack.package import *
@@ -33,7 +33,7 @@ class AccessCice(CMakePackage):
         description="Install CICE as library for Access3 models"
     )
 
-    variant("io_type", 
+    variant("io_type",
         default="NetCDF",
         values=("NetCDF", "PIO", "Binary"),
         description="CICE IO Method"
@@ -48,7 +48,7 @@ class AccessCice(CMakePackage):
     depends_on("c", type="build")
     depends_on("fortran", type="build")
 
-    depends_on("access3-share", when="+access3") 
+    depends_on("access3-share", when="+access3")
     depends_on("cmake@3.18:", type="build")
     depends_on("mpi")
     depends_on("netcdf-fortran@4.6.0:", when="io_type=NetCDF")

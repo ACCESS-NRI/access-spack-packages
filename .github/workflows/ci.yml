@@ -150,7 +150,7 @@ jobs:
       - setup-ci
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 20
       matrix:
         package: ${{ fromJson(needs.setup-ci.outputs.matrix) }}
         exclude:

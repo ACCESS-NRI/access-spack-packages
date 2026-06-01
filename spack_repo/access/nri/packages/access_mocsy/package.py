@@ -3,7 +3,7 @@
 #
 # Copyright 2024 ACCESS-NRI
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 from spack_repo.builtin.build_systems import cmake, makefile
 from spack_repo.builtin.build_systems.cmake import CMakePackage
@@ -148,4 +148,3 @@ Fflags: -I${{includedir}}
         for f in self._modfiles:
             install(join_path(pkg.stage.source_path, f), prefix.include)
         install(join_path(pkg.stage.source_path, self._pcfile), pkgconfdir)
-

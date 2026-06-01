@@ -3,7 +3,7 @@
 #
 # Copyright 2023 Angus Gibson
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 from spack_repo.builtin.packages.intel_oneapi_mkl.package import IntelOneapiMkl
 

@@ -1,6 +1,6 @@
 # Copyright Spack Project Developers. See COPYRIGHT file for details.
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 from spack_repo.builtin.build_systems.cmake import CMakePackage
 from spack.package import *
@@ -16,7 +16,7 @@ class Cable(CMakePackage):
     git = "https://github.com/CABLE-LSM/CABLE.git"
 
     maintainers("SeanBryan51", "Whyborn")
-    
+
     license("LicenseRef-CSIRO-Open-Source-Software-License-v1.0", checked_by="anton-seaice")
 
     version("stable", branch="main", preferred=True)

@@ -3,7 +3,7 @@
 # Copyright 2023 Angus Gibson
 # Copyright 2025 Justin Kin Jun Hew - Wrappers, Examples, Versioning, AD-enabled flavour
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 from spack_repo.builtin.build_systems.autotools import AutotoolsPackage
 from spack.package import *
@@ -35,7 +35,7 @@ class Issm(AutotoolsPackage):
     version("main", branch="main")
     version("access-release", branch="access-release")
     version("access-development", branch="access-development")
-    
+
     # same version string as the tag, so users can easily specify a specific tagged version if desired.
     # This is the recommended way to specify versions for reproducibility.
     version("2026.05.18", tag="2026.05.18", preferred=True)
@@ -101,7 +101,7 @@ class Issm(AutotoolsPackage):
     with when("~production"):
         depends_on("petsc~examples+metis+mumps+scalapack")
 
-    # When building "production" ISSM, use a PETSc variant with optimizations and no debug symbols. 
+    # When building "production" ISSM, use a PETSc variant with optimizations and no debug symbols.
     # This is the recommended configuration for production use, and ensures that users get the best performance out of the box.
     with when("+production"):
         depends_on("petsc~debug~examples+metis+mumps+scalapack")
@@ -196,7 +196,7 @@ class Issm(AutotoolsPackage):
         args += [
             f"--with-petsc-dir={self.spec['petsc'].prefix}",
         ]
-        
+
         # Always use --enable-development: ISSM's script-install machinery
         # (the if !DEVELOPMENT block in src/m/Makefile.am) requires $ISSM_DIR
         # to be set to the source tree at make time, which Spack does not do.

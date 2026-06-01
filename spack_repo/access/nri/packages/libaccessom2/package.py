@@ -3,7 +3,7 @@
 #
 # Copyright 2022 ACCESS-NRI
 #
-# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)!
 
 from spack_repo.builtin.build_systems.cmake import CMakePackage
 from spack.package import *
