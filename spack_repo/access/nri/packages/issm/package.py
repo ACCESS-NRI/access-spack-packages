@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 from spack_repo.builtin.build_systems.autotools import AutotoolsPackage
-from spack.build_systems.cuda import CudaPackage
+from spack_repo.builtin.build_systems.cuda import CudaPackage
 from spack.package import *
 import zipfile
 import os
