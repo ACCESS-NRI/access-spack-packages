@@ -473,7 +473,6 @@ class UmBasePackage(Package):
             if config_env[var] == "true":
                 fcm_name = self._lib_cfg[var]["fcm_name"]
                 linker_args = self._get_linker_args(spec, var)
-                print(f"Linker args for {var}: {linker_args}")
                 config_env[f"ldflags_{fcm_name}_on"] = linker_args
 
         # The project_cfg is relevant for models that use Github URLs.
