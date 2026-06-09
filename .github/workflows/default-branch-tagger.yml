@@ -1,0 +1,76 @@
+name: Tag
+run-name: Tag ${{ github.sha }}
+on:
+  push:
+    branches:
+      # We run on all api-v* branches even though we only care about the default branch,
+      # because we can't use a github.event.repository.default_branch expression here.
+      - api-v*
+
+# Potential for a tagging race-condition if multiple commits are pushed in rapid succession - wait for each workflow
+# of this kind to finish before running the next one!
+concurrency:
+  group: default-branch-tagger-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag
+    # There is potential for tagging ambiguity if we are tagging on non-default api-v* branches
+    # like api-v1 - this should be resolved by the maintainer manually.
+    if: github.event.repository.default_branch == github.ref_name
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Import Commit-Signing Key
+        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd  # v7.0.0
+        with:
+          gpg_private_key: ${{ secrets.GH_ACTIONS_BOT_GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GH_ACTIONS_BOT_GPG_PASSPHRASE }}
+          git_config_global: true
+          git_committer_name: ${{ vars.GH_ACTIONS_BOT_GIT_USER_NAME }}
+          git_committer_email: ${{ vars.GH_ACTIONS_BOT_GIT_USER_EMAIL }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+
+      - name: Generate new tag
+        id: generate
+        # Our tags are in the format YYYY.MM.00MINOR (eg. 2026.05.000).
+        # The new tag will be in the form CURRENT_YEAR.CURRENT_MONTH.00MINOR, where MINOR is
+        # determined by looking at the existing tags for the current year and month and
+        # incrementing the minor version by 1.
+        run: |
+          current_year_month=$(date +'%Y.%m')
+          echo "Current year/month: ${current_year_month}"
+
+          tags_in_current_year_month=$(git tag --list "${current_year_month}.*" | wc -l)
+          echo "Tags in ${current_year_month}: ${tags_in_current_year_month}"
+
+          padded_minor_version=$(printf "%03d" ${tags_in_current_year_month})
+          echo "Padded minor version: ${padded_minor_version}"
+
+          tag="${current_year_month}.${padded_minor_version}"
+
+          echo "::notice::New tag generated: ${tag}"
+          echo "tag=${tag}" >> $GITHUB_OUTPUT
+
+      - name: Check tag does not exist
+        run: |
+          if git rev-parse "${{ steps.generate.outputs.tag }}"; then
+            echo "::error::Generated tag ${{ steps.generate.outputs.tag }} already exists in the repository. Please check existing tags or tag manually."
+            exit 1
+          fi
+
+      - name: Push tag
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          git tag ${{ steps.generate.outputs.tag }} -m "Generated as part of ${{ env.RUN_URL }}"
+          git push --tags
