@@ -72,6 +72,10 @@ jobs:
       - name: Push tag
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          MESSAGE_PATH: ${{ runner.temp }}/msg.txt
         run: |
-          git tag ${{ steps.generate.outputs.tag }} -m "Generated as part of ${{ env.RUN_URL }}"
+          git show --no-patch --format=%B HEAD >> ${{ env.MESSAGE_PATH }}
+          echo "Generated as part of ${{ env.RUN_URL }}" >> ${{ env.MESSAGE_PATH }}
+
+          git tag ${{ steps.generate.outputs.tag }} -F ${{ env.MESSAGE_PATH }}
           git push --tags
