@@ -12,6 +12,7 @@ on:
 concurrency:
   group: default-branch-tagger-${{ github.ref }}
   cancel-in-progress: false
+  queue: max
 
 jobs:
   tag:
