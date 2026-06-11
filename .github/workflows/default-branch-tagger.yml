@@ -45,16 +45,24 @@ jobs:
         id: generate
         # Our tags are in the format YYYY.MM.00MINOR (eg. 2026.05.000).
         # The new tag will be in the form CURRENT_YEAR.CURRENT_MONTH.00MINOR, where MINOR is
-        # determined by looking at the existing tags for the current year and month and
+        # determined by looking at the latest existing tag for the current year and month and
         # incrementing the minor version by 1.
         run: |
           current_year_month=$(date +'%Y.%m')
           echo "Current year/month: ${current_year_month}"
 
-          tags_in_current_year_month=$(git tag --list "${current_year_month}.*" | wc -l)
-          echo "Tags in ${current_year_month}: ${tags_in_current_year_month}"
+          latest_tag_in_current_year_month=$(git tag --list "${current_year_month}.*" --sort=version:refname | tail -n 1)
+          echo "Latest tag in ${current_year_month}: ${latest_tag_in_current_year_month:-<none>}"
 
-          padded_minor_version=$(printf "%03d" ${tags_in_current_year_month})
+          if [ -n "${latest_tag_in_current_year_month}" ]; then
+            latest_minor_version=${latest_tag_in_current_year_month##*.}
+            # We need to treat the 00MINOR portion as a base-10 number to avoid misinterpretation as octal arithmetic
+            next_minor_version=$((10#${latest_minor_version} + 1))
+          else
+            next_minor_version=0
+          fi
+
+          padded_minor_version=$(printf "%03d" "${next_minor_version}")
           echo "Padded minor version: ${padded_minor_version}"
 
           tag="${current_year_month}.${padded_minor_version}"
