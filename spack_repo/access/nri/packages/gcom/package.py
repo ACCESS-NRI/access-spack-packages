@@ -19,7 +19,7 @@ class Gcom(Package):
     maintainers("scottwales", "paulleopardi")
 
     version("7.8", tag="vn7.8", commit="65c857cc3201833360ff62b285e49082378dae42")
-    version("7.9", tag="vn7.9", commit="6319ae016dcadc192842a06178f3dbd21a8af64f")
+    version("7.9", commit="3561f338706cf4ac7b1b1787de71638d78e8a913")
     version("8.0", tag="vn8.0", commit="5a122e9e2147c9a7486a00b9588356eb65324af9")
     version("8.1", tag="vn8.1", commit="e061e2787bd643d9a65679f153fb8e3ffd9d3186")
     version("8.2", tag="vn8.2", commit="fd143bb38e21fe03c7150c0754852c80e15df3d4")
