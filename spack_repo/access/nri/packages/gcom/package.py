@@ -45,6 +45,8 @@ class Gcom(Package):
         """
         if spec.satisfies("%intel"):
             mach_c = "ifort"
+        elif spec.satisfies("%oneapi"):
+            mach_c = "oneapi"
         elif spec.satisfies("%gcc"):
             mach_c = "gfortran"
         else:
