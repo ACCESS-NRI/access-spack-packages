@@ -6,6 +6,10 @@ The namespace of the ACCESS Spack package repository is `access.nri`.
 
 ## How to utilise this package repository
 
+If you want to build ACCESS models on Gadi, the [How to use Spack on Gadi for building ACCESS models](https://docs.access-hive.org.au/getting_started/spack/) document may be more relevant than this document.
+
+The instructions below will create an *editable* `access-spack-packages` repository.
+
 > [!NOTE]
 > `$SPACK_ROOT` and `$ACCESS_SPACK_PACKAGES_PATH` are substituted in all paths to make these instructions installation independent.
 
