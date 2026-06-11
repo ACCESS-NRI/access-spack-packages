@@ -18,6 +18,7 @@ KNOWN_CONF = (
 
 # tag,commit pairs for releases in access3-share git repository
 ACCESS3_VERSIONS = {
+    "2026.03.002": "5eaac41f7cd4ea5f6a2aa9c5639da9a490f309ce",
     "2026.03.001": "97b5380d75b6e0f11f857c3bab1059e76705543c",
     "2026.03.000": "825a3f4835bb088b12f68babe0149b017b16ba72",
     "2025.08.000": "f2f35ce5915e82a83899b69560d826deab53b668",
