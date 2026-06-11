@@ -45,3 +45,5 @@ Spack does a shallow clone of the repositories. To restore the full functionalit
 * The Spack package repository that was used with pre-v1.0 Spack is available in the [api-v1 branch](https://github.com/ACCESS-NRI/access-spack-packages/tree/api-v1)
 
 * For more information see the extensive [spack documentation](https://spack.readthedocs.io/en/latest/repositories.html) on how to utilise repository files.
+
+* This repository utilizes automatic tagging on the default branch, upon merging, in the form `YEAR.MONTH.00MINOR` (for example, `2026.05.001`). See the [workflow file](./.github/workflows/default-branch-tagger.yml) for more information.
