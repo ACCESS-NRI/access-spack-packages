@@ -20,7 +20,8 @@ class AccessMom6(CMakePackage):
     maintainers("minghangli-uni", "harshula", "dougiesquire")
 
     # see license file in https://github.com/ACCESS-NRI/MOM6/blob/e92c971084e185cfd3902f18072320b45d583a54/LICENSE.md
-    license("LGPL-3.0-only", checked_by="minghangli-uni")
+    license("LGPL-3.0-only", when="@:2026.01", checked_by="minghangli-uni")
+    license("Apache-2.0", when="@2026.05:", checked_by="dougiesquire")
 
     version("stable", branch="2026.05", preferred=True)   # need to update branch for new major versions
     version("2026.05.000", tag="2026.05.000", commit="1300cda7cd1aeda5f41a10738e52ca2958dcb7ea")
