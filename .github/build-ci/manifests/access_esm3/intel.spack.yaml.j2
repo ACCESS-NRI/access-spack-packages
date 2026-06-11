@@ -1,0 +1,29 @@
+spack:
+  specs:
+  # package is defined in the workflows inputs.spack-manifest-data-pairs
+  # intel_compiler_ver is defined in the standard_definitions.json data file
+  - '{{ package }}'
+  packages:
+    access3:
+      require:
+      - 'configurations=MOM6-CICE6-UM13,MOM6-UM13'
+    um:
+      require:
+      - '@13.0'
+      - casim_ref=um13.0 jules_ref=JULES_vn7.0 shumlib_ref=um13.0 socrates_ref=um13.0 ukca_ref=b42593d0c8fe744f9cc1d1556a664fec792f4766 um_ref=vn13.0_nuopc
+    access-cice:
+      require:
+      - '@git.3286c36f9b9125ffddbc4d3aa9f98ff87ae1aded=CICE6.6.3-0'
+    python:
+      require:
+        - '@3.11.14'
+    intel-oneapi-compilers-classic:
+      require:
+        - '{{ intel_compiler_ver }}'
+    all:
+      require:
+        - '%access_intel'
+        - 'target={{ target }}'
+  concretizer:
+    unify: false
+  view: false

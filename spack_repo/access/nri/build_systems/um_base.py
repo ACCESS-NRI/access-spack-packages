@@ -159,7 +159,7 @@ class UmBasePackage(Package):
         when="+DR_HOOK")
     depends_on("eccodes +fortran +netcdf", type=("build", "link", "run"),
         when="+eccodes")
-    depends_on("netcdf-fortran@4.5.2", type=("build", "link", "run"),
+    depends_on("netcdf-fortran@4.5.2:", type=("build", "link", "run"),
         when="+netcdf")
 
     phases = ["build", "install"]

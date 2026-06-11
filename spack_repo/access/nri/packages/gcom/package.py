@@ -5,6 +5,7 @@
 # Copyright 2024-2026 ACCESS-NRI
 
 from spack_repo.builtin.build_systems.generic import Package
+from spack.version.version_types import GitVersion, StandardVersion
 from spack.package import *
 
 
@@ -86,7 +87,48 @@ class Gcom(Package):
         # Do the build with fcm
         fcm("make", "-f", "fcm-make/gcom.cfg")
 
+        self.__create_pkgconfig(spec, prefix)
+
         # Install the library
         mkdirp(prefix.lib)
         install("build/lib/libgcom.a", prefix.lib + "/libgcom.a")
+        install_tree("build/lib/pkgconfig", prefix.lib + "/pkgconfig")
         install_tree("build/include", prefix.include)
+
+    def __create_pkgconfig(self, spec, prefix):
+
+        # Workaround for https://github.com/spack/spack/issues/50118
+        spec_version = self.spec.version
+        if isinstance(spec_version, GitVersion):
+            version_str = spec_version.ref_version.string
+        elif isinstance(spec_version, StandardVersion):
+            version_str = spec_version.string
+        else:
+            raise RuntimeError(
+                f"{dtype(spec_version)} is not a recognised spack version type"
+            )
+
+        # Location to install pkgconf file
+        pkgdir = "build/lib/pkgconfig"
+        mkdirp(pkgdir)
+
+        pkg = "gcom"
+        lib = f"lib{pkg}"
+        text = f"""\
+prefix={prefix}
+exec_prefix=${{prefix}}
+libdir=${{exec_prefix}}/lib
+includedir=${{prefix}}/include
+
+Name: {lib}
+Description: GCOM {version_str} {lib} Library for Fortran
+Version: {version_str}
+Libs: -L${{libdir}} -l{pkg}
+Cflags: -I${{includedir}}
+"""
+        pcpath = join_path(pkgdir, f"{lib}.pc")
+        with open(pcpath, "w", encoding="utf-8") as pc:
+            nchars_written = pc.write(text)
+
+        if nchars_written < len(text):
+            raise OSError
