@@ -110,14 +110,14 @@ class Issm(AutotoolsPackage, CudaPackage):
     with when("~production ~cuda"):
         depends_on("petsc~examples+metis+mumps+scalapack")
     with when("~production +cuda"):
-        depends_on("petsc+cuda")
+        depends_on("petsc+cuda+metis+mumps+scalapack")
 
     # When building "production" ISSM, use a PETSc variant with optimizations and no debug symbols.
     # This is the recommended configuration for production use, and ensures that users get the best performance out of the box.
     with when("+production ~cuda"):
         depends_on("petsc~debug~examples+metis+mumps+scalapack")
     with when("+production +cuda"):
-        depends_on("petsc+cuda")
+        depends_on("petsc+cuda~debug~examples+metis+mumps+scalapack")
 
     # Propagate cuda_arch to PETSc so the right GPU ISA is compiled
     with when("+cuda"):
@@ -240,6 +240,13 @@ class Issm(AutotoolsPackage, CudaPackage):
                 "--enable-tape-alloc",
                 "--with-numthreads=4",
             ]
+        # CUDA support
+        if self.spec.satisfies("+cuda"):
+            args.append(f"--with-cuda-dir={self.spec['cuda'].prefix}")
+            cuda_archs = self.spec.variants["cuda_arch"].value
+            if cuda_archs and cuda_archs[0] != "none":
+                args.append(f"--with-cuda-arch={cuda_archs[0]}")
+
         args.append(f"--with-parmetis-dir={self.spec['parmetis'].prefix}")
         args.append(f"--with-metis-dir={self.spec['metis'].prefix}")
         args.append(f"--with-mumps-dir={self.spec['mumps'].prefix}")
