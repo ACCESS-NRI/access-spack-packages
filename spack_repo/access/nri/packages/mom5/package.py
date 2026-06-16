@@ -40,6 +40,7 @@ class Mom5(CMakePackage, MakefilePackage):
     )
 
     with when("build_system=cmake"):
+        depends_on("cmake@3.18:", type="build")
         variant("build_type", default="RelWithDebInfo",
             description="CMake build type",
             values=("Debug", "Release", "RelWithDebInfo")
