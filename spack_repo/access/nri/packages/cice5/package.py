@@ -1,8 +1,9 @@
 # Copyright Spack Project Developers. See COPYRIGHT file for details.
 #
+# Copyright ACCESS-NRI
+#
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-from spack_repo.builtin.build_systems import cmake
 from spack_repo.builtin.build_systems.cmake import CMakePackage
 from spack.package import *
 
@@ -36,7 +37,7 @@ class Cice5(CMakePackage):
     homepage = "https://www.access-nri.org.au"
     git = "https://github.com/ACCESS-NRI/cice5.git"
 
-    maintainers("harshula", "anton-seaice")
+    maintainers("anton-seaice", "harshula")
     license("BSD-3-Clause", checked_by="anton-seaice")
 
     version("stable", branch="master", preferred=True)
