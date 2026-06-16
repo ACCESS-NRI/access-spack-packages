@@ -45,10 +45,6 @@ class Cice5(CMakePackage):
     version("access-om2", branch="master")
     version("access-esm1.6", branch="access-esm1.6")
 
-    # by default, keep existing processor layout
-    # if nxglob, nyglob, blckx, blcky, mxblcks are supplied, then spack will switch to cmake
-    build_system("cmake", default="cmake")
-
     variant(
         "model",
         default="access-om2",
@@ -70,16 +66,14 @@ class Cice5(CMakePackage):
 
     variant("deterministic", default=False, description="Deterministic build.")
 
-    with when("build_system=cmake"):
-        variant("io_type", default="NetCDF", values=("NetCDF", "PIO"), description="CICE IO Method")
-        # User set integer cmake options:
-        variant("nxglob", default="none", values=_int_validator, description="Size of model grid in x")
-        variant("nyglob", default="none", values=_int_validator, description="Size of model grid in y")
-        variant("blckx", default="none", values=_int_validator, description="Size of computational blocks in x")
-        variant("blcky", default="none", values=_int_validator, description="Size of computational blocks in y")
-        variant("mxblcks", default="none", values=_int_validator, description="Max number of blocks per task")
-        depends_on("cmake@3.18:", type="build")
-
+    variant("io_type", default="NetCDF", values=("NetCDF", "PIO"), description="CICE IO Method")
+    # User set integer cmake options:
+    variant("nxglob", default="none", values=_int_validator, description="Size of model grid in x")
+    variant("nyglob", default="none", values=_int_validator, description="Size of model grid in y")
+    variant("blckx", default="none", values=_int_validator, description="Size of computational blocks in x")
+    variant("blcky", default="none", values=_int_validator, description="Size of computational blocks in y")
+    variant("mxblcks", default="none", values=_int_validator, description="Max number of blocks per task")
+    depends_on("cmake@3.18:", type="build")
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")
@@ -105,9 +99,6 @@ class Cice5(CMakePackage):
     with when("model=access-om2"):
         depends_on("libaccessom2+deterministic", when="+deterministic")
         depends_on("libaccessom2~deterministic", when="~deterministic")
-
-
-class CMakeBuilder(cmake.CMakeBuilder):
 
     phases = ["set_layouts", "cmake", "build", "install"]
 
@@ -149,7 +140,7 @@ class CMakeBuilder(cmake.CMakeBuilder):
         )
         return f"{super().build_dirname}/{build}"
 
-    def set_layouts(self, pkg, spec, prefix):
+    def set_layouts(self, spec, prefix):
         """Layout of cice processors to use. If variants are set, use those. 
         Otherwise, use defaults."""
         layout_variants = OM2_LAYOUTS[0].keys()
@@ -176,18 +167,18 @@ class CMakeBuilder(cmake.CMakeBuilder):
 
         self._all_layouts = layouts
 
-    def cmake(self, pkg, spec, prefix):
+    def cmake(self, spec, prefix):
         for layout in self._all_layouts:
             self._layout = layout
-            super().cmake(pkg, spec, prefix)
+            super().cmake(spec, prefix)
 
-    def build(self, pkg, spec, prefix):
+    def build(self, spec, prefix):
         for layout in self._all_layouts:
             self._layout = layout
-            super().build(pkg, spec, prefix)
+            super().build(spec, prefix)
 
-    def install(self, pkg, spec, prefix):
+    def install(self, spec, prefix):
         for layout in self._all_layouts:
             self._layout = layout
-            super().install(pkg, spec, prefix)
+            super().install(spec, prefix)
 
