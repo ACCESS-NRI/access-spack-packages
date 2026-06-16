@@ -110,14 +110,14 @@ class Issm(AutotoolsPackage, CudaPackage):
     with when("~production ~cuda"):
         depends_on("petsc~examples+metis+mumps+scalapack")
     with when("~production +cuda"):
-        depends_on("petsc~examples+metis+mumps+scalapack+cuda")
+        depends_on("petsc+cuda")
 
     # When building "production" ISSM, use a PETSc variant with optimizations and no debug symbols.
     # This is the recommended configuration for production use, and ensures that users get the best performance out of the box.
     with when("+production ~cuda"):
         depends_on("petsc~debug~examples+metis+mumps+scalapack")
     with when("+production +cuda"):
-        depends_on("petsc~debug~examples+metis+mumps+scalapack+cuda")
+        depends_on("petsc+cuda")
 
     # Propagate cuda_arch to PETSc so the right GPU ISA is compiled
     with when("+cuda"):
