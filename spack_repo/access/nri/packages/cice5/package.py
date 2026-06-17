@@ -42,9 +42,6 @@ class Cice5(CMakePackage):
 
     version("stable", branch="master", preferred=True)
     version("2026.01.000", tag="2026.01.000", commit="cf5df9d4d26265dc5c79e558e5a67834b51fd38d")
-    # TODO: the versions below can be removed once we are convinced they are not in use anywhere
-    version("access-om2", branch="master")
-    version("access-esm1.6", branch="access-esm1.6")
 
     variant(
         "model",
