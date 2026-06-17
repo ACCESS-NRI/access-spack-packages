@@ -74,10 +74,11 @@ class Cice5(CMakePackage):
     variant("blckx", default="none", values=_int_validator, description="Size of computational blocks in x")
     variant("blcky", default="none", values=_int_validator, description="Size of computational blocks in y")
     variant("mxblcks", default="none", values=_int_validator, description="Max number of blocks per task")
-    depends_on("cmake@3.18:", type="build")
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")
+
+    depends_on("cmake@3.18:", type="build")
 
     # Depend on virtual package "mpi".
     depends_on("mpi")
