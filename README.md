@@ -42,7 +42,8 @@ libaccessom2
 ==> 1 packages
 ```
 
-Spack does a shallow clone of the repositories. To restore the full functionality of the git repository, run: `git fetch --unshallow $ACCESS_SPACK_PACKAGES_PATH`
+Spack does a shallow clone of the repositories. To restore the full functionality of the git repository, run: `git -C $ACCESS_SPACK_PACKAGES_PATH fetch --unshallow` . Now, it is possible to use an older version of the `access-spack-packages` repository by running `git -C $ACCESS_SPACK_PACKAGES_PATH switch -c <NEW_BRANCH_NAME> <GIT_TAG>`. However, please note that older versions of `access-spack-packages` may not be compatible with recent versions of Spack.
+
 
 ## More information
 
