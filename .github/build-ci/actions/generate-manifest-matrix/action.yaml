@@ -9,12 +9,13 @@ inputs:
     required: true
     description: Path relative to ACCESS-NRI/access-spack-packages, for the package repository root.
   ref:
-    required: true
+    required: false
+    # default: default branch for access-spack-packages, but we can't set this complex default value here
     description: Ref for the fallback access-spack-packages repository to checkout
 outputs:
   matrix:
     description: |
-      A GitHub Actions matrix of repository, manifest path, and package name tuples.
+      A GitHub Actions matrix of repository, ref, manifest path, and package name tuples.
     value: ${{ steps.gen.outputs.matrix }}
 runs:
   using: composite
@@ -24,6 +25,20 @@ runs:
       with:
         repository: ACCESS-NRI/access-spack-packages
         ref: ${{ inputs.ref }}
+
+    - name: Get default inputs.ref for fallback repository
+      id: default
+      shell: bash
+      run: |
+        if [[ -z "${{ inputs.ref }}" ]]; then
+          ref=$(git branch --show-current)
+        else
+          ref=${{ inputs.ref }}
+        fi
+
+        echo "Got default ref of manifest fallback repository: $ref"
+
+        echo "ref=$ref" >> $GITHUB_OUTPUT
 
     - name: Generate matrix
       id: gen
@@ -57,36 +72,37 @@ runs:
             cloned_repo_path=$(mktemp -d "${RUNNER_TEMP}/package-manifest-repo-${pkg}-XXXXXX")
 
             if git clone --depth 1 --filter=blob:none --quiet "$git_url" "$cloned_repo_path"; then
-              repo_manifest_root="$cloned_repo_path/"
-              if [[ -d "$repo_manifest_root" ]]; then
+              if [[ -d "${cloned_repo_path}/.github/build-ci/manifests" ]]; then
                 # Use any manifests from the package's source repository first.
                 cd $cloned_repo_path
                 manifest_paths=$(find .github/build-ci/manifests -iname '*.j2' -type f -printf '%p ')
                 ref=$(git branch --show-current)
-                cd -
+                cd - > /dev/null
               fi
             fi
           fi
 
-          if [[ -z "${manifest_paths:-}" && -d ".github/build-ci/manifests/$pkg" ]]; then  # Look for specific manifests for the package
-            # We space-separate the paths as we later use them in a for loop
-            manifest_paths=$(find ".github/build-ci/manifests/$pkg" -iname '*.j2' -type f -printf '%p ')
-            repository="access-nri/access-spack-packages"
-            ref=${{ inputs.ref }}
+          if [[ -z "${manifest_paths:-}" ]]; then  # Look for manifests for the package in access-spack-packages
+            repository="ACCESS-NRI/access-spack-packages"
+            ref="${{ steps.default.outputs.ref }}"
+
+            if [[ -d ".github/build-ci/manifests/$pkg" ]]; then  # Look for specific manifests for the package
+              # We space-separate the paths as we later use them in a for loop
+              manifest_paths=$(find ".github/build-ci/manifests/$pkg" -iname '*.j2' -type f -printf '%p ')
+
+            else # Use the default templates if no specific manifests exist for the package
+              # Similarly, space-separate the paths for a later for loop. Default manifests are always directly under .github/build-ci/manifests
+              manifest_paths=$(find ".github/build-ci/manifests" -maxdepth 1 -iname '*.j2' -type f -printf '%p ')
+            fi
           fi
 
-          if [[ -z "${manifest_paths:-}" ]]; then  # Use the default templates if no specific manifests exist for the package
-            # Similarly, space-separate the paths for a later for loop. Default manifests are always directly under .github/build-ci/manifests
-            manifest_paths=$(find ".github/build-ci/manifests" -maxdepth 1 -iname '*.j2' -type f -printf '%p ')
-            repository="access-nri/access-spack-packages"
-            ref=${{ inputs.ref }}
-          fi
+          echo "Found manifests for $pkg under $repository at ref $ref: $manifest_paths"
 
           for manifest_path in $manifest_paths; do
             json_entry=$(printf '{"template_value": "%s", "repository": "%s", "ref": "%s", "filepath": "%s"}' "$template_value" "$repository" "$ref" "$manifest_path")
             json_entries+="${json_entry},"
           done
-          unset manifest_paths git_url cloned_repo_path repo_manifest_root
+          unset manifest_paths git_url cloned_repo_path repository ref template_value
         done
 
         echo "$json_entries"
