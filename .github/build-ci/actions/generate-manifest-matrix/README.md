@@ -24,6 +24,7 @@ Each matrix entry contains:
 | `packages` | `string` (space-separated) | Space-separated list of spack package names to generate matrix entries for | `true` | N/A | `"mom5 cice5 cable"` |
 | `packages-root-dir` | `string` (path) | Path to the package root directory containing per-package `package.py` files, relative to this repository | `true` | N/A | `"/spack_repo/access/nri/packages"` |
 | `ref` | `string` (git ref) | Ref for the fallback access-spack-packages repository to checkout | `false` | Default branch of `access-spack-packages`, `api-v*` | `api-v2` |
+| `token` | `string` (GitHub PAT) | GitHub PAT with access to the repositories to checkout and read from. Only required if any of the repositories are private | `false` | `github.token` | `gh_pat_XXX` |
 
 ## Outputs
 
