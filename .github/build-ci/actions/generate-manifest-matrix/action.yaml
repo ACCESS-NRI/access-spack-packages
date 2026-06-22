@@ -88,6 +88,7 @@ runs:
                 echo "Found manifests for $pkg under $repository at ref $ref: $manifest_paths"
                 cd - > /dev/null
               fi
+            rm -rf ${cloned_repo_path}
             fi
           else
             echo "Couldn't find an associated GitHub URL in the $pkg package"
