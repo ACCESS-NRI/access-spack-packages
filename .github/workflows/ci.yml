@@ -37,6 +37,8 @@ jobs:
   setup-ci:
     name: Setup CI
     runs-on: ubuntu-latest
+    # We run this in our runner container so we can effectively parse the git repository for each package
+    container: ghcr.io/access-nri/build-ci-runner:rocky
     env:
       # Note, this needs to be updated in line with refs in the ci job below
       BUILD_CI_WORKFLOW_VERSION: v3
@@ -56,11 +58,9 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
         with:
-          # We only care about the directory names under the env.PACKAGES_ROOT_DIR - since they are also the package names
-          # and we want to find changes to the package.py files in those directories
+          # Match package.py from repo root so this works for local-git and REST-API fallback modes.
           dir_names: true
-          path: ./${{ env.PACKAGES_ROOT_DIR }}
-          files: '*/package.py'
+          files: '${{ env.PACKAGES_ROOT_DIR }}/*/package.py'
 
       - name: Dispatch - Get packages
         id: set-matrix-dispatch

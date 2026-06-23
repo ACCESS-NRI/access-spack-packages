@@ -2,6 +2,9 @@
 
 Action that generates a GitHub Actions matrix of repository, manifest path, and package tuples for passing to `ACCESS-NRI/build-ci`.
 
+> [!NOTE]
+> Requires an installation of spack on the runner to be able to interpolate `git` variables
+
 ## Description
 
 For each provided package, this action discovers build manifests in the following order:
