@@ -24,15 +24,21 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Check for spack install
+    - name: Check for spack install and basic info
+      id: spack-info
       shell: bash
       run: |
         if [ ! -f /opt/spack/share/spack/setup-env.sh ]; then
           echo "::error::Can't interrogate spack package recipes without a spack installation. Run this action as part of a container job of ghcr.io/access-nri/build-ci-runner"
           exit 1
         fi
-        . /opt/spack/share/spack/setup-env.sh
-        spack --version
+
+        # Output SPACK_ROOT so it is usable as a GitHub Actions expression
+        echo "SPACK_ROOT=$SPACK_ROOT" >> $GITHUB_OUTPUT
+
+        . ${SPACK_ROOT}/share/spack/setup-env.sh
+        echo "access-spack-packages-path=$(spack location --repo access.nri)" >> $GITHUB_OUTPUT
+
 
     - name: Checkout fallback repository
       uses: actions/checkout@v6
@@ -53,6 +59,14 @@ runs:
         echo "Got default ref of manifest fallback repository: $ref"
 
         echo "ref=$ref" >> $GITHUB_OUTPUT
+
+    - name: Update access-spack-packages repository linked to spack
+      uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
+      with:
+        spack-packages-repository-name: access_spack_packages
+        spack-packages-repository-path: ${{ steps.spack-info.outputs.access-spack-packages-path }}
+        ref: ${{ steps.default.outputs.ref }}
+        spack-instance-root-path: ${{ steps.spack-info.outputs.SPACK_ROOT }}
 
     - name: Generate matrix
       id: gen
