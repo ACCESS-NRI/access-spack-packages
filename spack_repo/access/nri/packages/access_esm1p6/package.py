@@ -46,7 +46,7 @@ class AccessEsm1p6(BundlePackage):
     )
 
     depends_on("cice5 model=access-esm1.6", type="run")
-    depends_on("mom5@access-esm1.6", type="run")
+    depends_on("mom5 model=access-esm1.6", type="run")
     # um7 is in a private repository
     depends_on("um7@access-esm1.5", type="run", when="um=access-esm1.5")
     depends_on("um7@access-esm1.6", type="run", when="um=access-esm1.6")
