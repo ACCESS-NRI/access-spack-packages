@@ -30,9 +30,7 @@ on:
 # So we will cancel any existing runs and only run the current HEAD of the branch
 concurrency:
   group: build-ci-${{ github.head_ref || github.ref_name }}
-  # only cancel in progress jobs on this branch if we are in a pull request - we might be doing multiple different workflow_dispatch runs
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-  queue: max
+  cancel-in-progress: true
 jobs:
   setup-ci:
     name: Setup CI
