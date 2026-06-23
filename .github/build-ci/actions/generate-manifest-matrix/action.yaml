@@ -82,8 +82,9 @@ runs:
 
           ### Check for manifests from the packages associated GitHub repo, if it exists
 
-          # Extract git value from package.py using spack's python environment, which has access to the package repository metadata
-          repository_url=$(spack python -c "import spack.repo; print(spack.repo.PATH.get_pkg_class('$pkg').git)")
+          # Extract git value from package.py (or an empty string if it doesn't exist),
+          # We use spack's python environment which has access to the package repository metadata
+          repository_url=$(spack python -c "import spack.repo; print(getattr(spack.repo.PATH.get_pkg_class('$pkg'), 'git', ''))")
           # Extract OWNER/REPO from repository_url
           repository=$(echo "$repository_url" | sed -nE "s|^https://github\.com/([^/]+/[^/\.]+)(\.git)?$|\1|p")
 
