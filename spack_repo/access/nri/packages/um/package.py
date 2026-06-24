@@ -69,8 +69,8 @@ class Um(UmBasePackage):
         um-recon.exe is always installed.
         """
 
-        # List of executables to install, always install recon
-        um_exe = ["recon"]
+        # List of executables to install
+        um_exe = ["recon", "atmos"]
 
         if self.spec.variants["access3"].value:
 
@@ -85,9 +85,6 @@ class Um(UmBasePackage):
                 install_dir = join_path(prefix, dir_name)
                 mkdirp(install_dir)
                 install_tree(build_dir, install_dir)
-        else:
-            # Install atmos executable
-            um_exe.append("atmos")
 
         # Install executables and accompanying files into the prefix directory,
         # according to the directory structure of EXEC_DIR, as described in (e.g.)
