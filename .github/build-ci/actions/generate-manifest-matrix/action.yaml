@@ -99,8 +99,11 @@ runs:
           # Extract git value from package.py (or an empty string if it doesn't exist),
           # We use spack's python environment which has access to the package repository metadata
           repository_url=$(spack python -c "import spack.repo; print(getattr(spack.repo.PATH.get_pkg_class('$pkg'), 'git', ''))")
-          # Extract OWNER/REPO from repository_url
-          repository=$(echo "$repository_url" | sed -nE "s|^https://github\.com/([^/]+/[^/\.]+)(\.git)?$|\1|p")
+
+          # Extract OWNER/REPO path component from repository_url, and remove the / prefix and optional .git suffix
+          repository=$(spack python -c "import urllib; print(urllib.parse.urlsplit('$repository_url').path)")
+          repository=${repository##/}
+          repository=${repository%%.git}
 
           if [[ -n "$repository" ]]; then
             cloned_repo_path=$(mktemp -d "${RUNNER_TEMP}/package-manifest-repo-${pkg}-XXXXXX")
