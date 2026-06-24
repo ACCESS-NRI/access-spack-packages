@@ -24,10 +24,9 @@ else
   set debug = $5
 endif
 
-# Location of this model
-setenv SPACKDIR $cwd:h
-setenv SRCDIR $SPACKDIR/spack-src
-setenv CBLD   $SRCDIR/bld
+# Location of the model source folder
+setenv CBLD   `dirname "$0"`
+setenv SRCDIR $CBLD/..
 
 if ($debug == 'debug') then
     setenv DEBUG yes
