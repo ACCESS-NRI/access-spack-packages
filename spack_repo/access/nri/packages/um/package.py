@@ -68,10 +68,6 @@ class Um(UmBasePackage):
         When +access3, the package installs libum-atmos.a
         um-recon.exe is always installed.
         """
-
-        # List of executables to install
-        um_exe = ["recon", "atmos"]
-
         if self.spec.variants["access3"].value:
 
             # Create a pkgconf file for the um library
@@ -89,6 +85,9 @@ class Um(UmBasePackage):
         # Install executables and accompanying files into the prefix directory,
         # according to the directory structure of EXEC_DIR, as described in (e.g.)
         # https://code.metoffice.gov.uk/trac/roses-u/browser/b/y/3/9/5/trunk/meta/rose-meta.conf
+
+        # List of executables to install
+        um_exe = ["recon", "atmos"]
         for exe in um_exe:
             bin_dir = join_path(f"build-{exe}", "bin")
             build_bin_dir = join_path(self.build_dir(), bin_dir)
