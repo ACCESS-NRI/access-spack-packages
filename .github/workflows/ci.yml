@@ -104,7 +104,7 @@ jobs:
 
       - name: Setup Matrix
         id: set-matrix
-        uses: ./.github/build-ci/actions/generate-manifest-matrix
+        uses: access-nri/access-spack-packages/.github/build-ci/actions/generate-manifest-matrix@api-v2
         with:
           packages: ${{ steps.set-matrix-pr.outputs.pkgs || steps.set-matrix-dispatch.outputs.pkgs }}
           packages-root-dir: ${{ env.PACKAGES_ROOT_DIR }}
