@@ -24,9 +24,9 @@ else
   set debug = $5
 endif
 
-# Location of the model source folder
-setenv CBLD   `dirname "$0"`
-setenv SRCDIR $CBLD/..
+# Location of this model
+setenv SRCDIR $cwd
+setenv CBLD   $SRCDIR/bld
 
 if ($debug == 'debug') then
     setenv DEBUG yes
