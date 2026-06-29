@@ -25,8 +25,7 @@ else
 endif
 
 # Location of this model
-setenv SPACKDIR $cwd:h
-setenv SRCDIR $SPACKDIR/spack-src
+setenv SRCDIR $cwd
 setenv CBLD   $SRCDIR/bld
 
 if ($debug == 'debug') then
