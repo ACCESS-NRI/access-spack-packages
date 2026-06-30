@@ -24,7 +24,7 @@ class Access3Share(CMakePackage):
     for tag, commit in ACCESS3_VERSIONS.items():
         version(tag, tag=tag, commit=commit)
 
-    variant("openmp", default=False, description="Enable OpenMP")
+    variant("openmp", default=False, sticky=True, description="Enable OpenMP")
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")

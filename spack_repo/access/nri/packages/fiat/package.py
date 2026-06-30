@@ -35,7 +35,7 @@ class Fiat(CMakePackage):
     )
 
     variant("mpi", default=True, sticky=True, description="Use MPI")
-    variant("openmp", default=True, description="Use OpenMP")
+    variant("openmp", default=True, sticky=True, description="Use OpenMP")
     variant("fckit", default=True, description="Use fckit")
 
     depends_on("c", type="build")

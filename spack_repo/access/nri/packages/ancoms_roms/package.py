@@ -31,7 +31,7 @@ class AncomsRoms(MakefilePackage):
     version("3.6", tag="roms-3.6", commit="0db3bdc59587154c194deb246b0007f4f743b35a")
     version("3.5", tag="roms-3.5", commit="bf4c05eb1a4b384eda306c2ed74697284970e48a")
 
-    variant("openmp", default=False, description="Turn on shared-memory parallelization in ROMS")
+    variant("openmp", default=False, sticky=True, description="Turn on shared-memory parallelization in ROMS")
     variant("mpi", default=True, sticky=True, description="Turn on distributed-memory parallelization in ROMS")
     variant(
         "roms_application",
