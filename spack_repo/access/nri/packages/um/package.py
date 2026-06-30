@@ -40,7 +40,7 @@ class Um(UmBasePackage):
 
     # Include openmpi directly.
     # https://github.com/ACCESS-NRI/access-spack-packages/issues/293
-    variant("mpi", default=True, description="Build with MPI")
+    variant("mpi", default=True, sticky=True, description="Build with MPI")
     depends_on("mpi", when="+mpi", type=("build", "link", "run"))
 
     variant("access3", default=False,

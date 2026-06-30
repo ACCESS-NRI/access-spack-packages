@@ -27,7 +27,7 @@ class Gcom(Package):
     version("8.3", tag="vn8.3", commit="b7b890a181d8e31e4e80b731b9f8ad9a6e1a8bed")
     version("8.4", tag="vn8.4", commit="f4fa92eb4af4f1e4cf9d608b441e3c96f77b6a6d")
 
-    variant("mpi", default=True, description="Build with MPI")
+    variant("mpi", default=True, sticky=True, description="Build with MPI")
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")

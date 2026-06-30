@@ -25,6 +25,7 @@ class Cable(CMakePackage):
     variant(
         "mpi",
         default=True,
+        sticky=True,
         description="Build MPI executable.",
     )
 

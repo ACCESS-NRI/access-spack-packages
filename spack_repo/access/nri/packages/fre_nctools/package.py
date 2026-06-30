@@ -38,7 +38,7 @@ class FreNctools(AutotoolsPackage):
     version("2024.02", sha256="90d52abc1b467d635dd648185b0046efcc6d58a232143b0ccaf9a0bff23d2f5d")
     version("2022.02", sha256="bd90c9c3becdb19ff408c0915e61141376e81c12651a5c1b054c75ced9a73ad2")
 
-    variant("mpi", default=False, description="Builds with MPI support")
+    variant("mpi", default=False, sticky=True, description="Builds with MPI support")
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")

@@ -34,7 +34,7 @@ class Fiat(CMakePackage):
         values=("Debug", "Release", "RelWithDebInfo"),
     )
 
-    variant("mpi", default=True, description="Use MPI")
+    variant("mpi", default=True, sticky=True, description="Use MPI")
     variant("openmp", default=True, description="Use OpenMP")
     variant("fckit", default=True, description="Use fckit")
 
