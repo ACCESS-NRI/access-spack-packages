@@ -26,10 +26,17 @@ on:
         description: 'spack ref to use'
         required: true
         type: string
+# We don't want to overwhelm the runners with multiple commits in a PR.
+# So we will cancel any existing runs and only run the current HEAD of the branch
+concurrency:
+  group: build-ci-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 jobs:
   setup-ci:
     name: Setup CI
     runs-on: ubuntu-latest
+    # We run this in our runner container so we can effectively parse the git repository for each package
+    container: ghcr.io/access-nri/build-ci-runner:rocky
     env:
       # Note, this needs to be updated in line with refs in the ci job below
       BUILD_CI_WORKFLOW_VERSION: v3
@@ -42,18 +49,31 @@ jobs:
       spack-ref: ${{ inputs.spack-ref || steps.defaults.outputs.spack-ref }}
     steps:
       - name: Checkout spack-packages
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: PR - Get packages
+        id: get-packages-changed
+        if: github.event_name == 'pull_request'
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
+        with:
+          # We need to use the REST API because changed-files can't deduce $GITHUB_WORKSPACE correctly in a container
+          use_rest_api: true
+          dir_names: true
+          files: '${{ env.PACKAGES_ROOT_DIR }}/*/package.py'
+
+      - name: PR - Normalize package paths to names
         id: set-matrix-pr
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c  # v46.0.5
-        with:
-          # We only care about the directory names under the env.PACKAGES_ROOT_DIR - since they are also the package names
-          # and we want to find changes to the package.py files in those directories
-          dir_names: true
-          path: ./${{ env.PACKAGES_ROOT_DIR }}
-          files: '*/package.py'
+        shell: bash
+        run: |
+          normalized_pkgs=""
+
+          # From the full spack_repo/access/nri/packages/PKG path, to just the PKG
+          for pkg in ${{ steps.get-packages-changed.outputs.all_changed_files }}; do
+            normalized_pkgs+="$(basename $pkg) "
+          done
+
+          echo "pkgs=$normalized_pkgs" >> "$GITHUB_OUTPUT"
 
       - name: Dispatch - Get packages
         id: set-matrix-dispatch
@@ -84,50 +104,19 @@ jobs:
 
       - name: Setup Matrix
         id: set-matrix
-        # Get all packages that will be tested, then
-        # Get file paths to manifests for each package, and a template, then finally
-        # Convert into a JSON array for the matrix, one of the form:
-        # [
-        #   {"template_value": "mom5", "filepath": ".github/build-ci/manifests/mom5/intel.spack.yaml.j2"},
-        #   {"template_value": "mom5", "filepath": ".github/build-ci/manifests/mom5/gcc.spack.yaml.j2"},
-        #   {"template_value": "cice5", "filepath": ".github/build-ci/manifests/cice5/spack.yaml.j2"},
-        #   ...
-        # ]
-        run: |
-          pkgs="${{ steps.set-matrix-pr.outputs.all_changed_files || steps.set-matrix-dispatch.outputs.pkgs }}"
-
-          for pkg in $pkgs; do
-            # We want each manifest to have an associated injection of {{ package }} to $pkg
-            # Replace underscores with hyphens for the template value, as spack converts directory underscores to package name hyphens
-            template_value="${pkg//_/-}"
-
-            if [ -d ".github/build-ci/manifests/$pkg" ]; then  # Look for specific manifests for the package
-              # We space-separate the paths as we later use them in a for loop
-              manifest_paths=$(find .github/build-ci/manifests/$pkg -iname '*.j2' -type f -printf '%p ')
-            fi
-
-            if [[ -z "$manifest_paths" ]]; then  # Use the default templates if no specific manifests exist for the package
-              # Similarly, space-separate the paths for a later for loop. Default manifests are always directly under .github/build-ci/manifests
-              manifest_paths=$(find .github/build-ci/manifests/ -maxdepth 1 -type f -iname '*.j2' -printf '%p ')
-            fi
-
-            for manifest_path in $manifest_paths; do
-              json_entry=$(printf '{"template_value": "%s", "filepath": "%s"}' "$template_value" "$manifest_path")
-              json_entries+="${json_entry},"
-            done
-            unset manifest_paths
-          done
-
-          echo "$json_entries"
-
-          # Remove the trailing comma and wrap in square brackets
-          echo "matrix=[${json_entries%,}]" >> $GITHUB_OUTPUT
+        uses: access-nri/access-spack-packages/.github/build-ci/actions/generate-manifest-matrix@api-v2
+        with:
+          packages: ${{ steps.set-matrix-pr.outputs.pkgs || steps.set-matrix-dispatch.outputs.pkgs }}
+          packages-root-dir: ${{ env.PACKAGES_ROOT_DIR }}
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.event.repository.default_branch }}
+          token: ${{ secrets.SPACK_INSTALL_COMMAND_PAT }}
 
       - name: Checkout build-ci
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: access-nri/build-ci
           ref: ${{ env.BUILD_CI_WORKFLOW_VERSION }}
+          path: build-ci
 
       - name: Get default refs from build-ci workflow
         id: defaults
@@ -136,8 +125,8 @@ jobs:
         # So we are getting the default values from the workflow file itself, and passing them back into the workflow
         # builtin-spack-packages-ref does not need this as the input handles the empty string default.
         run: |
-          default_spack_ref=$(yq '.on.workflow_call.inputs."spack-ref".default' .github/workflows/ci.yml)
-          default_spack_config_ref=$(yq '.on.workflow_call.inputs."spack-config-ref".default' .github/workflows/ci.yml)
+          default_spack_ref=$(yq '.on.workflow_call.inputs."spack-ref".default' build-ci/.github/workflows/ci.yml)
+          default_spack_config_ref=$(yq '.on.workflow_call.inputs."spack-config-ref".default' build-ci/.github/workflows/ci.yml)
 
           echo "Default refs from ${{ env.BUILD_CI_WORKFLOW_VERSION }}: spack-ref=$default_spack_ref, spack-config=$default_spack_config_ref"
 
@@ -167,14 +156,17 @@ jobs:
           - package: {template_value: "gcom4"}
     uses: access-nri/build-ci/.github/workflows/ci.yml@v3
     with:
+      spack-manifest-repository: ${{ matrix.package.repository }}
+      spack-manifest-repository-ref: ${{ matrix.package.ref }}
       spack-manifest-path: ${{ matrix.package.filepath }}
-      spack-manifest-data-path: .github/build-ci/data/standard_definitions.json
+      spack-manifest-data-path: .github/build-ci/data/standard.json
       spack-manifest-data-pairs: |-
         package ${{ matrix.package.template_value }}
       builtin-spack-packages-ref: ${{ needs.setup-ci.outputs.builtin-spack-packages-ref }}
       access-spack-packages-ref: ${{ needs.setup-ci.outputs.access-spack-packages-ref }}
       spack-config-ref: ${{ needs.setup-ci.outputs.spack-config-ref }}
       spack-ref: ${{ needs.setup-ci.outputs.spack-ref }}
+      ref: ${{ matrix.package.ref }}
       allow-ssh-into-spack-install: false
       # container-image-version: :rocky
     secrets:

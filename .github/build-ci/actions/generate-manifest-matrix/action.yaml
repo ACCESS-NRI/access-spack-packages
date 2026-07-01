@@ -1,0 +1,160 @@
+name: Generate Manifest Matrix
+description: Action that returns a matrix of repository, manifest path, package name tuples, suitable to be passed to build-ci entrypoint inputs.
+author: Tommy Gatti
+inputs:
+  packages:
+    required: true
+    description: Space-separated list of spack packages to generate matrix entries for.
+  packages-root-dir:
+    required: true
+    description: Path relative to ACCESS-NRI/access-spack-packages, for the package repository root.
+  ref:
+    required: false
+    # default: default branch for access-spack-packages, but we can't set this complex default value here
+    description: Ref for the fallback access-spack-packages repository to checkout
+  token:
+    required: false
+    default: ${{ github.token }}
+    description: GitHub PAT with access to the repositories to checkout and read from. Only required if any of the repositories are private.
+outputs:
+  matrix:
+    description: |
+      A GitHub Actions matrix of repository, ref, manifest path, and package name tuples.
+    value: ${{ steps.gen.outputs.matrix }}
+runs:
+  using: composite
+  steps:
+    - name: Check for spack install and basic info
+      id: spack-info
+      shell: bash
+      run: |
+        if [ ! -f /opt/spack/share/spack/setup-env.sh ]; then
+          echo "::error::Can't interrogate spack package recipes without a spack installation. Run this action as part of a container job of ghcr.io/access-nri/build-ci-runner"
+          exit 1
+        fi
+
+        # Output SPACK_ROOT so it is usable as a GitHub Actions expression
+        echo "SPACK_ROOT=$SPACK_ROOT" >> $GITHUB_OUTPUT
+
+        . ${SPACK_ROOT}/share/spack/setup-env.sh
+        echo "access-spack-packages-path=$(spack location --repo access.nri)" >> $GITHUB_OUTPUT
+
+
+    - name: Checkout fallback repository
+      uses: actions/checkout@v6
+      with:
+        repository: ACCESS-NRI/access-spack-packages
+        ref: ${{ inputs.ref }}
+
+    - name: Get default inputs.ref for fallback repository
+      id: default
+      shell: bash
+      run: |
+        if [[ -z "${{ inputs.ref }}" ]]; then
+          ref=$(git branch --show-current)
+        else
+          ref=${{ inputs.ref }}
+        fi
+
+        echo "Got default ref of manifest fallback repository: $ref"
+
+        echo "ref=$ref" >> $GITHUB_OUTPUT
+
+    - name: Update access-spack-packages repository linked to spack
+      uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
+      with:
+        spack-packages-repository-name: access_spack_packages
+        spack-packages-repository-path: ${{ steps.spack-info.outputs.access-spack-packages-path }}
+        ref: ${{ steps.default.outputs.ref }}
+        spack-instance-root-path: ${{ steps.spack-info.outputs.SPACK_ROOT }}
+
+    - name: Generate matrix
+      id: gen
+      # Get all packages that will be tested, then
+      # Get file paths to manifests for each package, first from the package git repository,
+      # then from this repository's package-specific manifests, and finally from defaults, then
+      # Convert into a JSON array for the matrix, one of the form:
+      # [
+      #   {"template_value": "mom5", "repository": "ACCESS-NRI/MOM5", "ref": "main", "filepath": ".github/build-ci/manifests/intel.spack.yaml.j2"},
+      #   {"template_value": "mom5", "repository": "ACCESS-NRI/MOM5", "ref": "main", "filepath": ".github/build-ci/manifests/gcc.spack.yaml.j2"},
+      #   {"template_value": "cice5", "repository": "ACCESS-NRI/access-spack-packages", "ref": "api-v2", "filepath": ".github/build-ci/manifests/cice5/spack.yaml.j2"},
+      #   ...
+      # ]
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        pkgs="${{ inputs.packages }}"
+
+        . /opt/spack/share/spack/setup-env.sh
+
+        for pkg in $pkgs; do
+          # We want each manifest to have an associated injection of {{ package }} to $pkg
+          # Replace underscores with hyphens for the template value, as spack converts directory underscores to package name hyphens
+          template_value="${pkg//_/-}"
+          package_file="${{ inputs.packages-root-dir }}/$pkg/package.py"
+
+          ### Check for manifests from the packages associated GitHub repo, if it exists
+
+          # Extract git value from package.py (or an empty string if it doesn't exist),
+          # We use spack's python environment which has access to the package repository metadata
+          repository_url=$(spack python -c "import spack.repo; print(getattr(spack.repo.PATH.get_pkg_class('$pkg'), 'git', ''))")
+
+          # Extract OWNER/REPO path component from repository_url, and remove the / prefix and optional .git suffix
+          repository=$(spack python -c "import urllib; print(urllib.parse.urlsplit('$repository_url').path)")
+          repository=${repository##/}
+          repository=${repository%%.git}
+
+          if [[ -n "$repository" ]]; then
+            cloned_repo_path=$(mktemp -d "${RUNNER_TEMP}/package-manifest-repo-${pkg}-XXXXXX")
+
+            # Some package repositories are private; use GH_TOKEN with `gh repo clone`.
+            if gh repo clone --no-upstream "$repository" "$cloned_repo_path" -- --depth 1 --filter=blob:none --quiet; then
+              if [[ -d "${cloned_repo_path}/.github/build-ci/manifests" ]]; then
+                # Use any manifests from the package's source repository first.
+                cd $cloned_repo_path
+
+                manifest_paths=$(find .github/build-ci/manifests -iname '*.j2' -type f -printf '%p ')
+                ref=$(git branch --show-current)
+
+                for manifest_path in $manifest_paths; do
+                  json_entries+="$(printf '{"template_value": "%s", "repository": "%s", "ref": "%s", "filepath": "%s"}' "$template_value" "$repository" "$ref" "$manifest_path"),"
+                done
+                echo "Found manifests for $pkg under $repository at ref $ref: $manifest_paths"
+                cd - > /dev/null
+              fi
+            rm -rf ${cloned_repo_path}
+            fi
+          else
+            echo "Couldn't find an associated GitHub URL in the $pkg package"
+          fi
+
+          ### Check for manifests in access-spack-packages as well
+
+          repository="ACCESS-NRI/access-spack-packages"
+          ref="${{ steps.default.outputs.ref }}"
+
+          if [[ -d ".github/build-ci/manifests/$pkg" ]]; then  # Look for specific manifests for the package
+            # We space-separate the paths as we later use them in a for loop
+            manifest_paths=$(find ".github/build-ci/manifests/$pkg" -iname '*.j2' -type f -printf '%p ')
+            for manifest_path in $manifest_paths; do
+              json_entries+="$(printf '{"template_value": "%s", "repository": "%s", "ref": "%s", "filepath": "%s"}' "$template_value" "$repository" "$ref" "$manifest_path"),"
+            done
+            echo "Found manifests for $pkg under $repository at ref $ref: $manifest_paths"
+          fi
+
+          if [[ -z "${manifest_paths:-}" ]]; then # Use the default templates if no MCR or specific manifests exist for the package
+            # Similarly, space-separate the paths for a later for loop. Default manifests are always directly under .github/build-ci/manifests
+            manifest_paths=$(find ".github/build-ci/manifests" -maxdepth 1 -iname '*.j2' -type f -printf '%p ')
+            for manifest_path in $manifest_paths; do
+              json_entries+="$(printf '{"template_value": "%s", "repository": "%s", "ref": "%s", "filepath": "%s"}' "$template_value" "$repository" "$ref" "$manifest_path"),"
+            done
+            echo "Found DEFAULT manifests for $pkg under $repository at ref $ref: $manifest_paths"
+          fi
+          unset manifest_paths repository cloned_repo_path ref template_value
+        done
+
+        echo "$json_entries"
+
+        # Remove the trailing comma and wrap in square brackets
+        echo "matrix=[${json_entries%,}]" >> $GITHUB_OUTPUT
