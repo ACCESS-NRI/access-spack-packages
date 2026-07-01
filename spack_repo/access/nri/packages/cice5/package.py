@@ -46,6 +46,7 @@ class Cice5(CMakePackage):
     variant(
         "model",
         default="access-om2",
+        sticky=True,
         values=("access-om2", "access-esm1.6"),
         description="Which model this build is coupled with"
     )
@@ -62,15 +63,15 @@ class Cice5(CMakePackage):
         msg="model=access-om2 not included in @access-esm1.6"
     )
 
-    variant("deterministic", default=False, description="Deterministic build.")
+    variant("deterministic", default=False, sticky=True, description="Deterministic build.")
 
-    variant("io_type", default="NetCDF", values=("NetCDF", "PIO"), description="CICE IO Method")
+    variant("io_type", default="NetCDF", sticky=True, values=("NetCDF", "PIO"), description="CICE IO Method")
     # User set integer cmake options:
-    variant("nxglob", default="none", values=_int_validator, description="Size of model grid in x")
-    variant("nyglob", default="none", values=_int_validator, description="Size of model grid in y")
-    variant("blckx", default="none", values=_int_validator, description="Size of computational blocks in x")
-    variant("blcky", default="none", values=_int_validator, description="Size of computational blocks in y")
-    variant("mxblcks", default="none", values=_int_validator, description="Max number of blocks per task")
+    variant("nxglob", default="none", sticky=True, values=_int_validator, description="Size of model grid in x")
+    variant("nyglob", default="none", sticky=True, values=_int_validator, description="Size of model grid in y")
+    variant("blckx", default="none", sticky=True, values=_int_validator, description="Size of computational blocks in x")
+    variant("blcky", default="none", sticky=True, values=_int_validator, description="Size of computational blocks in y")
+    variant("mxblcks", default="none", sticky=True, values=_int_validator, description="Max number of blocks per task")
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")

@@ -42,22 +42,25 @@ class Mom5(CMakePackage, MakefilePackage):
     with when("build_system=cmake"):
         depends_on("cmake@3.18:", type="build")
         variant("build_type", default="RelWithDebInfo",
+            sticky=True,
             description="CMake build type",
             values=("Debug", "Release", "RelWithDebInfo")
         )
-        variant("deterministic", default=False, description="Deterministic build")
+        variant("deterministic", default=False, sticky=True, description="Deterministic build")
 
     with when("build_system=makefile"):
-        variant("restart_repro", default=True, description="Reproducible restart build.")
+        variant("restart_repro", default=True, sticky=True, description="Reproducible restart build.")
         variant(
             "deterministic",
             default=False,
+            sticky=True,
             description="Deterministic build",
             when="@access-om2,legacy-access-om2-bgc"
         )
         variant(
             "optimisation_report",
             default=False,
+            sticky=True,
             description="Generate optimisation reports",
             when="@access-om2,legacy-access-om2-bgc"
         )

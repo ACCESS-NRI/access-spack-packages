@@ -29,8 +29,8 @@ class Oasis3Mct(MakefilePackage):
     version("access-om2", branch="master")
     version("access-esm1.5", branch="access-esm1.5")
 
-    variant("deterministic", default=False, description="Deterministic build.")
-    variant("optimisation_report", default=False, description="Generate optimisation reports.")
+    variant("deterministic", default=False, sticky=True, description="Deterministic build.")
+    variant("optimisation_report", default=False, sticky=True, description="Generate optimisation reports.")
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")

@@ -16,7 +16,7 @@ class Cable(CMakePackage):
     git = "https://github.com/CABLE-LSM/CABLE.git"
 
     maintainers("SeanBryan51", "Whyborn")
-    
+
     license("LicenseRef-CSIRO-Open-Source-Software-License-v1.0", checked_by="anton-seaice")
 
     version("stable", branch="main", preferred=True)
@@ -33,6 +33,7 @@ class Cable(CMakePackage):
     variant(
         "library",
         default="none",
+        sticky=True,
         values=(
             "none",
             "access-esm1.6"
@@ -43,6 +44,7 @@ class Cable(CMakePackage):
     variant(
         "build_type",
         default="Release",
+        sticky=True,
         description="CMake build type",
         values=("Debug", "Release"),
     )

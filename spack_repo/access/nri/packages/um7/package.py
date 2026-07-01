@@ -41,9 +41,11 @@ class Um7(Package):
     variant(
         "full",
         default=True,
+        sticky=True,
         description="Full (fresh) build. Disable for incremental build"
     )
-    variant("optim", default="high", description="Optimization level",
+    variant("optim", default="high", sticky=True,
+            description="Optimization level",
             values=("high", "debug"), multi=False)
 
     with when("@access-esm1.6"):

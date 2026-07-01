@@ -26,15 +26,16 @@ class AccessFms(CMakePackage):
     version("main", branch="main")
     version("mom5", branch="mom5", preferred=True)
 
-    variant("gfs_phys", default=False, description="Use GFS Physics")
-    variant("large_file", default=False, description="Enable compiler definition -Duse_LARGEFILE.")
+    variant("gfs_phys", default=False, sticky=True, description="Use GFS Physics")
+    variant("large_file", default=False, sticky=True, description="Enable compiler definition -Duse_LARGEFILE.")
     variant(
         "internal_file_nml",
         default=True,
+        sticky=True,
         description="Enable compiler definition -DINTERNAL_FILE_NML.",
     )
-    variant("pic", default=False, description="Build with position independent code")
-    variant("shared", default=False, description="Build shared/dynamic libraries")
+    variant("pic", default=False, sticky=True, description="Build with position independent code")
+    variant("shared", default=False, sticky=True, description="Build shared/dynamic libraries")
     # To build a shared/dynamic library, both `pic` and `shared` are required:
     requires("+pic", when="+shared", msg="The +shared variant requires +pic")
 

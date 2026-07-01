@@ -36,6 +36,7 @@ class AncomsRoms(MakefilePackage):
     variant(
         "roms_application",
         default="benchmark",
+        sticky=True,
         description="Makefile to include its associated header file",
         values=("upwelling", "benchmark"),
         multi=False,
@@ -43,6 +44,7 @@ class AncomsRoms(MakefilePackage):
     variant(
         "debug",
         default=False,
+        sticky=True,
         description="Turn on symbolic debug information with no optimization",
     )
 

@@ -25,6 +25,7 @@ class AccessWw3(CMakePackage):
     variant(
         "access3",
         default=True,
+        sticky=True,
         description="Install WW3 as library for Access3 models"
     )
 

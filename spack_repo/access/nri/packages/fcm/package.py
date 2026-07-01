@@ -16,7 +16,7 @@ class Fcm(Package):
         sha256="b4178b488470aa391f29b46d19bd6395ace42ea06cb9678cabbd4604b46f56cd",
     )
 
-    variant("site", default="none", description="Site to use for keyword configuration",
+    variant("site", default="none", sticky=True, description="Site to use for keyword configuration",
         values=("none", "nci-gadi"), multi=False)
 
     depends_on("c", type="build")

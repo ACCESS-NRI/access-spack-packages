@@ -38,6 +38,7 @@ class AccessGenericTracers(CMakePackage):
     variant(
         "shared",
         default=False,
+        sticky=True,
         description="Build shared/dynamic libraries"
     )
     # NOTE: access-fms@mom5 should be used in OM2, ESM1.5 and ESM1.6 to preserve
@@ -45,6 +46,7 @@ class AccessGenericTracers(CMakePackage):
     variant(
         "use_access_fms",
         default=True,
+        sticky=True,
         description="If True, depend on access-fms, otherwise depend on fms"
     )
 

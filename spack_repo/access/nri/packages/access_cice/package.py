@@ -30,17 +30,20 @@ class AccessCice(CMakePackage):
     variant(
         "access3",
         default=True,
+        sticky=True,
         description="Install CICE as library for Access3 models"
     )
 
     variant("io_type", 
         default="NetCDF",
+        sticky=True,
         values=("NetCDF", "PIO", "Binary"),
         description="CICE IO Method"
     )
 
     variant("driver",
             default="none",
+            sticky=True,
             values=("none", "nuopc/cmeps", "access/cmeps", "standalone/cice"),
             description="CICE driver path"
     )

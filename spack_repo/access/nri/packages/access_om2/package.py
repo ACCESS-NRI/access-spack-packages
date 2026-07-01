@@ -19,7 +19,7 @@ class AccessOm2(BundlePackage):
 
     version("latest")
 
-    variant("deterministic", default=False, description="Deterministic build.")
+    variant("deterministic", default=False, sticky=True, description="Deterministic build.")
 
     depends_on("libaccessom2+deterministic", when="+deterministic", type="run")
     depends_on("libaccessom2~deterministic", when="~deterministic", type="run")
