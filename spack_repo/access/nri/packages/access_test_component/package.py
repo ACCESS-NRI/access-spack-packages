@@ -23,11 +23,9 @@ class AccessTestComponent(CMakePackage):
 
     version("main", branch="main", no_cache=True)
 
-    variant("mpi", default=True, description="Use MPI")
-
     depends_on("fortran", type="build")
     depends_on("cmake@3.20:", type="build")
-    depends_on("mpi", when="+mpi")
+    depends_on("mpi", type=("build", "link", "run"))
 
     root_cmakelists_dir = "stub"
 

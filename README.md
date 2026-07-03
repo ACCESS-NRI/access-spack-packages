@@ -6,6 +6,10 @@ The namespace of the ACCESS Spack package repository is `access.nri`.
 
 ## How to utilise this package repository
 
+If you want to build ACCESS models on Gadi, the [How to use Spack on Gadi for building ACCESS models](https://docs.access-hive.org.au/getting_started/spack/) document may be more relevant than this document.
+
+The instructions below will create an *editable* `access-spack-packages` repository.
+
 > [!NOTE]
 > `$SPACK_ROOT` and `$ACCESS_SPACK_PACKAGES_PATH` are substituted in all paths to make these instructions installation independent.
 
@@ -38,10 +42,13 @@ libaccessom2
 ==> 1 packages
 ```
 
-Spack does a shallow clone of the repositories. To restore the full functionality of the git repository, run: `git fetch --unshallow $ACCESS_SPACK_PACKAGES_PATH`
+Spack does a shallow clone of the repositories. To restore the full functionality of the git repository, run: `git -C $ACCESS_SPACK_PACKAGES_PATH fetch --unshallow` . Now, it is possible to use an older version of the `access-spack-packages` repository by running `git -C $ACCESS_SPACK_PACKAGES_PATH switch -c <NEW_BRANCH_NAME> <GIT_TAG>`. However, please note that older versions of `access-spack-packages` may not be compatible with recent versions of Spack.
+
 
 ## More information
 
 * The Spack package repository that was used with pre-v1.0 Spack is available in the [api-v1 branch](https://github.com/ACCESS-NRI/access-spack-packages/tree/api-v1)
 
 * For more information see the extensive [spack documentation](https://spack.readthedocs.io/en/latest/repositories.html) on how to utilise repository files.
+
+* This repository utilizes automatic tagging on the default branch, upon merging, in the form `YEAR.MONTH.00MINOR` (for example, `2026.05.001`). See the [workflow file](./.github/workflows/default-branch-tagger.yml) for more information.
