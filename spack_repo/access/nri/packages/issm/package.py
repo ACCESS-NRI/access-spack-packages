@@ -35,7 +35,7 @@ class Issm(AutotoolsPackage):
     version("main", branch="main")
     version("access-release", branch="access-release")
     version("access-development", branch="access-development")
-    
+
     # same version string as the tag, so users can easily specify a specific tagged version if desired.
     # This is the recommended way to specify versions for reproducibility.
     version("2026.05.18", tag="2026.05.18", preferred=True)
@@ -47,36 +47,42 @@ class Issm(AutotoolsPackage):
     variant(
         "wrappers",
         default=False,
+        sticky=True,
         description="Enable building ISSM Python/C wrappers",
     )
 
     variant(
         "examples",
         default=False,
+        sticky=True,
         description="Install the examples tree under <prefix>/examples",
     )
 
     variant(
         "ad",
         default=False,
+        sticky=True,
         description="Build with CoDiPack automatic differentiation and adjointpetsc support",
     )
 
     variant(
         "openmp",
         default=True,
+        sticky=True,
         description="Propagate OpenMP flags so threaded deps link cleanly",
     )
 
     variant(
         "production",
         default=True,
+        sticky=True,
         description="Build ISSM in production mode with optimized PETSc and release flags",
     )
 
     variant(
         "py-tools",
         default=False,
+        sticky=True,
         description="Install ISSM python files under <prefix>/python-tools",
     )
 
@@ -133,11 +139,8 @@ class Issm(AutotoolsPackage):
     # GCC 14 breaks on several C++17 constructs used in ISSM
     conflicts("%gcc@14:", msg="ISSM cannot be built with GCC versions above 13")
 
-    # +wrappers requires +py-tools to access the wrappers
-    conflicts("+wrappers", when="~py-tools", msg="The +wrappers variant requires +py-tools")
-
-    # +py-tools requires +wrappers for full Python functionality
-    conflicts("+py-tools", when="~wrappers", msg="The +py-tools variant requires +wrappers for full functionality")
+    requires("+py-tools", when="+wrappers", msg="The +wrappers variant requires +py-tools")
+    requires("+wrappers", when="+py-tools", msg="The +py-tools variant requires +wrappers for full functionality")
 
     # --------------------------------------------------------------------
     # Helper functions
@@ -196,7 +199,7 @@ class Issm(AutotoolsPackage):
         args += [
             f"--with-petsc-dir={self.spec['petsc'].prefix}",
         ]
-        
+
         # Always use --enable-development: ISSM's script-install machinery
         # (the if !DEVELOPMENT block in src/m/Makefile.am) requires $ISSM_DIR
         # to be set to the source tree at make time, which Spack does not do.
