@@ -45,10 +45,12 @@ runs:
       with:
         repository: ACCESS-NRI/access-spack-packages
         ref: ${{ inputs.ref }}
+        path: fallback
 
     - name: Get default inputs.ref for fallback repository
       id: default
       shell: bash
+      working-directory: fallback
       run: |
         if [[ -z "${{ inputs.ref }}" ]]; then
           ref=$(git branch --show-current)
