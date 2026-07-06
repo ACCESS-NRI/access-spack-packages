@@ -34,18 +34,21 @@ class AccessMocsy(CMakePackage):
     variant(
         "shared",
         default=False,
+        sticky=True,
         description="Build shared/dynamic libraries",
         when="@2025.07.002:",
     )
     variant(
         "build_type",
         default="RelWithDebInfo",
+        sticky=True,
         description="CMake build type",
         values=("Debug", "Release", "RelWithDebInfo", "MinSizeRel"),
     )
     variant(
         "precision",
         default="2",
+        sticky=True,
         description="Precision to use (1 or 2)",
         values=("1", "2"),
     )

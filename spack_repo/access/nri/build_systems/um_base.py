@@ -60,7 +60,7 @@ class UmBasePackage(Package):
         "eccodes",
         "netcdf")
     for var in _bool_variants:
-        variant(var, default=True, description=var)
+        variant(var, default=True, sticky=True, description=var)
 
     # Off/on variants have 3-value "none" "off", "on" logic.
     _off_on_variants = (
@@ -68,7 +68,7 @@ class UmBasePackage(Package):
         "platagnostic",
         "thread_utils")
     for var in _off_on_variants:
-        variant(var, default="none", description=var,
+        variant(var, default="none", sticky=True, description=var,
             values=("none", "off", "on"), multi=False)
 
     # String variants have their default values set to "none" here.
@@ -89,19 +89,31 @@ class UmBasePackage(Package):
         if _project != "um":
             _rev_var = f"{_project}_rev"
             _rev_variants.append(_rev_var)
-            variant(_rev_var, default="none", values="*", multi=False,
+            variant(
+                _rev_var,
+                default="none",
+                sticky=True,
+                values="*",
+                multi=False,
                 description=f"Subversion revision for {_project}. "
-                            f"Defaults to automatic versioning if 'none'.")
+                            f"Defaults to automatic versioning if 'none'."
+            )
 
         # Sources variants
         _sources_var = f"{_project}_sources"
         _sources_variants.append(_sources_var)
-        variant(_sources_var, default="none", values="*", multi=False,
-            description=f"FCM diff extract location of {_project}.")
+        variant(
+            _sources_var,
+            default="none",
+            sticky=True,
+            values="*",
+            multi=False,
+            description=f"FCM diff extract location of {_project}."
+        )
 
         # Git reference variants.
         _ref_var = f"{_project}_ref"
-        variant(_ref_var, default="none", values="*", multi=False,
+        variant(_ref_var, default="none", sticky=True, values="*", multi=False,
             description=f"Git branch/tag/commit for {_project}. "
                         f"Overrides Subversion. "
                         f"Defaults to automatic tagging if 'none'.")
@@ -147,7 +159,14 @@ class UmBasePackage(Package):
     ]
 
     for _var in _other_variants:
-        variant(_var, default="none", values="*", multi=False, description=_var)
+        variant(
+            _var,
+            default="none",
+            sticky=True,
+            values="*",
+            multi=False,
+            description=_var
+        )
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")

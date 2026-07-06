@@ -16,7 +16,8 @@ class Um(UmBasePackage):
     """
 
     # Gets URL from the base package
-    variant("model", default="vn13", description="Model configuration.",
+    variant("model", default="vn13", sticky=True,
+        description="Model configuration.",
         values=("vn13", "vn13p0-rns", "vn13p1-am", "vn13p5-rns"), multi=False)
 
     # List of model variants that have been migrated to Github sources.
@@ -40,10 +41,10 @@ class Um(UmBasePackage):
 
     # Include openmpi directly.
     # https://github.com/ACCESS-NRI/access-spack-packages/issues/293
-    variant("mpi", default=True, description="Build with MPI")
+    variant("mpi", default=True, sticky=True, description="Build with MPI")
     depends_on("mpi", when="+mpi", type=("build", "link", "run"))
 
-    variant("access3", default=False,
+    variant("access3", default=False, sticky=True,
         description="Install UM as library for Access3 models")
 
     with when("+access3"):

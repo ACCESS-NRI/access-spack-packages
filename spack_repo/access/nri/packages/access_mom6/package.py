@@ -35,16 +35,18 @@ class AccessMom6(CMakePackage):
     version("2025.02.001", tag="2025.02.001", commit="a5f4397b953f749acecf06f21129c2a20aa578fe")
     version("2025.02.000", tag="2025.02.000", commit="e088c8b7f6c2b18b72edd568aa009e13396ec0c3")
 
-    variant("openmp", default=False, description="Enable OpenMP")
-    variant("asymmetric_mem", default=False, description="Use asymmetric memory in MOM6")
+    variant("openmp", default=False, sticky=True, description="Enable OpenMP")
+    variant("asymmetric_mem", default=False, sticky=True, description="Use asymmetric memory in MOM6")
     variant(
         "access3",
         default=True,
+        sticky=True,
         description="Install MOM6 as library for Access3 models"
     )
     variant(
         "mom6_solo",
         default=False,
+        sticky=True,
         description="Install MOM6 solo executable",
         when="@2025.07.001:"
     )

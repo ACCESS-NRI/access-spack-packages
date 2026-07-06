@@ -30,13 +30,14 @@ class Fiat(CMakePackage):
     variant(
         "build_type",
         default="RelWithDebInfo",
+        sticky=True,
         description="CMake build type",
         values=("Debug", "Release", "RelWithDebInfo"),
     )
 
-    variant("mpi", default=True, description="Use MPI")
-    variant("openmp", default=True, description="Use OpenMP")
-    variant("fckit", default=True, description="Use fckit")
+    variant("mpi", default=True, sticky=True, description="Use MPI")
+    variant("openmp", default=True, sticky=True, description="Use OpenMP")
+    variant("fckit", default=True, sticky=True, description="Use fckit")
 
     depends_on("c", type="build")
     depends_on("cxx", type="build")

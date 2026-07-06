@@ -21,10 +21,11 @@ class AccessWw3(CMakePackage):
     version("2025.08.000", tag="2025.08.000", commit="5ccdad475003c711ccb660039847759cc952519f")
     version("2025.03.0", tag="2025.03.0", commit="d980dececb8843da1769470f24bc633982073db6")
 
-    variant("openmp", default=False, description="Enable OpenMP")
+    variant("openmp", default=False, sticky=True, description="Enable OpenMP")
     variant(
         "access3",
         default=True,
+        sticky=True,
         description="Install WW3 as library for Access3 models"
     )
 

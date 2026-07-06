@@ -26,6 +26,7 @@ class Cice4(MakefilePackage):
     variant(
         "direct_ldflags",
         default="none",
+        sticky=True,
         values="*",
         multi=False,
         description="Directly inject LDFLAGS into the Makefile",

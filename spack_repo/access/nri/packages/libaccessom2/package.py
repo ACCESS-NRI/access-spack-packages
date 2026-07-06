@@ -18,10 +18,11 @@ class Libaccessom2(CMakePackage):
 
     version("access-om2", branch="master", preferred=True)
 
-    variant("deterministic", default=False, description="Deterministic build.")
-    variant("optimisation_report", default=False, description="Generate optimisation reports.")
+    variant("deterministic", default=False, sticky=True, description="Deterministic build.")
+    variant("optimisation_report", default=False, sticky=True, description="Generate optimisation reports.")
     variant('build_type',
             default='Release',
+            sticky=True,
             description='The build type to build',
             values=('Debug', 'Release')
     )

@@ -23,7 +23,7 @@ class AccessTriangle(MakefilePackage):
     version("1.6.1", branch="main")
     
     # variant for building the showme utility (requires X11).
-    variant("showme", default=False,
+    variant("showme", default=False, sticky=True,
             description="Build the showme utility (requires libX11).")
 
     depends_on("c", type="build")

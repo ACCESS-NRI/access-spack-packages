@@ -37,9 +37,9 @@ class AdjointPetsc(CMakePackage):
 
     version("stable", branch="master", preferred=True)
 
-    variant("shared", default=True, description="Build shared libraries")
-    variant("examples", default=False, description="Build examples")
-    variant("build-tests", default=False, description="Enable CMake BUILD_TESTING targets")
+    variant("shared", default=True, sticky=True, description="Build shared libraries")
+    variant("examples", default=False, sticky=True, description="Build examples")
+    variant("build-tests", default=False, sticky=True, description="Enable CMake BUILD_TESTING targets")
 
     depends_on("cmake@3.20:", type="build")
     depends_on("pkgconfig", type="build")

@@ -31,6 +31,7 @@ class AccessEsm1p6(BundlePackage):
     variant(
         "cice",
         default="5",
+        sticky=True,
         description="(Deprecated) choose the version of the CICE sea-ice model.",
         values=("5"),
         multi=False,
@@ -38,6 +39,7 @@ class AccessEsm1p6(BundlePackage):
     variant(
         "um",
         default="access-esm1.6",
+        sticky=True,
         description="Choose the branch of um7.",
         values=("access-esm1.5", "access-esm1.6"),
         multi=False,
