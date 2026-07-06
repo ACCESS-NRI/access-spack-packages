@@ -41,8 +41,11 @@ class Gcom4(Package):
             mach_c = "ifort"
         elif spec.satisfies("%oneapi"):
             mach_c = "oneapi"
-        elif spec.satisfies("%gcc"):
-            mach_c = "gfortran"
+        # https://github.com/ACCESS-NRI/access-spack-packages/issues/85
+        # versions 4.7 and 4.8 support the gcc Fortran compiler,
+        # but versions 4.5 and 4.6 do not.
+        # elif spec.satisfies("%gcc"):
+        #     mach_c = "gfortran"
         else:
             raise NotImplementedError("Unknown compiler")
         if "+mpi" in spec:
