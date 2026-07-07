@@ -1,12 +1,12 @@
 [
-	{"package": {"template_value": "access-om2"}},
-	{"package": {"template_value": "access-om2-bgc"}},
-	{"package": {"template_value": "access-om3"}},
-	{"package": {"template_value": "access-esm1p5"}},
-	{"package": {"template_value": "access-esm1p6"}},
-	{"package": {"template_value": "access-am3"}},
-	{"package": {"template_value": "access-ram3"}},
-	{"package": {"template_value": "access-issm"}},
-	{"package": {"template_value": "access-test"}},
-	{"package": {"template_value": "coastri-roms"}}
+	"access-om2",
+	"access-om2-bgc",
+	"access-om3",
+	"access-esm1p5",
+	"access-esm1p6",
+	"access-am3",
+	"access-ram3",
+	"access-issm",
+	"access-test",
+	"coastri-roms"
 ]

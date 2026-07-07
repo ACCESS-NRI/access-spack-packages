@@ -171,7 +171,7 @@ runs:
       env:
         EXCLUSION_MATRIX_FILE_PATH: .github/build-ci/data/exclude.json
       run: |
-        matrix="$(jq -cr . ${{ env.EXCLUSION_MATRIX_FILE_PATH }})"
+        matrix="$(jq -cr '[.[] | {package: {template_value: .}}]' ${{ env.EXCLUSION_MATRIX_FILE_PATH }})"
 
         echo "Exclusion matrix from ${{ env.EXCLUSION_MATRIX_FILE_PATH }}:"
         echo "$matrix"
