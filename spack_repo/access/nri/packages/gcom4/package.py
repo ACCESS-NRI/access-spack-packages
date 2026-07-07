@@ -32,6 +32,7 @@ class Gcom4(Package):
     depends_on("fcm", type="build")
     depends_on("mpi", when="+mpi")
 
+    conflicts("%gcc")
 
     def gcom_machine(self, spec):
         """
