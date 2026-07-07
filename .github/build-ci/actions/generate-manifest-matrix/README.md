@@ -34,6 +34,7 @@ Each matrix entry contains:
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | `matrix` | JSON array | A GitHub Actions matrix of `{template_value, repository, ref, filepath}` tuples |
+| `exclude-matrix` | JSON array | A GitHub Actions matrix of packages to exlude from matrix generation |
 
 ## Example
 
@@ -58,7 +59,8 @@ jobs:
     needs: setup
     strategy:
       matrix:
-        config: ${{ fromJson(needs.setup.outputs.matrix) }}
+        packages: ${{ fromJson(needs.setup.outputs.matrix) }}
+        exclude: ${{ fromJson(needs.setup.outputs.exclude-matrix) }}
     uses: access-nri/build-ci/.github/workflows/ci.yml@v3
     with:
       spack-manifest-repository: ${{ matrix.config.repository }}
@@ -69,6 +71,8 @@ jobs:
 ```
 
 ## Example Output
+
+### Matrix
 
 ```json
 [
@@ -90,6 +94,26 @@ jobs:
     "ref": "main",
     "filepath": ".github/build-ci/manifests/cice5/gcc.spack.yaml.j2"
   }
+]
+```
+
+### Exclude Matrix
+
+Note that the `package` section comes from the matrix name, and `template_value` from the matrix itself - the package name!
+
+```json
+[
+  {"package": {"template_value": "access-om2"}},
+  {"package": {"template_value": "access-om2-bgc"}},
+  {"package": {"template_value": "access-om3"}},
+  {"package": {"template_value": "access-esm1p5"}},
+  {"package": {"template_value": "access-esm1p6"}},
+  {"package": {"template_value": "access-am3"}},
+  {"package": {"template_value": "access-ram3"}},
+  {"package": {"template_value": "access-issm"}},
+  {"package": {"template_value": "access-test"}},
+  {"package": {"template_value": "coastri-roms"}},
+  {"package": {"template_value": "gcom4"}}
 ]
 ```
 

@@ -21,6 +21,10 @@ outputs:
     description: |
       A GitHub Actions matrix of repository, ref, manifest path, and package name tuples.
     value: ${{ steps.gen.outputs.matrix }}
+  exclude-matrix:
+    description: |
+      A GitHub Actions matrix of excluded matrix entries
+    value: ${{ steps.exclude.outputs.matrix }}
 runs:
   using: composite
   steps:
@@ -160,3 +164,16 @@ runs:
 
         # Remove the trailing comma and wrap in square brackets
         echo "matrix=[${json_entries%,}]" >> $GITHUB_OUTPUT
+
+    - name: Generate exclude matrix
+      shell: bash
+      id: exclude
+      env:
+        EXCLUSION_MATRIX_FILE_PATH: .github/build-ci/data/exclude.json
+      run: |
+        matrix="$(jq -cr . ${{ env.EXCLUSION_MATRIX_FILE_PATH }})"
+
+        echo "Exclusion matrix from ${{ env.EXCLUSION_MATRIX_FILE_PATH }}:"
+        echo "$matrix"
+
+        echo "matrix=$matrix" >> $GITHUB_OUTPUT

@@ -42,7 +42,9 @@ jobs:
       BUILD_CI_WORKFLOW_VERSION: v3
       PACKAGES_ROOT_DIR: spack_repo/access/nri/packages
     outputs:
+      # Output both a matrix of {repo, ref, path, package}s, and a matrix of packages for exclusion
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      exclude-matrix: ${{ steps.set-matrix.outputs.exclude-matrix }}
       builtin-spack-packages-ref: ${{ inputs.builtin-spack-packages-ref }}
       access-spack-packages-ref: ${{ inputs.access-spack-packages-ref || github.event.pull_request.head.sha }}
       spack-config-ref: ${{ inputs.spack-config-ref || steps.defaults.outputs.spack-config-ref }}
@@ -142,17 +144,7 @@ jobs:
       max-parallel: 10
       matrix:
         package: ${{ fromJson(needs.setup-ci.outputs.matrix) }}
-        exclude:
-          - package: {template_value: "access-om2"}
-          - package: {template_value: "access-om2-bgc"}
-          - package: {template_value: "access-om3"}
-          - package: {template_value: "access-esm1p5"}
-          - package: {template_value: "access-esm1p6"}
-          - package: {template_value: "access-am3"}
-          - package: {template_value: "access-ram3"}
-          - package: {template_value: "access-issm"}
-          - package: {template_value: "access-test"}
-          - package: {template_value: "coastri-roms"}
+        exclude: ${{ fromJson(needs.setup-ci.outputs.exclude-matrix) }}
     uses: access-nri/build-ci/.github/workflows/ci.yml@v3
     with:
       spack-manifest-repository: ${{ matrix.package.repository }}
