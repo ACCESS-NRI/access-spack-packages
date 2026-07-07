@@ -99,20 +99,20 @@ jobs:
 
 ### Exclude Matrix
 
-Note that the `package` section comes from the matrix name, and `template_value` from the matrix itself - the package name!
+In this example, the packages below are excluded because they are all Spack Bundle Recipes (SBRs), which are tested and deployed separately in Model Deployment Repositories (MDRs).
 
 ```json
 [
-  {"package": {"template_value": "access-om2"}},
-  {"package": {"template_value": "access-om2-bgc"}},
-  {"package": {"template_value": "access-om3"}},
-  {"package": {"template_value": "access-esm1p5"}},
-  {"package": {"template_value": "access-esm1p6"}},
-  {"package": {"template_value": "access-am3"}},
-  {"package": {"template_value": "access-ram3"}},
-  {"package": {"template_value": "access-issm"}},
-  {"package": {"template_value": "access-test"}},
-  {"package": {"template_value": "coastri-roms"}},
+  "access-om2",
+  "access-om2-bgc",
+  "access-om3",
+  "access-esm1p5",
+  "access-esm1p6",
+  "access-am3",
+  "access-ram3",
+  "access-issm",
+  "access-test",
+  "coastri-roms"
 ]
 ```
 
