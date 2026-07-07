@@ -34,6 +34,7 @@ Each matrix entry contains:
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | `matrix` | JSON array | A GitHub Actions matrix of `{template_value, repository, ref, filepath}` tuples |
+| `exclude-matrix` | JSON array | A GitHub Actions matrix of packages to exlude from matrix generation |
 
 ## Example
 
@@ -58,7 +59,8 @@ jobs:
     needs: setup
     strategy:
       matrix:
-        config: ${{ fromJson(needs.setup.outputs.matrix) }}
+        packages: ${{ fromJson(needs.setup.outputs.matrix) }}
+        exclude: ${{ fromJson(needs.setup.outputs.exclude-matrix) }}
     uses: access-nri/build-ci/.github/workflows/ci.yml@v3
     with:
       spack-manifest-repository: ${{ matrix.config.repository }}
@@ -69,6 +71,8 @@ jobs:
 ```
 
 ## Example Output
+
+### Matrix
 
 ```json
 [
@@ -90,6 +94,25 @@ jobs:
     "ref": "main",
     "filepath": ".github/build-ci/manifests/cice5/gcc.spack.yaml.j2"
   }
+]
+```
+
+### Exclude Matrix
+
+In this example, the packages below are excluded because they are all Spack Bundle Recipes (SBRs), which are tested and deployed separately in Model Deployment Repositories (MDRs).
+
+```json
+[
+  "access-om2",
+  "access-om2-bgc",
+  "access-om3",
+  "access-esm1p5",
+  "access-esm1p6",
+  "access-am3",
+  "access-ram3",
+  "access-issm",
+  "access-test",
+  "coastri-roms"
 ]
 ```
 
