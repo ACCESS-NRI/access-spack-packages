@@ -113,7 +113,6 @@ Note that the `package` section comes from the matrix name, and `template_value`
   {"package": {"template_value": "access-issm"}},
   {"package": {"template_value": "access-test"}},
   {"package": {"template_value": "coastri-roms"}},
-  {"package": {"template_value": "gcom4"}}
 ]
 ```
 

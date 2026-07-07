@@ -8,6 +8,5 @@
 	{"package": {"template_value": "access-ram3"}},
 	{"package": {"template_value": "access-issm"}},
 	{"package": {"template_value": "access-test"}},
-	{"package": {"template_value": "coastri-roms"}},
-	{"package": {"template_value": "gcom4"}}
+	{"package": {"template_value": "coastri-roms"}}
 ]
