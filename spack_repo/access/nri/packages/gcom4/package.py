@@ -22,6 +22,7 @@ class Gcom4(Package):
 
     maintainers("penguian")
 
+    version("stable", branch="access-esm1.6", preferred=True)
     version("access-esm1.5", branch="access-esm1.5")
 
     variant("mpi", default=True, sticky=True, description="Build with MPI")
