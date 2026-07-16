@@ -18,11 +18,11 @@ class Um(UmBasePackage):
     # Gets URL from the base package
     variant("model", default="vn13", sticky=True,
         description="Model configuration.",
-        values=("vn13", "vn13p0-rns", "vn13p1-am", "vn13p5-rns"), multi=False)
+        values=("vn13", "vn13p0-rns", "vn13p1-am", "vn13p5-rns", "vn13p8-am"), multi=False)
 
     # List of model variants that have been migrated to Github sources.
     # Defined in parent class and overridden here.
-    github_models = ("vn13", "vn13p1-am")
+    github_models = ("vn13", "vn13p1-am", "vn13p8-am")
 
     # List of projects to be used by this package.
     # Defined in parent class as all projects and left to default here.
