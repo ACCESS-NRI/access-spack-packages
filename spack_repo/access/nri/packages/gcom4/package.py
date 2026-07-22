@@ -50,7 +50,11 @@ class Gcom4(Package):
         "@access-esm1.5",
         msg="access-esm1.5 is only available in access-spack-packages versions older than 2026.08.000."
     )
-    conflicts("%gcc", msg="gcom4 cannot be compiled with gcc, at the moment")
+    conflicts(
+        "%gcc",
+        when="@:2025.08.000",
+        msg="gcom4 version 2025.08.000 and older cannot be compiled with gcc."
+    )
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")
@@ -69,8 +73,8 @@ class Gcom4(Package):
         # https://github.com/ACCESS-NRI/access-spack-packages/issues/85
         # versions 4.7 and 4.8 support the gcc Fortran compiler,
         # but versions 4.5 and 4.6 do not.
-        # elif spec.satisfies("%gcc"):
-        #     mach_c = "gfortran"
+        elif spec.satisfies("%gcc"):
+            mach_c = "gfortran"
         else:
             raise NotImplementedError("Unknown compiler")
         if "+mpi" in spec:
