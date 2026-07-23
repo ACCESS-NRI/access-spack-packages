@@ -143,15 +143,6 @@ class Issm(AutotoolsPackage):
     requires("+wrappers", when="+py-tools", msg="The +py-tools variant requires +wrappers for full functionality")
 
     # --------------------------------------------------------------------
-    # Helper functions
-    # --------------------------------------------------------------------
-    def url_for_version(self, version):
-        """Tarball URL for Spack-generated versions."""
-        if version == Version("upstream"):
-            return "https://github.com/ISSMteam/ISSM/archive/refs/heads/main.tar.gz"
-        return f"https://github.com/ACCESS-NRI/ISSM/archive/refs/heads/{version}.tar.gz"
-
-    # --------------------------------------------------------------------
     # Build environment - inject AD and/or OpenMP compiler flags when needed
     # --------------------------------------------------------------------
     def setup_build_environment(self, env):

@@ -31,9 +31,6 @@ class AccessTriangle(MakefilePackage):
     # Make libX11 conditional on +showme
     depends_on("libx11", when="+showme", type="link")
     
-    def url_for_version(self, version):
-        return "https://github.com/ACCESS-NRI/issm-triangle/archive/refs/heads/{0}.tar.gz".format(version)
-
     def edit(self, spec, prefix):
         """
         Below, we just copy in the 'configs'

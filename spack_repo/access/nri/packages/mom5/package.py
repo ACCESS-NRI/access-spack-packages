@@ -98,9 +98,6 @@ class Mom5(CMakePackage, MakefilePackage):
         depends_on("openmpi")
         depends_on("oasis3-mct@access-esm1.5")
 
-    def url_for_version(self, version):
-        return "https://github.com/ACCESS-NRI/mom5/tarball/{0}".format(version)
-
 
 class CMakeBuilder(cmake.CMakeBuilder):
     root_cmakelists_dir = "cmake/"
