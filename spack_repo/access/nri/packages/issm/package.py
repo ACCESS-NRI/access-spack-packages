@@ -87,6 +87,17 @@ class Issm(AutotoolsPackage, CudaPackage):
         description="Install ISSM python files under <prefix>/python-tools",
     )
 
+    variant(
+        "hypre",
+        default=False,
+        description=(
+            "Build with Hypre BoomerAMG preconditioner support via PETSc. "
+            "Enables pc_type=hypre in PETSc solver options. "
+            "When combined with +cuda, Hypre is built with GPU support "
+            "(BoomerAMG setup and V-cycles on device)."
+        ),
+    )
+
     # --------------------------------------------------------------------
     # Dependencies
     # --------------------------------------------------------------------
@@ -124,6 +135,12 @@ class Issm(AutotoolsPackage, CudaPackage):
         for _arch in CudaPackage.cuda_arch_values:
             depends_on(f"petsc cuda_arch={_arch}", when=f"cuda_arch={_arch}")
 
+    # Hypre BoomerAMG: propagate +hypre to PETSc (and cuda_arch when +cuda).
+    # PETSc's +hypre variant downloads/links Hypre; with +cuda Hypre is built
+    # GPU-native (--with-gpu-arch=<arch> passed by the Hypre Spack package).
+    with when("+hypre"):
+        depends_on("petsc+hypre")
+
     # When building with AD support, add CoDiPack + MediPack + adjointpetsc dependencies
     with when("+ad"):
         depends_on("codipack")
@@ -156,6 +173,9 @@ class Issm(AutotoolsPackage, CudaPackage):
 
     # CUDA and AD are not supported together (adjointpetsc is not CUDA-aware)
     conflicts("+cuda", when="+ad", msg="+cuda and +ad cannot be used together: adjointpetsc does not support CUDA")
+
+    # Hypre and AD are not supported together (same reason as +cuda +ad)
+    conflicts("+hypre", when="+ad", msg="+hypre is incompatible with +ad: adjointpetsc does not support the Hypre-enabled PETSc path")
 
     # --------------------------------------------------------------------
     # Helper functions
