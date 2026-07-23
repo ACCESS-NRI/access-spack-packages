@@ -52,18 +52,6 @@ class Cice5(CMakePackage):
         description="Which model this build is coupled with"
     )
 
-    conflicts(
-        "model=access-esm1.6",
-        when="@access-om2",
-        msg="model=access-esm1.6 not included in @access-om2"
-    )
-
-    conflicts(
-        "model=access-om2",
-        when="@access-esm1.6",
-        msg="model=access-om2 not included in @access-esm1.6"
-    )
-
     variant("deterministic", default=False, sticky=True, description="Deterministic build.")
 
     variant("io_type", default="NetCDF", sticky=True, values=("NetCDF", "PIO"), description="CICE IO Method")
