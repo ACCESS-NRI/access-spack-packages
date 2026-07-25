@@ -39,9 +39,6 @@ class Libaccessom2(CMakePackage):
     depends_on("json-fortran")
     depends_on("netcdf-fortran@4.5.2:")
 
-    def url_for_version(self, version):
-        return "https://github.com/ACCESS-NRI/libaccessom2/tarball/{0}".format(version)
-
     # https://spack.readthedocs.io/en/latest/packaging_guide.html
     def patch(self):
         if "+deterministic" in self.spec:

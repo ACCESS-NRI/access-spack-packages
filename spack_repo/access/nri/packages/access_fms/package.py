@@ -48,9 +48,6 @@ class AccessFms(CMakePackage):
     depends_on("netcdf-fortran")
     depends_on("mpi")
 
-    def url_for_version(self, version):
-        return "https://github.com/ACCESS-NRI/FMS/tarball/{0}".format(version)
-
     @property
     def headers(self):
         return find_headers(

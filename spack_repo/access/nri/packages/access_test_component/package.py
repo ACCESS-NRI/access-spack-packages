@@ -28,6 +28,3 @@ class AccessTestComponent(CMakePackage):
     depends_on("mpi", type=("build", "link", "run"))
 
     root_cmakelists_dir = "stub"
-
-    def url_for_version(self, version):
-        return f"https://github.com/{self.githubrepo}/tarball/{version}"

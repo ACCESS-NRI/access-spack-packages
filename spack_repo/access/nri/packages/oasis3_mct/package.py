@@ -62,13 +62,6 @@ class Oasis3Mct(MakefilePackage):
     # use both the psmile and mct libraries $ARCHDIR/lib/libpsmile.MPI1.a
     # and libmct.a and libmpeu.a when linking.
 
-    # TODO: Remove this function when it is no longer required
-    def url_for_version(self, version):
-        if self.spec.satisfies("@upstream"):
-            raise ValueError("url_for_version() called for version @upstream")
-
-        return "https://github.com/ACCESS-NRI/oasis3-mct/tarball/{0}".format(version)
-
     def __create_pkgconfig(self, spec, prefix):
 
         oasis_version = "2.0"
