@@ -16,7 +16,12 @@ class Libaccessom2(CMakePackage):
 
     maintainers("harshula")
 
-    version("access-om2", branch="master", preferred=True)
+    version("stable", branch="master", preferred=True)
+    version(
+        "2026.02.000",
+        tag="2026.02.000",
+        commit="6fbf94ce77f69a1d37af536cc45aeedee47556a5"
+    )
 
     variant("deterministic", default=False, sticky=True, description="Deterministic build.")
     variant("optimisation_report", default=False, sticky=True, description="Generate optimisation reports.")
