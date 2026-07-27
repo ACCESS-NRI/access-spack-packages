@@ -134,21 +134,40 @@ class Um7(Package):
             "CABLE_17TILES=cable_17tiles "
             "CABLE_SOIL_LAYERS=cable_soil_layers "
             "TIMER=timer")
-        FFLAGS = "-ftz -what -fno-alias -stack-temps -safe-cray-ptr"
-        if opt_value == "debug":
-            FO = "-O0"
-            FTRACEBACK = "-traceback"
-            FDEBUG = "-debug all"
-            FG = "-g"
-            FARCH = ""
-            FOBLANK = "-O0"
+        if spec.satisfies("%intel") or spec.satisfies("%oneapi"):
+            FFLAGS = "-ftz -what -fno-alias -stack-temps -safe-cray-ptr"
+            if opt_value == "debug":
+                FO = "-O0"
+                FTRACEBACK = "-traceback"
+                FDEBUG = "-debug all"
+                FG = "-g"
+                FARCH = ""
+                FOBLANK = "-O0"
+            else:
+                FO = "-O2"
+                FTRACEBACK = ""
+                FDEBUG = ""
+                FG = ""
+                FARCH = "-xCORE-AVX512"
+                FOBLANK = ""
+        elif spec.satisfies("%gcc"):
+            FFLAGS = ""
+            if opt_value == "debug":
+                FO = "-O0"
+                FTRACEBACK = ""
+                FDEBUG = ""
+                FG = "-g"
+                FARCH = ""
+                FOBLANK = "-O0"
+            else:
+                FO = "-O3"
+                FTRACEBACK = ""
+                FDEBUG = ""
+                FG = ""
+                FARCH = "-"
+                FOBLANK = ""
         else:
-            FO = "-O2"
-            FTRACEBACK = ""
-            FDEBUG = ""
-            FG = ""
-            FARCH = "-xCORE-AVX512"
-            FOBLANK = ""
+            raise NotImplementedError("Unknown compiler")
 
         # FCM tries to find all instances of USE and include them as
         # source code, except things explicitly excluded by excl_deps.
@@ -198,7 +217,66 @@ excl_dep                                           USE::cable_runtime_opts_mod
 excl_dep                                           USE::landuse_mod
             """
 
-        config = f"""
+        config_gfortran = f"""
+# ------------------------------------------------------------------------------
+# File header
+# ------------------------------------------------------------------------------
+
+CFG::TYPE                                          bld
+CFG::REVISION                                      1.0
+
+USE                                                $HERE/../../umbase_hg3
+
+# ------------------------------------------------------------------------------
+# Destination
+# ------------------------------------------------------------------------------
+
+DEST                                               $HERE/..
+
+# ------------------------------------------------------------------------------
+# Build declarations
+# ------------------------------------------------------------------------------
+
+blockdata                                          blkdata.o
+excl_dep                                           USE::NetCDF
+excl_dep                                           INC::netcdf.inc
+excl_dep                                           INC::mpif.h
+excl_dep                                           USE::mpl
+excl_dep                                           USE::mod_prism
+excl_dep                                           USE::mod_prism_proto
+excl_dep                                           USE::mod_prism_grids_writing
+excl_dep                                           USE::mod_prism_def_partition_proto
+excl_dep                                           USE::mod_prism_put_proto
+excl_dep                                           USE::mod_prism_get_proto
+{CABLE_excl_deps}
+excl_dep::script                                   EXE
+exe_dep                                            portio2a.o pio_data_conv.o pio_io_timer.o
+exe_name::flumeMain                                {EXE_NAME}
+pp                                                 1
+target                                             {EXE_NAME}
+tool::ar                                           ar
+tool::cc                                           mpicc
+tool::cflags                                       {FO} -g {FTRACEBACK} {FDEBUG} {FARCH}
+tool::cpp                                          cpp
+tool::cppflags
+tool::cppkeys                                      {CPPKEYS}
+tool::fc                                           mpif90
+tool::fflags                                       {FO} -g {FDEBUG} -fdefault-integer-8 -fdefault-real-8 -fdefault-double-8  {FFLAGS}
+tool::fflags::control::coupling::dump_received     {FO} {FG} {FTRACEBACK} {FDEBUG} {FFLAGS}
+tool::fflags::control::coupling::dump_sent         {FO} {FG} {FTRACEBACK} {FDEBUG} {FFLAGS}
+tool::fflags::control::coupling::oasis3_atmos_init {FO} {FG} {FTRACEBACK} {FDEBUG}  -fdefault-real-8 -fdefault-double-8 -mp1 {FFLAGS}
+tool::fflags::control::top_level::microphys_ctl     {FO} -g {FDEBUG} -fdefault-integer-8 -fdefault-real-8 -fdefault-double-8  {FFLAGS} -fallow-argument-mismatch
+
+tool::fpp                                          cpp
+tool::fppflags                                     -P -traditional
+tool::fppkeys                                      {CPPKEYS}
+
+tool::geninterface                                 none
+tool::ld                                           mpif90
+tool::ldflags                                      {FOBLANK} -g - {FDEBUG}  {libs}
+        """
+
+        config_intel = f"""
 # ------------------------------------------------------------------------------
 # File header
 # ------------------------------------------------------------------------------
@@ -257,8 +335,12 @@ tool::geninterface                                 none
 tool::ld                                           mpif90
 tool::ldflags                                      {FOBLANK} -g -traceback {FDEBUG} -static-intel {libs}
         """
+
         with open(self._bld_cfg_path, "w") as bld_cfg_file:
-            bld_cfg_file.write(config)
+            if spec.satisfies("%intel") or spec.satisfies("%oneapi"):
+                bld_cfg_file.write(config_intel)
+            elif spec.satisfies("%gcc"):
+                bld_cfg_file.write(config_gfortran)
 
 
     def build(self, spec, prefix):
