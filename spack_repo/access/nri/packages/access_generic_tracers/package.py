@@ -19,8 +19,6 @@ class AccessGenericTracers(CMakePackage):
 
     maintainers("harshula", "dougiesquire")
 
-    # TODO: Delete the "main" version once it is no longer being used anywhere.
-    version("main", branch="main")
     version("stable", branch="main", preferred=True)
     version("2026.05.000", tag="2026.05.000", commit="8afe03201dbf9d6a1412f37159bf25e186fc36ee")
     version("2026.04.000", tag="2026.04.000", commit="19d9b3f4426ee5af30d10391622bf71503d471b7")
@@ -41,7 +39,7 @@ class AccessGenericTracers(CMakePackage):
         sticky=True,
         description="Build shared/dynamic libraries"
     )
-    # NOTE: access-fms@mom5 should be used in OM2, ESM1.5 and ESM1.6 to preserve
+    # NOTE: access-fms should be used in OM2, ESM1.5 and ESM1.6 to preserve
     # answers with previous releases
     variant(
         "use_access_fms",
