@@ -23,8 +23,12 @@ class AccessFms(CMakePackage):
 
     maintainers("harshula")
 
-    version("main", branch="main")
-    version("mom5", branch="mom5", preferred=True)
+    version("stable", branch="mom5", preferred=True)
+    version(
+        "2025.08.000",
+        tag="mom5-2025.08.000",
+        commit="bf5f05bbf817b0168773fb2737e9d707c989fb43"
+    )
 
     variant("gfs_phys", default=False, sticky=True, description="Use GFS Physics")
     variant("large_file", default=False, sticky=True, description="Enable compiler definition -Duse_LARGEFILE.")
