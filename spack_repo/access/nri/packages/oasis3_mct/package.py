@@ -25,9 +25,12 @@ class Oasis3Mct(MakefilePackage):
         branch="OASIS3-MCT_5.0",
         git="https://gitlab.com/cerfacs/oasis3-mct.git",
     )
-    # TODO: Remove the "access-om2" once it is no longer being used anywhere
-    version("access-om2", branch="master")
     version("access-esm1.5", branch="access-esm1.5")
+    version(
+        "2025.03.001",
+        tag="2025.03.001",
+        commit="48a76126fc00932e50af19617f3dba7a154717c6"
+    )
 
     variant("deterministic", default=False, sticky=True, description="Deterministic build.")
     variant("optimisation_report", default=False, sticky=True, description="Generate optimisation reports.")
@@ -65,7 +68,7 @@ class Oasis3Mct(MakefilePackage):
     def __create_pkgconfig(self, spec, prefix):
 
         oasis_version = "2.0"
-        if self.spec.satisfies("@upstream,5:"):
+        if self.spec.satisfies("@upstream,5"):
             oasis_version = "5"
 
         mkdirp(self.__pkgdir)
