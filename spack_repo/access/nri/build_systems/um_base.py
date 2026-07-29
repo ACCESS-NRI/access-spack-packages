@@ -181,7 +181,8 @@ class UmBasePackage(Package):
         when="+eccodes")
     depends_on("netcdf-fortran@4.5.2:", type=("build", "link", "run"),
         when="+netcdf")
-    depends_on("cable library='access3'", type=("build", "link", "run"))
+    depends_on("cable library='access3'", type=("build", "link", "run"),
+        when="+cable")
 
     phases = ["build", "install"]
 
