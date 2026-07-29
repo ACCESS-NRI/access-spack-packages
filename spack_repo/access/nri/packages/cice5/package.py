@@ -41,6 +41,7 @@ class Cice5(CMakePackage):
     license("BSD-3-Clause", checked_by="anton-seaice")
 
     version("stable", branch="master", preferred=True)
+    version("2026.07.000", tag="2026.07.000", commit="4c53bc72143eaa1b9c235d06de3b8ad80509f990")
     version("2026.01.000", tag="2026.01.000", commit="cf5df9d4d26265dc5c79e558e5a67834b51fd38d")
 
     variant(
