@@ -107,15 +107,6 @@ class Um7(Package):
         Set environment variables to their required values.
         """
         env.prepend_path("PATH", self.spec["fcm"].prefix.bin)
-        oasis3_incs = [
-                join_path(self.spec["oasis3-mct"].prefix.include, subdir)
-                for subdir in ["psmile.MPI1", "mct"]]
-        ideps = ["gcom4", "netcdf-fortran"]
-        if self.spec.satisfies(self._VERSION_WITH_CABLE):
-            ideps.append("cable")
-        incs = [self.spec[d].prefix.include for d in ideps] + oasis3_incs
-        for ipath in incs:
-            env.prepend_path("CPATH", ipath)
         # The gcom4 library does not contain shared objects and
         # therefore must be statically linked.
         env.prepend_path("LIBRARY_PATH", self.spec["gcom4"].prefix.lib)
@@ -156,9 +147,18 @@ class Um7(Package):
         ummodel_hg3/cfg/bld-hadgem3-mct.cfg
         """
 
+        ideps = ["gcom4", "netcdf-fortran"]
         ldeps = ["oasis3-mct", "netcdf-fortran", "dummygrib"]
         if self.spec.satisfies(self._VERSION_WITH_CABLE):
+            ideps.append("cable")
             ldeps.append("cable")
+
+        oasis3_incs = [
+                join_path(spec["oasis3-mct"].prefix.include, subdir)
+                for subdir in ["psmile.MPI1", "mct"]
+        ]
+        incs_list = [spec[d].prefix.include for d in ideps] + oasis3_incs
+        incs = " ".join([f"-I{d}" for d in incs_list])
         libs = " ".join([self._get_linker_args(spec, d) for d in ldeps] + ["-lgcom"])
 
         opt_value = spec.variants["optim"].value
@@ -182,7 +182,7 @@ class Um7(Package):
             "CABLE_17TILES=cable_17tiles "
             "CABLE_SOIL_LAYERS=cable_soil_layers "
             "TIMER=timer")
-        FFLAGS = "-ftz -what -fno-alias -stack-temps -safe-cray-ptr"
+        FFLAGS = f"-ftz -what -fno-alias -stack-temps -safe-cray-ptr {incs}"
         if opt_value == "debug":
             FO = "-O0"
             FTRACEBACK = "-traceback"
@@ -285,9 +285,9 @@ pp                                                 1
 target                                             {EXE_NAME}
 tool::ar                                           ar
 tool::cc                                           mpicc
-tool::cflags                                       {FO} -g {FTRACEBACK} {FDEBUG} {FARCH} -fp-model precise
+tool::cflags                                       {FO} -g {FTRACEBACK} {FDEBUG} {FARCH} -fp-model precise {incs}
 tool::cpp                                          cpp
-tool::cppflags
+tool::cppflags                                     {incs}
 tool::cppkeys                                      {CPPKEYS}
 tool::fc                                           mpif90
 tool::fflags                                       {FO}  -g   -traceback  {FDEBUG} -i8 -r8      -fp-model precise {FFLAGS}
