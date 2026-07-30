@@ -10,8 +10,8 @@ Action that generates a GitHub Actions matrix of repository, manifest path, and 
 For each provided package, this action discovers build manifests in the following order:
 
 1. Read `git = "..."` from the package's `package.py`, if it exists, clone that repository and search for manifests under `.github/build-ci/manifests`.
-2. If none are found, search this repository under `.github/build-ci/manifests/<package>/`.
-3. If still none are found, use default manifests under `.github/build-ci/manifests/`.
+2. Search this repository under `.github/build-ci/manifests/<package>/`.
+3. If none are found in 1 or 2, use default manifests under `.github/build-ci/manifests/`.
 
 Each matrix entry contains:
 
@@ -25,7 +25,6 @@ Each matrix entry contains:
 | Name | Type | Description | Required | Default | Examples |
 | ---- | ---- | ----------- | -------- | ------- | -------- |
 | `packages` | `string` (space-separated) | Space-separated list of spack package names to generate matrix entries for | `true` | N/A | `"mom5 cice5 cable"` |
-| `packages-root-dir` | `string` (path) | Path to the package root directory containing per-package `package.py` files, relative to this repository | `true` | N/A | `"/spack_repo/access/nri/packages"` |
 | `ref` | `string` (git ref) | Ref for the fallback access-spack-packages repository to checkout | `false` | Default branch of `access-spack-packages`, `api-v*` | `api-v2` |
 | `token` | `string` (GitHub PAT) | GitHub PAT with access to the repositories to checkout and read from. Only required if any of the repositories are private | `false` | `github.token` | `gh_pat_XXX` |
 

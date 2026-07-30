@@ -5,9 +5,6 @@ inputs:
   packages:
     required: true
     description: Space-separated list of spack packages to generate matrix entries for.
-  packages-root-dir:
-    required: true
-    description: Path relative to ACCESS-NRI/access-spack-packages, for the package repository root.
   ref:
     required: false
     # default: default branch for access-spack-packages, but we can't set this complex default value here
@@ -98,7 +95,6 @@ runs:
           # We want each manifest to have an associated injection of {{ package }} to $pkg
           # Replace underscores with hyphens for the template value, as spack converts directory underscores to package name hyphens
           template_value="${pkg//_/-}"
-          package_file="${{ inputs.packages-root-dir }}/$pkg/package.py"
 
           ### Check for manifests from the packages associated GitHub repo, if it exists
 
