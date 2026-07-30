@@ -23,17 +23,40 @@ class Gcom4(Package):
     maintainers("penguian")
 
     version("stable", branch="access-esm1.6", preferred=True)
-    version("access-esm1.5", branch="access-esm1.5")
+    version(
+        "2025.08.000",
+        tag="2025.08.000",
+        commit="d401980e663267be2a039dbb06bf684e2641ee3d"
+    )
+    version(
+        "2024.05.28",
+        tag="2024.05.28",
+        commit="e123dea738209ab10e194a10e2f19017aac2b032"
+    )
+    version(
+        "2024.05.22",
+        tag="2024.05.22",
+        commit="1ff765f12ff2413b85bdc18a4bdecd152cfcf1f1"
+    )
+    version(
+        "2024.05.21",
+        tag="2024.05.21",
+        commit="5c50f725145636862f9e82854244c25bd1d5fe9a"
+    )
 
     variant("mpi", default=True, sticky=True, description="Build with MPI")
+
+    conflicts(
+        "@access-esm1.5",
+        msg="access-esm1.5 is only available in access-spack-packages versions older than 2026.08.000."
+    )
+    conflicts("%gcc", msg="gcom4 cannot be compiled with gcc, at the moment")
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")
 
     depends_on("fcm", type="build")
     depends_on("mpi", when="+mpi")
-
-    conflicts("%gcc")
 
     def gcom_machine(self, spec):
         """
