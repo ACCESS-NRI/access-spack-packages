@@ -58,12 +58,16 @@ class UmBasePackage(Package):
     _bool_variants = (
         "DR_HOOK",
         "eccodes",
-        "netcdf",
-        "cable")
+        "netcdf"
+    )
     for var in _bool_variants:
         variant(var, default=True, sticky=True, description=var)
 
-    # Off/on variants have 3-value "default" "off", "on" logic.
+    # We don't want cable to be on by default, but otherwise we want it treated like a bool variant
+    variant("cable", default=False, sticky=True, description="Whether to use CABLE library")
+    _bool_variants = _bool_variants + ("cable",)
+    
+    # Off/on variants have 3-value "none" "off", "on" logic.
     _off_on_variants = (
         "openmp",
         "platagnostic",
@@ -181,7 +185,8 @@ class UmBasePackage(Package):
         when="+eccodes")
     depends_on("netcdf-fortran@4.5.2:", type=("build", "link", "run"),
         when="+netcdf")
-    depends_on("cable library='access3'", type=("build", "link", "run"))
+    depends_on("cable library='access3'", type=("build", "link", "run"),
+        when="+cable")
 
     phases = ["build", "install"]
 
