@@ -10,7 +10,7 @@ from spack.package import *
 
 # https://spack.readthedocs.io/en/latest/build_systems/makefilepackage.html
 class Cice4(MakefilePackage):
-    """The Los Alamos sea ice model (CICE) is the result of an effort to develop a computationally efficient sea ice component for a fully coupled atmosphere-land global climate model."""
+    """cice4 is DEPRECATED. Please use cice5. The Los Alamos sea ice model (CICE) is the result of an effort to develop a computationally efficient sea ice component for a fully coupled atmosphere-land global climate model."""
 
     homepage = "https://www.access-nri.org.au"
     git = "https://github.com/ACCESS-NRI/cice4.git"
@@ -18,8 +18,8 @@ class Cice4(MakefilePackage):
     maintainers("penguian")
     license("BSD-3-Clause", checked_by="anton-seaice")
 
-    version("stable", branch="access-esm1.5", preferred=True)
-    version("2025.04.001", tag="access-esm1.5-2025.04.001", commit="694a9fbd4ac29dc841b38aff002eb36da5b650f1")
+    version("stable", branch="access-esm1.5", deprecated=True, preferred=True)
+    version("2025.04.001", tag="access-esm1.5-2025.04.001", commit="694a9fbd4ac29dc841b38aff002eb36da5b650f1", deprecated=True)
 
     # Support -fuse-ld=lld
     # https://github.com/ACCESS-NRI/spack-packages/issues/255
