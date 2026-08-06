@@ -6,7 +6,7 @@ from spack_repo.builtin.build_systems.bundle import BundlePackage
 from spack.package import *
 
 class AccessEsm1p5(BundlePackage):
-    """ACCESS-ESM1.5 bundle contains the coupled UM7, CICE4 and MOM5 models.
+    """ACCESS-ESM1.5 is DEPRECATED. Please use ACCESS-ESM1.6. ACCESS-ESM1.5 bundle contains the coupled UM7, CICE4 and MOM5 models.
 
     ACCESS-ESM1.5 comprises of:
 
@@ -27,9 +27,14 @@ class AccessEsm1p5(BundlePackage):
 
     version("latest")
 
-    depends_on("cice4", type="run")
-    depends_on("mom5@access-esm1.5", type="run")
+    # NOTE: The commented out lines below are only for documentation purposes:
+    # depends_on("cice4", type="run")
+    # depends_on("mom5@access-esm1.5", type="run")
     # um7 is in a private repository
-    depends_on("um7@access-esm1.5", type="run")
+    # depends_on("um7@access-esm1.5", type="run")
+    conflicts(
+        "@latest",
+        msg="access-esm1.5 is only available in access-spack-packages versions older than 2026.08.000. Refer to https://github.com/ACCESS-NRI/ACCESS-ESM1.5 for instructions on how to build access-esm1.5."
+    )
 
     # There is no need for install() since there is no code.

@@ -20,22 +20,39 @@ class Um7(Package):
     homepage = "https://code.metoffice.gov.uk/trac/um"
     git = "https://github.com/ACCESS-NRI/UM7.git"
 
-    # https://code.metoffice.gov.uk/trac/um/wiki/PastReleases
-    version("access-esm1.6", branch="dev-access-esm1.6", preferred=True)
-    version("access-esm1.5", branch="access-esm1.5")
-
-    # Comment to trigger CI for UM7
     maintainers("penguian", "Whyborn")
 
-    depends_on("c", type="build")
-    depends_on("fortran", type="build")
+    # https://code.metoffice.gov.uk/trac/um/wiki/PastReleases
+    version("stable", branch="dev-access-esm1.6", preferred=True)
+    version(
+        "2026.04.000",
+        tag="2026.04.000",
+        commit="06f9a279d092542637342e8d71a70f1a42fd2df8"
+    )
+    version(
+        "2026.02.000",
+        tag="2026.02.000",
+        commit="a1fd578b49602919903a9f68ab06d71e68524369"
+    )
+    version(
+        "2025.12.000",
+        tag="2025.12.000",
+        commit="b5f58fcf8487c177b0d75878bcf015102a90dc7c"
+    )
+    version(
+        "2025.11.000",
+        tag="2025.11.000",
+        commit="e969f21dd521b6c74b4ff4804103e0b297b3ea01"
+    )
+    # This version corresponds to the um7 source code used for ACCESS-ESM1.5
+    version(
+        "2024.10.17",
+        tag="2024.10.17",
+        commit="1d71fe04e003d9df0a2d9318c2ada09a28edef6a"
+    )
 
-    depends_on("fcm", type="build")
-    depends_on("dummygrib", type=("build", "link"))
-    depends_on("gcom4+mpi", type=("build", "link"))
-    depends_on("openmpi", type=("build", "run"))
-    depends_on("netcdf-fortran@4.5.2:", type=("build", "link"))
-    depends_on("oasis3-mct", type=("build", "link"))
+    # https://github.com/ACCESS-NRI/ACCESS-ESM1.6/commit/d07281e7ee53c9233afbe5984339d6659fe1d6cb
+    _VERSION_WITH_CABLE = "@2025.11.000:"
 
     # https://metomi.github.io/fcm/doc/user_guide/build.html
     variant(
@@ -48,8 +65,29 @@ class Um7(Package):
             description="Optimization level",
             values=("high", "debug"), multi=False)
 
-    with when("@access-esm1.6"):
-        depends_on("cable library='access-esm1.6'", type=("build", "link"))
+    conflicts(
+        "@access-esm1.5",
+        msg="access-esm1.5 is only available in access-spack-packages versions older than 2026.08.000."
+    )
+    conflicts(
+        "@access-esm1.6",
+        msg="access-esm1.6 is only available in access-spack-packages versions older than 2026.08.000."
+    )
+
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
+    depends_on("fcm", type="build")
+    depends_on("dummygrib", type=("build", "link"))
+    depends_on("gcom4+mpi", type=("build", "link"))
+    depends_on("openmpi", type=("build", "run"))
+    depends_on("netcdf-fortran@4.5.2:", type=("build", "link"))
+    depends_on("oasis3-mct", type=("build", "link"))
+    depends_on(
+        "cable library='access-esm1.6'",
+        type=("build", "link"),
+        when=_VERSION_WITH_CABLE
+    )
 
     phases = ["edit", "build", "install"]
 
@@ -63,7 +101,7 @@ class Um7(Package):
                 join_path(self.spec["oasis3-mct"].prefix.include, subdir)
                 for subdir in ["psmile.MPI1", "mct"]]
         ideps = ["gcom4", "netcdf-fortran"]
-        if self.spec.satisfies("@access-esm1.6"):
+        if self.spec.satisfies(self._VERSION_WITH_CABLE):
             ideps.append("cable")
         incs = [self.spec[d].prefix.include for d in ideps] + oasis3_incs
         for ipath in incs:
@@ -109,7 +147,7 @@ class Um7(Package):
         """
 
         ldeps = ["oasis3-mct", "netcdf-fortran", "dummygrib"]
-        if self.spec.satisfies("@access-esm1.6"):
+        if self.spec.satisfies(self._VERSION_WITH_CABLE):
             ldeps.append("cable")
         libs = " ".join([self._get_linker_args(spec, d) for d in ldeps] + ["-lgcom"])
 
@@ -158,7 +196,7 @@ class Um7(Package):
         # string for older versions of UM7 which include CABLE as
         # source code.
         CABLE_excl_deps = ""
-        if self.spec.satisfies("@access-esm1.6"):
+        if self.spec.satisfies(self._VERSION_WITH_CABLE):
             CABLE_excl_deps = """
 excl_dep                                           USE::cable_def_types_mod
 excl_dep                                           USE::cbl_masks_mod
