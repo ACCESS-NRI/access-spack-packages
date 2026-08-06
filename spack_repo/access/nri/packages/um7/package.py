@@ -25,6 +25,11 @@ class Um7(Package):
     # https://code.metoffice.gov.uk/trac/um/wiki/PastReleases
     version("stable", branch="dev-access-esm1.6", preferred=True)
     version(
+        "2026.04.001",
+        tag="2026.04.001",
+        commit="22cde94f5b58690b2db4af0bbb4524b9a8130094"
+        )
+    version(
         "2026.04.000",
         tag="2026.04.000",
         commit="06f9a279d092542637342e8d71a70f1a42fd2df8"
