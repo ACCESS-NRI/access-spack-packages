@@ -24,6 +24,7 @@ class AccessMom6(CMakePackage):
     license("Apache-2.0", when="@2026.05:", checked_by="dougiesquire")
 
     version("stable", branch="2026.05", preferred=True)   # need to update branch for new major versions
+    version("2026.05.002", tag="2026.05.002", commit="6432010e3ab29df43994adabb413b69fe718d94c")
     version("2026.05.001", tag="2026.05.001", commit="4dfe73f8e483500dcc576b2a343317e1b0fc9ef2")
     version("2026.05.000", tag="2026.05.000", commit="1300cda7cd1aeda5f41a10738e52ca2958dcb7ea")
     version("2026.01.001", tag="2026.01.001", commit="c664721ebd58c033964b502e7fcdcccd05f02947")
