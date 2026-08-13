@@ -18,6 +18,11 @@ class Libaccessom2(CMakePackage):
 
     version("stable", branch="master", preferred=True)
     version(
+        "2026.08.000",
+        tag="2026.08.000",
+        commit="83b27fe9317650d340d8544b56994b93b4826296"
+    )
+    version(
         "2026.02.000",
         tag="2026.02.000",
         commit="6fbf94ce77f69a1d37af536cc45aeedee47556a5"
