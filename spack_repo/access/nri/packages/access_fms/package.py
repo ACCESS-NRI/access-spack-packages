@@ -25,6 +25,11 @@ class AccessFms(CMakePackage):
 
     version("stable", branch="mom5", preferred=True)
     version(
+        "2025.08.001",
+        tag="mom5-2025.08.001",
+        commit="3636de1e2501aa3441f52e240492e514b7e7c179"
+    )
+    version(
         "2025.08.000",
         tag="mom5-2025.08.000",
         commit="bf5f05bbf817b0168773fb2737e9d707c989fb43"
