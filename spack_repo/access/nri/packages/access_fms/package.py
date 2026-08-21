@@ -35,6 +35,13 @@ class AccessFms(CMakePackage):
         commit="bf5f05bbf817b0168773fb2737e9d707c989fb43"
     )
 
+    variant(
+        "build_type",
+        default="RelWithDebInfo",
+        sticky=True,
+        description="CMake build type",
+        values=("Debug", "Release", "RelWithDebInfo")
+    )
     variant("gfs_phys", default=False, sticky=True, description="Use GFS Physics")
     variant("large_file", default=False, sticky=True, description="Enable compiler definition -Duse_LARGEFILE.")
     variant(
