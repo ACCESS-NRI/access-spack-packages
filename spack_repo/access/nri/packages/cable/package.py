@@ -22,7 +22,7 @@ class Cable(CMakePackage):
     version("stable", branch="main", preferred=True)
     version("2025.11.001", tag="2025.11.001", commit="8769df1e65868414247c527ac2ec18979a7dbb67")
     version("2025.11.000", tag="2025.11.000", commit="15f639dd33dfb15819304332d72c2b405b51b85e")
-    
+
     variant(
         "mpi",
         default=True,
