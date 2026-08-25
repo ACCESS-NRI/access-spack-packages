@@ -42,6 +42,13 @@ class Oasis3Mct(MakefilePackage):
     # Depend on virtual package "mpi".
     depends_on("mpi")
 
+    # NOTE: lib/scrip/src/Makefile may have a bug not allowing parallelism:
+    # [oasis3-mct]/spack-src/lib/scrip/src/iounits.f(41): error #7002: Error in opening the compiled module file.  Check INCLUDE paths.   [MOD_OASIS_FLUSH]
+    #       USE mod_oasis_flush
+    # ----------^
+    # Verified workaround:
+    parallel = False
+
     phases = ["edit", "build", "install"]
 
     # TODO: Implement a determine_version(cls, exe)
@@ -143,7 +150,6 @@ f           = $(F90)
 
         config["gcc"] = """
 # Compiling and other commands
-MAKE        = make
 # Consider adding following flags if breaks for gfortran > v10: -fdefault-real-8 -fdefault-double-8
 F90         = mpif90 -Wall -fallow-argument-mismatch -ffree-line-length-0
 CC          = gcc
@@ -159,7 +165,6 @@ F90FLAGS_1  =
         # module load intel-compiler/2019.5.281
         config["intel"] = f"""
 # Compiling and other commands
-MAKE        = /usr/bin/make
 F90         = mpifort
 CC          = mpicc
 LD          = $(F90)
@@ -230,8 +235,7 @@ CCFLAGS   = $(CCFLAGS_1) $(INCPSMILE) $(CPPDEF)
         # compiles all OASIS3-MCT libraries mct, scrip and psmile:
         # make -f TopMakefileOasis3
         with working_dir(join_path(self.stage.source_path, self.__makefiledir)):
-            build = Executable("make")
-            build("-f", "TopMakefileOasis3")
+            make("-f", "TopMakefileOasis3")
 
         # Upstream is missing a pkgconfig files, so we'll create them.
         self.__create_pkgconfig(spec, prefix)
