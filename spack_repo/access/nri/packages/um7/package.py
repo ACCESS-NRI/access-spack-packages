@@ -83,6 +83,11 @@ class Um7(Package):
         "@access-esm1.6",
         msg="access-esm1.6 is only available in access-spack-packages versions older than 2026.08.000."
     )
+    conflicts(
+        "%gcc",
+        when="@:2026.04.001",
+        msg="um7 version 2026.04.001 and older cannot be compiled with gcc."
+    )
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")
@@ -107,15 +112,6 @@ class Um7(Package):
         Set environment variables to their required values.
         """
         env.prepend_path("PATH", self.spec["fcm"].prefix.bin)
-        oasis3_incs = [
-                join_path(self.spec["oasis3-mct"].prefix.include, subdir)
-                for subdir in ["psmile.MPI1", "mct"]]
-        ideps = ["gcom4", "netcdf-fortran"]
-        if self.spec.satisfies(self._VERSION_WITH_CABLE):
-            ideps.append("cable")
-        incs = [self.spec[d].prefix.include for d in ideps] + oasis3_incs
-        for ipath in incs:
-            env.prepend_path("CPATH", ipath)
         # The gcom4 library does not contain shared objects and
         # therefore must be statically linked.
         env.prepend_path("LIBRARY_PATH", self.spec["gcom4"].prefix.lib)
@@ -156,9 +152,18 @@ class Um7(Package):
         ummodel_hg3/cfg/bld-hadgem3-mct.cfg
         """
 
+        ideps = ["gcom4", "netcdf-fortran"]
         ldeps = ["oasis3-mct", "netcdf-fortran", "dummygrib"]
         if self.spec.satisfies(self._VERSION_WITH_CABLE):
+            ideps.append("cable")
             ldeps.append("cable")
+
+        oasis3_incs = [
+                join_path(spec["oasis3-mct"].prefix.include, subdir)
+                for subdir in ["psmile.MPI1", "mct"]
+        ]
+        incs_list = [spec[d].prefix.include for d in ideps] + oasis3_incs
+        incs = " ".join([f"-I{d}" for d in incs_list])
         libs = " ".join([self._get_linker_args(spec, d) for d in ldeps] + ["-lgcom"])
 
         opt_value = spec.variants["optim"].value
@@ -166,7 +171,6 @@ class Um7(Package):
         CPPKEYS = (
             "C_LONG_LONG_INT=c_long_long_int MPP=mpp C_LOW_U=c_low_u "
             "FRL8=frl8 LINUX=linux BUFRD_IO=bufrd_io LITTLE_END=little_end "
-            "LINUX_INTEL_COMPILER=linux_intel_compiler "
             "ACCESS=access OASIS3=oasis3 CONTROL=control REPROD=reprod "
             "MPP=mpp ATMOS=atmos GLOBAL=global A04_ALL=a04_all "
             "A01_3A=a01_3a A02_3A=a02_3a A03_8C=a03_8c A04_3D=a04_3d "
@@ -182,21 +186,6 @@ class Um7(Package):
             "CABLE_17TILES=cable_17tiles "
             "CABLE_SOIL_LAYERS=cable_soil_layers "
             "TIMER=timer")
-        FFLAGS = "-ftz -what -fno-alias -stack-temps -safe-cray-ptr"
-        if opt_value == "debug":
-            FO = "-O0"
-            FTRACEBACK = "-traceback"
-            FDEBUG = "-debug all"
-            FG = "-g"
-            FARCH = ""
-            FOBLANK = "-O0"
-        else:
-            FO = "-O2"
-            FTRACEBACK = ""
-            FDEBUG = ""
-            FG = ""
-            FARCH = "-xCORE-AVX512"
-            FOBLANK = ""
 
         # FCM tries to find all instances of USE and include them as
         # source code, except things explicitly excluded by excl_deps.
@@ -246,7 +235,7 @@ excl_dep                                           USE::cable_runtime_opts_mod
 excl_dep                                           USE::landuse_mod
             """
 
-        config = f"""
+        config_pre = f"""
 # ------------------------------------------------------------------------------
 # File header
 # ------------------------------------------------------------------------------
@@ -285,9 +274,29 @@ pp                                                 1
 target                                             {EXE_NAME}
 tool::ar                                           ar
 tool::cc                                           mpicc
-tool::cflags                                       {FO} -g {FTRACEBACK} {FDEBUG} {FARCH} -fp-model precise
+        """
+
+        if spec.satisfies("%intel") or spec.satisfies("%oneapi"):
+            FFLAGS = f"-ftz -what -fno-alias -stack-temps -safe-cray-ptr {incs}"
+            if opt_value == "debug":
+                FO = "-O0"
+                FTRACEBACK = "-traceback"
+                FDEBUG = "-debug all"
+                FG = "-g"
+                FARCH = ""
+                FOBLANK = "-O0"
+            else:
+                FO = "-O2"
+                FTRACEBACK = ""
+                FDEBUG = ""
+                FG = ""
+                FARCH = "-xCORE-AVX512"
+                FOBLANK = ""
+
+            config = f"""
+tool::cflags                                       {FO} -g {FTRACEBACK} {FDEBUG} {FARCH} -fp-model precise {incs}
 tool::cpp                                          cpp
-tool::cppflags
+tool::cppflags                                     {incs}
 tool::cppkeys                                      {CPPKEYS}
 tool::fc                                           mpif90
 tool::fflags                                       {FO}  -g   -traceback  {FDEBUG} -i8 -r8      -fp-model precise {FFLAGS}
@@ -305,8 +314,68 @@ tool::geninterface                                 none
 tool::ld                                           mpif90
 tool::ldflags                                      {FOBLANK} -g -traceback {FDEBUG} -static-intel {libs}
         """
+        elif spec.satisfies("%gcc"):
+            FFLAGS = f"{incs}"
+            if opt_value == "debug":
+                FO = "-O0"
+                FTRACEBACK = ""
+                FDEBUG = ""
+                FG = "-g"
+                FARCH = ""
+                FOBLANK = "-O0"
+            else:
+                FO = "-O3 -fno-tree-vectorize"
+                FTRACEBACK = ""
+                FDEBUG = ""
+                FG = ""
+                FARCH = ""
+                FOBLANK = ""
+            FSTD = f"{FO} -g {FDEBUG} -fdefault-integer-8 -fdefault-real-8 -fdefault-double-8 {FFLAGS}"
+            config = f"""
+tool::cflags                                       {FO} -g -std=gnu17 {FTRACEBACK} {FDEBUG} {FARCH} {incs}
+tool::cpp                                          cpp
+tool::cppflags                                     {incs} -std=gnu17
+tool::cppkeys                                      {CPPKEYS}
+tool::fc                                           mpif90
+tool::fflags                                       {FSTD}
+# Different precision options for OASIS interface
+tool::fflags::control::coupling::dump_received     {FO} {FG} {FDEBUG} {FFLAGS}
+tool::fflags::control::coupling::dump_sent         {FO} {FG} {FDEBUG} {FFLAGS}
+tool::fflags::control::coupling::oasis3_atmos_init {FO} {FG} {FDEBUG}  -fdefault-real-8 -fdefault-double-8 {FFLAGS}
+# These routines require -fallow-argument-mismatch
+tool::fflags::control::top_level::acumps           {FSTD} -fallow-argument-mismatch
+tool::fflags::control::top_level::diagnostics_bl   {FSTD} -fallow-argument-mismatch
+tool::fflags::control::top_level::diagnostics_conv {FSTD} -fallow-argument-mismatch
+tool::fflags::control::top_level::dumpctl          {FSTD} -fallow-argument-mismatch
+tool::fflags::control::top_level::microphys_ctl    {FSTD} -fallow-argument-mismatch
+tool::fflags::control::top_level::ni_imp_ctl       {FSTD} -fallow-argument-mismatch
+tool::fflags::control::top_level::in_intf          {FSTD} -fallow-argument-mismatch
+tool::fflags::control::top_level::setcona          {FSTD} -fallow-argument-mismatch
+tool::fflags::control::top_level::setdiff_old      {FSTD} -fallow-argument-mismatch
+tool::fflags::control::stash::coex2                {FSTD} -fallow-argument-mismatch
+tool::fflags::control::stash::init_pp              {FSTD} -fallow-argument-mismatch
+tool::fflags::control::stash::meandiag             {FSTD} -fallow-argument-mismatch
+tool::fflags::control::stash::spatial              {FSTD} -fallow-argument-mismatch
+tool::fflags::control::mpp::gather_pack_field      {FSTD} -fallow-argument-mismatch
+tool::fflags::control::dump_io::writhead           {FSTD} -fallow-argument-mismatch
+tool::fflags::control::dump_io::readhead           {FSTD} -fallow-argument-mismatch
+tool::fflags::control::ancillaries::inancila-inanca1a      {FSTD} -fallow-argument-mismatch
+tool::fflags::atmosphere::lbc_output::gen_intf_a_old_lbcs  {FSTD} -fallow-argument-mismatch
+tool::fflags::atmosphere::dynamics_solver::two_norm_levels {FSTD} -fallow-argument-mismatch
+
+tool::fpp                                          cpp
+tool::fppflags                                     -P -traditional
+tool::fppkeys                                      {CPPKEYS}
+
+tool::geninterface                                 none
+tool::ld                                           mpif90
+tool::ldflags                                      {FOBLANK} -g {FDEBUG}  {libs}
+        """
+        else:
+            raise NotImplementedError("Unknown compiler")
+
         with open(self._bld_cfg_path, "w") as bld_cfg_file:
-            bld_cfg_file.write(config)
+            bld_cfg_file.write(config_pre + config)
 
 
     def build(self, spec, prefix):
