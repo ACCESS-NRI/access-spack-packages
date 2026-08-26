@@ -1,0 +1,8 @@
+package:
+  gcc:
+    require:
+    - '@{{ gcc_compiler_version }}'
+  all:
+    require:
+    - '%access_gcc'
+    - 'target=x86_64'
