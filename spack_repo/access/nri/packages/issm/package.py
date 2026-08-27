@@ -6,6 +6,7 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 from spack_repo.builtin.build_systems.autotools import AutotoolsPackage
+from spack_repo.builtin.build_systems.cuda import CudaPackage
 from spack.package import *
 import zipfile
 import os
@@ -13,7 +14,7 @@ import time
 
 ZIPFILE_MIN_DATE = (1980, 1, 1, 0, 0, 0)
 
-class Issm(AutotoolsPackage):
+class Issm(AutotoolsPackage, CudaPackage):
     """Ice-sheet and Sea-Level System Model.
 
     This recipe supports two distinct build flavours:
@@ -86,6 +87,17 @@ class Issm(AutotoolsPackage):
         description="Install ISSM python files under <prefix>/python-tools",
     )
 
+    variant(
+        "hypre",
+        default=False,
+        description=(
+            "Build with Hypre BoomerAMG preconditioner support via PETSc. "
+            "Enables pc_type=hypre in PETSc solver options. "
+            "When combined with +cuda, Hypre is built with GPU support "
+            "(BoomerAMG setup and V-cycles on device)."
+        ),
+    )
+
     # --------------------------------------------------------------------
     # Dependencies
     # --------------------------------------------------------------------
@@ -103,14 +115,31 @@ class Issm(AutotoolsPackage):
 
     # Conditional dependencies
     # --------------------------------------------------------------------
-    # PETSc is used for linear algebra in all builds
-    with when("~production"):
+    # PETSc is used for linear algebra in all builds.
+    # The +cuda variant propagates through to PETSc so that GPU-accelerated
+    # KSP solves (via aijcusparse / CUDA vectors) are available at runtime.
+    with when("~production ~cuda"):
         depends_on("petsc~examples+metis+mumps+scalapack")
+    with when("~production +cuda"):
+        depends_on("petsc+cuda+metis+mumps+scalapack")
 
-    # When building "production" ISSM, use a PETSc variant with optimizations and no debug symbols. 
+    # When building "production" ISSM, use a PETSc variant with optimizations and no debug symbols.
     # This is the recommended configuration for production use, and ensures that users get the best performance out of the box.
-    with when("+production"):
+    with when("+production ~cuda"):
         depends_on("petsc~debug~examples+metis+mumps+scalapack")
+    with when("+production +cuda"):
+        depends_on("petsc+cuda~debug~examples+metis+mumps+scalapack")
+
+    # Propagate cuda_arch to PETSc so the right GPU ISA is compiled
+    with when("+cuda"):
+        for _arch in CudaPackage.cuda_arch_values:
+            depends_on(f"petsc cuda_arch={_arch}", when=f"cuda_arch={_arch}")
+
+    # Hypre BoomerAMG: propagate +hypre to PETSc (and cuda_arch when +cuda).
+    # PETSc's +hypre variant downloads/links Hypre; with +cuda Hypre is built
+    # GPU-native (--with-gpu-arch=<arch> passed by the Hypre Spack package).
+    with when("+hypre"):
+        depends_on("petsc+hypre")
 
     # When building with AD support, add CoDiPack + MediPack + adjointpetsc dependencies
     with when("+ad"):
@@ -141,6 +170,12 @@ class Issm(AutotoolsPackage):
 
     requires("+py-tools", when="+wrappers", msg="The +wrappers variant requires +py-tools")
     requires("+wrappers", when="+py-tools", msg="The +py-tools variant requires +wrappers for full functionality")
+
+    # CUDA and AD are not supported together (adjointpetsc is not CUDA-aware)
+    conflicts("+cuda", when="+ad", msg="+cuda and +ad cannot be used together: adjointpetsc does not support CUDA")
+
+    # Hypre and AD are not supported together (same reason as +cuda +ad)
+    conflicts("+hypre", when="+ad", msg="+hypre is incompatible with +ad: adjointpetsc does not support the Hypre-enabled PETSc path")
 
     # --------------------------------------------------------------------
     # Build environment - inject AD and/or OpenMP compiler flags when needed
@@ -216,6 +251,13 @@ class Issm(AutotoolsPackage):
                 "--enable-tape-alloc",
                 "--with-numthreads=4",
             ]
+        # CUDA support
+        if self.spec.satisfies("+cuda"):
+            args.append(f"--with-cuda-dir={self.spec['cuda'].prefix}")
+            cuda_archs = self.spec.variants["cuda_arch"].value
+            if cuda_archs and cuda_archs[0] != "none":
+                args.append(f"--with-cuda-arch={cuda_archs[0]}")
+
         args.append(f"--with-parmetis-dir={self.spec['parmetis'].prefix}")
         args.append(f"--with-metis-dir={self.spec['metis'].prefix}")
         args.append(f"--with-mumps-dir={self.spec['mumps'].prefix}")

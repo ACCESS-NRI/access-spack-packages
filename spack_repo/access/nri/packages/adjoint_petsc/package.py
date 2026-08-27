@@ -28,8 +28,8 @@ class AdjointPetsc(CMakePackage):
     constraints that are not broadly useful to the wider Spack ecosystem.
     """
 
-    homepage = "https://github.com/SciCompKL/adjoint-PETSc"
-    git      = "https://github.com/SciCompKL/adjoint-PETSc.git"
+    homepage = "https://github.com/justinh2002/adjoint-PETSc.git"
+    git      = "https://github.com/justinh2002/adjoint-PETSc.git"
 
     maintainers("justinh2002")
 
@@ -57,7 +57,7 @@ class AdjointPetsc(CMakePackage):
     conflicts("%clang@:14", msg="adjoint-PETSc requires C++23 support (Clang 15+). Release notes: https://clang.llvm.org/cxx_status.html#cxx23")
     conflicts("%apple-clang@:15", msg="adjoint-PETSc requires C++23 support (Apple Clang 16+). Release notes: https://developer.apple.com/documentation/xcode-release-notes")
     conflicts("%intel", msg="adjoint-PETSc is not supported with classic Intel compilers in this recipe. Release notes: https://www.intel.com/content/www/us/en/developer/articles/release-notes/oneapi-dpcpp-cpp-compiler-release-notes.html")
-    conflicts("%oneapi", msg="adjoint-PETSc is not currently supported with oneAPI in this recipe. Release notes: https://www.intel.com/content/www/us/en/developer/articles/release-notes/oneapi-dpcpp-cpp-compiler-release-notes.html")
+
 
     def cmake_args(self):
         args = [
