@@ -1,0 +1,5 @@
+packages:
+  cmake:
+    require:
+    - '@3.31.12'
+    

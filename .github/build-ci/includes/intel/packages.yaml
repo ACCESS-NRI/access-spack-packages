@@ -1,4 +1,8 @@
 packages:
+  gcc-runtime:
+    require:
+    - '%access_gcc'
+    - 'target=x86_64'
   intel-oneapi-compilers-classic:
     require:
     - '@2021.10.0'

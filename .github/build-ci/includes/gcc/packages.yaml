@@ -1,4 +1,8 @@
 package:
+  gcc-runtime:
+    require:
+    - '%access_gcc'
+    - 'target=x86_64'
   gcc:
     require:
     - '@{{ gcc_compiler_version }}'
