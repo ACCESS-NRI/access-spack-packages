@@ -1,12 +1,7 @@
 packages:
-  gcc-runtime:
-    require:
-    - '%access_gcc'
-    - 'target=x86_64'
   intel-oneapi-compilers:
     require:
     - '@2025.2.0'
   all:
     require:
     - '%access_oneapi'
-    - 'target=x86_64'
