@@ -24,6 +24,11 @@ class Gcom4(Package):
 
     version("stable", branch="access-esm1.6", preferred=True)
     version(
+        "2026.08.000",
+        tag="2026.08.000",
+        commit="0f60010e6419ff096d4f2ab344a5b2b098047289"
+    )
+    version(
         "2025.08.000",
         tag="2025.08.000",
         commit="d401980e663267be2a039dbb06bf684e2641ee3d"
