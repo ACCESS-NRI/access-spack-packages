@@ -20,6 +20,7 @@ class Cable(CMakePackage):
     license("LicenseRef-CSIRO-Open-Source-Software-License-v1.0", checked_by="anton-seaice")
 
     version("stable", branch="main", preferred=True)
+    version("2026.07.000", tag="2026.07.000", commit="41fd8871a68d23c91a63da97fa0a14de11a19aec")
     version("2025.11.001", tag="2025.11.001", commit="8769df1e65868414247c527ac2ec18979a7dbb67")
     version("2025.11.000", tag="2025.11.000", commit="15f639dd33dfb15819304332d72c2b405b51b85e")
 
