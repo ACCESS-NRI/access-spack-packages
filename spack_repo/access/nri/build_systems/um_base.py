@@ -73,10 +73,10 @@ class UmBasePackage(Package):
         "platagnostic",
         "thread_utils")
     for var in _off_on_variants:
-        variant(var, default="none", sticky=True, description=var,
-            values=("none", "off", "on"), multi=False)
+        variant(var, default="default", sticky=True, description=var,
+            values=("default", "off", "on"), multi=False)
 
-    # String variants have their default values set to "none" here.
+    # String variants have their default values set to "default" here.
     # For all string variants other than Git reference variants,
     # the real default is set by the model.
 
@@ -96,12 +96,12 @@ class UmBasePackage(Package):
             _rev_variants.append(_rev_var)
             variant(
                 _rev_var,
-                default="none",
+                default="default",
                 sticky=True,
                 values="*",
                 multi=False,
                 description=f"Subversion revision for {_project}. "
-                            f"Defaults to automatic versioning if 'none'."
+                            f"Defaults to automatic versioning if 'default'."
             )
 
         # Sources variants
@@ -109,7 +109,7 @@ class UmBasePackage(Package):
         _sources_variants.append(_sources_var)
         variant(
             _sources_var,
-            default="none",
+            default="default",
             sticky=True,
             values="*",
             multi=False,
@@ -118,10 +118,10 @@ class UmBasePackage(Package):
 
         # Git reference variants.
         _ref_var = f"{_project}_ref"
-        variant(_ref_var, default="none", sticky=True, values="*", multi=False,
+        variant(_ref_var, default="default", sticky=True, values="*", multi=False,
             description=f"Git branch/tag/commit for {_project}. "
                         f"Overrides Subversion. "
-                        f"Defaults to automatic tagging if 'none'.")
+                        f"Defaults to automatic tagging if 'default'.")
 
         # Configuraion items to use when GitHub sources are needed.
         _project_cfg[_project] = {
@@ -166,7 +166,7 @@ class UmBasePackage(Package):
     for _var in _other_variants:
         variant(
             _var,
-            default="none",
+            default="default",
             sticky=True,
             values="*",
             multi=False,
@@ -238,12 +238,12 @@ class UmBasePackage(Package):
     def _project_ref(self, project):
         """
         Return the git reference for a resource, applying automatic tagging
-        if the variant is 'none'.
+        if the variant is 'default'.
         """
         spec = self.spec
         ref_var = self._project_cfg[project]["ref_var"]
         ref_value = spec.variants[ref_var].value
-        if ref_value == "none":
+        if ref_value == "default":
             if ref_var == "um_ref":
                 # Use a UM repo tag, e.g. UKMO_vn13.8
                 return f"UKMO_vn{spec.version}"
@@ -357,7 +357,7 @@ class UmBasePackage(Package):
             sources_var = project_cfg["sources_var"]
             location_var = project_cfg["location_var"]
             sources_value = spec.variants[sources_var].value
-            if sources_value == "none":
+            if sources_value == "default":
                 # In this case, the spec value for sources_var has not
                 # overridden the model configuration value, if any.
                 if sources_var not in config_env:
@@ -372,7 +372,7 @@ class UmBasePackage(Package):
                         tty.warn(
                             f"The {model} model sets "
                             f"{sources_var}={env_value}.")
-            else:  # sources_value != "none"
+            else:  # sources_value != "default"
                 # In this case, the spec value for sources_var has already
                 # overridden the model configuration value, if any.
                 assert sources_value == config_env[sources_var]
@@ -396,7 +396,7 @@ class UmBasePackage(Package):
             root_path_value = spec.variants[root_path_var].value
             ref_value = spec.variants[ref_var].value
             tty.info(f"The spec sets {ref_var}={ref_value}")
-            if root_path_value == "none":
+            if root_path_value == "default":
                 # In this case, the spec value for root_path_var has not
                 # overridden the model configuration value, if any.
                 if root_path_var not in config_env:
@@ -411,7 +411,7 @@ class UmBasePackage(Package):
                         tty.warn(
                             f"The {model} model sets "
                             f"{root_path_var}={env_value}.")
-            else:  # root_path_value != "none"
+            else:  # root_path_value != "default"
                 # In this case, the spec value for root_path_var has already
                 # overridden the model configuration value, if any.
                 assert root_path_value == config_env[root_path_var]
@@ -455,7 +455,7 @@ class UmBasePackage(Package):
         off_on_to_str = lambda off_on: "true" if off_on == "on" else "false"
         for var in self._off_on_variants:
             spec_value = spec.variants[var].value
-            if spec_value != "none":
+            if spec_value != "default":
                 spec_str_value = off_on_to_str(spec_value)
                 check_model_vs_spec(model, config_env, var, spec_str_value)
                 config_env[var] = spec_str_value
@@ -465,7 +465,7 @@ class UmBasePackage(Package):
         # then use a component revision based on the spec UM version.
         for var in self._rev_variants:
             spec_value = spec.variants[var].value
-            if spec_value != "none":
+            if spec_value != "default":
                 check_model_vs_spec(model, config_env, var, spec_value)
                 config_env[var] = spec_value
             elif var not in config_env or config_env[var] == "":
@@ -474,7 +474,7 @@ class UmBasePackage(Package):
         # Override those environment variables where any other string variant is specified.
         for var in self._sources_variants + self._other_variants:
             spec_value = spec.variants[var].value
-            if spec_value != "none":
+            if spec_value != "default":
                 check_model_vs_spec(model, config_env, var, spec_value)
                 config_env[var] = spec_value
 
@@ -530,7 +530,7 @@ class UmBasePackage(Package):
             for project in self._projects:
                 ref_var = self._project_cfg[project]["ref_var"]
                 ref_value = spec.variants[ref_var].value
-                if ref_value != "none":
+                if ref_value != "default":
                     tty.warn(
                         f"The {model} model ignores the variant "
                         f"{ref_var}={ref_value}.")
