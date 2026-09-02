@@ -70,6 +70,12 @@ class Mom5(CMakePackage):
         description="Deterministic build"
     )
 
+    requires(
+        "build_type=Release",
+        when="+deterministic",
+        msg="Deterministic builds are only supported with build_type=Release",
+    )
+
     depends_on("c", type="build")
     depends_on("fortran", type="build")
     depends_on("cmake@3.18:", type="build")
