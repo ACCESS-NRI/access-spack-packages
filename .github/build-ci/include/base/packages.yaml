@@ -1,20 +1,20 @@
 # All of the package requirements defined here are overridable in environments
 packages:
   # Common packages versions
-  cmake:
-    require:
-    - '@3.31.12'
-  python:
-    require:
-    - '@3.12.13'
-  openmpi:
-    require:
-    - '@5.0.8'
+  #cmake:
+  #  require:
+  #  - '@3.31.6'
+  #python:
+  #  require:
+  #  - '@3.12.13'
+  #openmpi:
+  #  require:
+  #  - '@5.0.8'
 
   # Common base compiler versions
   gcc:
     require:
-    - '@15.1.0'
+    - '@13.2.0'
   intel-oneapi-compilers-classic:
     require:
     - '@2021.10.0'
