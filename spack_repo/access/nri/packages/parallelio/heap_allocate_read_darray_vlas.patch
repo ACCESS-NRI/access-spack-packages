@@ -1,8 +1,136 @@
 diff --git a/src/clib/pio_darray_int.c b/src/clib/pio_darray_int.c
-index 4faf656e..ec2fbb8e 100644
+index 4faf656e..e0ab4c6a 100644
 --- a/src/clib/pio_darray_int.c
 +++ b/src/clib/pio_darray_int.c
-@@ -1192,8 +1192,29 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
+@@ -425,8 +425,27 @@ write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *vari
+         int ndims = iodesc->ndims;
+ #ifdef _PNETCDF
+         int rrcnt = 0; /* Number of subarray requests (pnetcdf only). */
+-        PIO_Offset *startlist[num_regions]; /* Array of start arrays for ncmpi_iput_varn(). */
+-        PIO_Offset *countlist[num_regions]; /* Array of count  arrays for ncmpi_iput_varn(). */
++        /* These were stack VLAs of num_regions pointers each -- see the note
++         * in pio_read_darray_nc_serial(). num_regions is unbounded for a
++         * fragmented decomposition, so the frame could exceed the stack limit
++         * and fault with no diagnostic. calloc() so the entry pointers start
++         * NULL. NOTE: the error returns in this function do not release these;
++         * they are all fatal paths that abort the run, and the diff was kept
++         * small deliberately. */
++        PIO_Offset **startlist = NULL; /* Array of start arrays for ncmpi_iput_varn(). */
++        PIO_Offset **countlist = NULL; /* Array of count  arrays for ncmpi_iput_varn(). */
++
++        if (file->iotype == PIO_IOTYPE_PNETCDF && num_regions > 0)
++        {
++            startlist = calloc((size_t)num_regions, sizeof(PIO_Offset *));
++            countlist = calloc((size_t)num_regions, sizeof(PIO_Offset *));
++            if (!startlist || !countlist)
++            {
++                free(startlist);
++                free(countlist);
++                return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
++            }
++        }
+
+         ierr = ncmpi_wait_all(file->fh, NC_REQ_ALL, NULL, NULL);
+ #endif /* _PNETCDF */
+@@ -675,7 +694,10 @@ write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *vari
+                     {
+                         free(startlist[i]);
+                         free(countlist[i]);
++                        startlist[i] = NULL;
++                        countlist[i] = NULL;
+                     }
++                    rrcnt = 0;
+                 }
+                 break;
+ #endif
+@@ -687,6 +709,17 @@ write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *vari
+             if (region)
+                 region = region->next;
+         } /* next regioncnt */
++
++#ifdef _PNETCDF
++        /* Any per-region entries were released above; release the arrays. */
++        for (int i = 0; i < rrcnt; i++)
++        {
++            free(startlist[i]);
++            free(countlist[i]);
++        }
++        free(startlist);
++        free(countlist);
++#endif /* _PNETCDF */
+     } /* endif (ios->ioproc) */
+
+     /* Check the return code from the netCDF/pnetcdf call. */
+@@ -1082,16 +1115,38 @@ write_darray_multi_serial(file_desc_t *file, int nvars, int fndims, const int *v
+     /* Only IO tasks participate in this code. */
+     if (ios->ioproc)
+     {
+-        size_t tmp_start[fndims * num_regions]; /* A start array for each region. */
+-        size_t tmp_count[fndims * num_regions]; /* A count array for each region. */
++        /* These were stack VLAs sized by num_regions -- see the note in
++         * pio_read_darray_nc_serial(). num_regions grows with the local
++         * element count for any decomposition that is not contiguous, so the
++         * frame is unbounded and the write faults under the default stack
++         * limit with no diagnostic. Heap allocate instead. */
++        size_t *tmp_start = NULL; /* A start array for each region. */
++        size_t *tmp_count = NULL; /* A count array for each region. */
+
+         PLOG((3, "num_regions = %d", num_regions));
+
++        if (num_regions > 0)
++        {
++            size_t nelem = (size_t)fndims * (size_t)num_regions;
++            tmp_start = malloc(nelem * sizeof(size_t));
++            tmp_count = malloc(nelem * sizeof(size_t));
++            if (!tmp_start || !tmp_count)
++            {
++                free(tmp_start);
++                free(tmp_count);
++                return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
++            }
++        }
++
+         /* Fill the tmp_start and tmp_count arrays, which contain the
+          * start and count arrays for all regions. */
+         if ((ierr = find_all_start_count(region, num_regions, fndims, iodesc->ndims, vdesc,
+                                          tmp_start, tmp_count)))
++        {
++            free(tmp_start);
++            free(tmp_count);
+             return pio_err(ios, file, ierr, __FILE__, __LINE__);
++        }
+
+         /* Tasks other than 0 will send their data to task 0. */
+         if (ios->io_rank > 0)
+@@ -1100,7 +1155,11 @@ write_darray_multi_serial(file_desc_t *file, int nvars, int fndims, const int *v
+              * to task 0. */
+             if ((ierr = send_all_start_count(ios, iodesc, llen, num_regions, nvars, fndims,
+                                              tmp_start, tmp_count, iobuf)))
++            {
++                free(tmp_start);
++                free(tmp_count);
+                 return pio_err(ios, file, ierr, __FILE__, __LINE__);
++            }
+         }
+         else
+         {
+@@ -1108,8 +1167,15 @@ write_darray_multi_serial(file_desc_t *file, int nvars, int fndims, const int *v
+
+             if ((ierr = recv_and_write_data(file, varids, frame, iodesc, llen, num_regions, nvars, fndims,
+                                             tmp_start, tmp_count, iobuf)))
++            {
++                free(tmp_start);
++                free(tmp_count);
+                 return pio_err(ios, file, ierr, __FILE__, __LINE__);
++            }
+         }
++
++        free(tmp_start);
++        free(tmp_count);
+     }
+
+ #ifdef TIMING
+@@ -1192,8 +1258,29 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
  #ifdef _PNETCDF
          size_t tmp_bufsize = 1;
          int rrlen = 0;
@@ -32,9 +160,9 @@ index 4faf656e..ec2fbb8e 100644
 +            }
 +        }
  #endif
- 
+
          /* buffer is incremented by byte and loffset is in terms of
-@@ -1355,7 +1376,16 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
+@@ -1355,7 +1442,16 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
                                                  vdesc->record, startlist, countlist, &filetype);
                      ierr = ncmpi_get_vard_all(file->fh, vid, filetype, iobuf, iodesc->llen, iodesc->mpitype);
                      if(filetype != MPI_DATATYPE_NULL && (mpierr = MPI_Type_free(&filetype)))
@@ -48,10 +176,10 @@ index 4faf656e..ec2fbb8e 100644
 +                        free(countlist);
                          return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
 +                    }
- 
+
  #else
                      //printf("rllen %d mpitype %d\n",iodesc->rllen, iodesc->mpitype);
-@@ -1369,7 +1399,10 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
+@@ -1369,7 +1465,10 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
  //                        PLOG((3,"startlist %d %d countlist %d %d",startlist[i][0],startlist[i][1],countlist[i][0],countlist[i][1]));
                          free(startlist[i]);
                          free(countlist[i]);
@@ -62,8 +190,8 @@ index 4faf656e..ec2fbb8e 100644
                  }
              }
              break;
-@@ -1380,12 +1413,29 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
- 
+@@ -1380,12 +1479,29 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
+
              /* Check return code. */
              if (ierr)
 +            {
@@ -78,7 +206,7 @@ index 4faf656e..ec2fbb8e 100644
 +#endif
                  return check_netcdf(file, ierr, __FILE__,__LINE__);
 +            }
- 
+
              /* Move to next region. */
              if (region)
                  region = region->next;
@@ -90,9 +218,9 @@ index 4faf656e..ec2fbb8e 100644
 +        free(countlist);
 +#endif
      }
- 
+
  #ifdef TIMING
-@@ -1468,11 +1518,31 @@ pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
+@@ -1468,11 +1584,31 @@ pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
          io_region *region;
          size_t start[fndims];
          size_t count[fndims];
@@ -100,7 +228,7 @@ index 4faf656e..ec2fbb8e 100644
 -        size_t tmp_count[fndims * iodesc->maxregions];
          size_t tmp_bufsize;
          void *bufptr;
- 
+
 +        /* These were stack VLAs sized by iodesc->maxregions. For a
 +         * decomposition with many regions per IO task -- e.g. an ESMF mesh
 +         * read via PIOc_InitDecomp_ReadOnly with PIO_REARR_SUBSET over
@@ -126,7 +254,7 @@ index 4faf656e..ec2fbb8e 100644
          /* buffer is incremented by byte and loffset is in terms of
             the iodessc->mpitype so we need to multiply by the size of
             the mpitype. */
-@@ -1572,8 +1642,25 @@ pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
+@@ -1572,8 +1708,25 @@ pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
               * other IO tasks. */
              int maxregions = 0;
              size_t loffset, regionsize;
@@ -151,11 +279,11 @@ index 4faf656e..ec2fbb8e 100644
 +                    return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
 +                }
 +            }
- 
+
              for (int rtask = 1; rtask <= ios->num_iotasks; rtask++)
              {
-@@ -1692,10 +1779,22 @@ pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
- 
+@@ -1692,10 +1845,22 @@ pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
+
                      if ((mpierr = MPI_Send(iobuf, tmp_bufsize, iodesc->mpitype, rtask,
                                             4 * ios->num_iotasks + rtask, ios->io_comm)))
 +                    {
@@ -175,5 +303,5 @@ index 4faf656e..ec2fbb8e 100644
 +        free(tmp_start);
 +        free(tmp_count);
      }
- 
+
  #ifdef TIMING
