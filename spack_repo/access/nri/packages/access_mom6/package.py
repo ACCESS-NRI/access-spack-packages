@@ -51,8 +51,38 @@ class AccessMom6(CMakePackage):
         description="Install MOM6 solo executable",
         when="@2025.07.001:"
     )
+    variant(
+        "openmp_offload",
+        default=False,
+        sticky=True,
+        description="Enable NVHPC OpenMP/OpenACC/do-concurrent GPU offload flags. Requires a "
+                     "source tree with the MOM6_OPENMP_OFFLOAD CMake option (currently only on "
+                     "the dev/gpu branch) and the NVHPC compiler."
+    )
+    variant(
+        "offload_mem_model",
+        default="separate",
+        values=("unified", "managed", "separate"),
+        multi=False,
+        when="+openmp_offload",
+        description="GPU memory model for +openmp_offload (maps to -gpu=mem:<model>)"
+    )
+    variant(
+        "offload_cc",
+        values=any_combination_of(
+            "35", "50", "60", "61", "70", "75", "80", "86", "87", "88", "89", "90",
+            "100", "101", "103", "110", "120", "121",
+        ),
+        when="+openmp_offload",
+        description="GPU compute capabilities to target for +openmp_offload, as any combination of "
+                     "the values NVHPC's -gpu=ccXY supports (per `nvc -gpu=help`). E.g. offload_cc=70,80,90 "
+                     "for Volta/Ampere/Hopper GPUs (V100/A100/H100). Default (none) will leave the arch"
+                     "decision up to the compiler (all possible archs if no GPU is detected, or only the"
+                     "native arch if a GPU is detected."
+    )
 
     conflicts("~access3", when="~mom6_solo", msg="At least one of access3 or mom6_solo must be enabled")
+    requires("%nvhpc", when="+openmp_offload", msg="+openmp_offload requires the NVHPC compiler")
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")
@@ -73,6 +103,14 @@ class AccessMom6(CMakePackage):
             self.define_from_variant("MOM6_ASYMMETRIC", "asymmetric_mem"),
             self.define_from_variant("MOM6_ACCESS3", "access3"),
             self.define_from_variant("MOM6_SOLO"),
+            self.define_from_variant("MOM6_OPENMP_OFFLOAD", "openmp_offload"),
+            self.define_from_variant("MOM6_OFFLOAD_MEM_MODEL", "offload_mem_model"),
         ]
+
+        if self.spec.satisfies("+openmp_offload"):
+            offload_cc = self.spec.variants["offload_cc"].value
+            if "none" in offload_cc:
+                offload_cc = []
+            args.append(self.define("MOM6_OFFLOAD_CC", sorted(offload_cc)))
 
         return args
