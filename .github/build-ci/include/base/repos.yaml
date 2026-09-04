@@ -1,0 +1,10 @@
+# These are sensible defaults for manifests as part of build-ci, and can be overridden
+repos:
+  access_spack_packages:
+    git: https://github.com/ACCESS-NRI/access-spack-packages.git
+    branch: api-v2
+    destination: $env/package-repos/access-spack-packages
+  builtin:
+    git: https://github.com/ACCESS-NRI/upstream-spack-packages.git
+    branch: access/v1.1
+    destination: $env/package-repos/spack-packages
