@@ -55,8 +55,7 @@ class Parallelio(CMakePackage):
     patch("pio_260.patch", when="@2.6.0")
 
     # Remove this patch once it has been accepted upstream.
-    # ---------------------------------------------------------------------
-    patch("heap_allocate_read_darray_vlas.patch", when="@2.6.0:2.6.8")
+    patch("heap_allocate_read_darray_vlas.patch", when="@2.6.1:2.6.8")
 
     depends_on("c", type="build")  # generated
     depends_on("cxx", type="build")  # generated
