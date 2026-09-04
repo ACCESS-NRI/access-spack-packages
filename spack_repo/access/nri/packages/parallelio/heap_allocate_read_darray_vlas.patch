@@ -1,0 +1,179 @@
+diff --git a/src/clib/pio_darray_int.c b/src/clib/pio_darray_int.c
+index 4faf656e..ec2fbb8e 100644
+--- a/src/clib/pio_darray_int.c
++++ b/src/clib/pio_darray_int.c
+@@ -1192,8 +1192,29 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
+ #ifdef _PNETCDF
+         size_t tmp_bufsize = 1;
+         int rrlen = 0;
+-        PIO_Offset *startlist[iodesc->maxregions];
+-        PIO_Offset *countlist[iodesc->maxregions];
++        /* These were stack VLAs of iodesc->maxregions pointers each. For a
++         * decomposition with many regions per IO task -- e.g. an ESMF mesh
++         * read via PIOc_InitDecomp_ReadOnly with PIO_REARR_SUBSET over
++         * scattered node ids -- they run to many megabytes. A VLA that large
++         * moves the stack pointer past the stack guard gap in a single step,
++         * so instead of faulting cleanly it can write straight into an
++         * adjacent mapping. Raising RLIMIT_STACK does not help. Heap allocate
++         * instead. calloc() so that the entry pointers start NULL, which makes
++         * the cleanup paths below safe. */
++        PIO_Offset **startlist = NULL;
++        PIO_Offset **countlist = NULL;
++
++        if (file->iotype == PIO_IOTYPE_PNETCDF && iodesc->maxregions > 0)
++        {
++            startlist = calloc((size_t)iodesc->maxregions, sizeof(PIO_Offset *));
++            countlist = calloc((size_t)iodesc->maxregions, sizeof(PIO_Offset *));
++            if (!startlist || !countlist)
++            {
++                free(startlist);
++                free(countlist);
++                return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
++            }
++        }
+ #endif
+ 
+         /* buffer is incremented by byte and loffset is in terms of
+@@ -1355,7 +1376,16 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
+                                                 vdesc->record, startlist, countlist, &filetype);
+                     ierr = ncmpi_get_vard_all(file->fh, vid, filetype, iobuf, iodesc->llen, iodesc->mpitype);
+                     if(filetype != MPI_DATATYPE_NULL && (mpierr = MPI_Type_free(&filetype)))
++                    {
++                        for (int i = 0; i < rrlen; i++)
++                        {
++                            free(startlist[i]);
++                            free(countlist[i]);
++                        }
++                        free(startlist);
++                        free(countlist);
+                         return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
++                    }
+ 
+ #else
+                     //printf("rllen %d mpitype %d\n",iodesc->rllen, iodesc->mpitype);
+@@ -1369,7 +1399,10 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
+ //                        PLOG((3,"startlist %d %d countlist %d %d",startlist[i][0],startlist[i][1],countlist[i][0],countlist[i][1]));
+                         free(startlist[i]);
+                         free(countlist[i]);
++                        startlist[i] = NULL;
++                        countlist[i] = NULL;
+                     }
++                    rrlen = 0;
+                 }
+             }
+             break;
+@@ -1380,12 +1413,29 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
+ 
+             /* Check return code. */
+             if (ierr)
++            {
++#ifdef _PNETCDF
++                for (int i = 0; i < rrlen; i++)
++                {
++                    free(startlist[i]);
++                    free(countlist[i]);
++                }
++                free(startlist);
++                free(countlist);
++#endif
+                 return check_netcdf(file, ierr, __FILE__,__LINE__);
++            }
+ 
+             /* Move to next region. */
+             if (region)
+                 region = region->next;
+         } /* next regioncnt */
++
++#ifdef _PNETCDF
++        /* Any per-region entries were released above; release the arrays. */
++        free(startlist);
++        free(countlist);
++#endif
+     }
+ 
+ #ifdef TIMING
+@@ -1468,11 +1518,31 @@ pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
+         io_region *region;
+         size_t start[fndims];
+         size_t count[fndims];
+-        size_t tmp_start[fndims * iodesc->maxregions];
+-        size_t tmp_count[fndims * iodesc->maxregions];
+         size_t tmp_bufsize;
+         void *bufptr;
+ 
++        /* These were stack VLAs sized by iodesc->maxregions. For a
++         * decomposition with many regions per IO task -- e.g. an ESMF mesh
++         * read via PIOc_InitDecomp_ReadOnly with PIO_REARR_SUBSET over
++         * scattered node ids -- they run to many megabytes. A VLA that large
++         * moves the stack pointer past the stack guard gap in a single step,
++         * so instead of faulting cleanly it can write straight into an
++         * adjacent mapping. Raising RLIMIT_STACK does not help. Heap allocate
++         * instead. See ESMF issue #492. */
++        size_t *tmp_start = NULL;
++        size_t *tmp_count = NULL;
++        if (iodesc->maxregions > 0)
++        {
++            size_t nelem = (size_t)fndims * (size_t)iodesc->maxregions;
++            if (!(tmp_start = malloc(nelem * sizeof(size_t))))
++                return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
++            if (!(tmp_count = malloc(nelem * sizeof(size_t))))
++            {
++                free(tmp_start);
++                return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
++            }
++        }
++
+         /* buffer is incremented by byte and loffset is in terms of
+            the iodessc->mpitype so we need to multiply by the size of
+            the mpitype. */
+@@ -1572,8 +1642,25 @@ pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
+              * other IO tasks. */
+             int maxregions = 0;
+             size_t loffset, regionsize;
+-            size_t this_start[fndims * iodesc->maxregions];
+-            size_t this_count[fndims * iodesc->maxregions];
++            /* Formerly stack VLAs -- see the note on tmp_start above. These
++             * hold the *remote* task's regions while tmp_* still hold this
++             * task's own, so they cannot alias. */
++            size_t *this_start = NULL;
++            size_t *this_count = NULL;
++            if (iodesc->maxregions > 0)
++            {
++                size_t nelem = (size_t)fndims * (size_t)iodesc->maxregions;
++                this_start = malloc(nelem * sizeof(size_t));
++                this_count = malloc(nelem * sizeof(size_t));
++                if (!this_start || !this_count)
++                {
++                    free(this_start);
++                    free(this_count);
++                    free(tmp_start);
++                    free(tmp_count);
++                    return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
++                }
++            }
+ 
+             for (int rtask = 1; rtask <= ios->num_iotasks; rtask++)
+             {
+@@ -1692,10 +1779,22 @@ pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
+ 
+                     if ((mpierr = MPI_Send(iobuf, tmp_bufsize, iodesc->mpitype, rtask,
+                                            4 * ios->num_iotasks + rtask, ios->io_comm)))
++                    {
++                        free(this_start);
++                        free(this_count);
++                        free(tmp_start);
++                        free(tmp_count);
+                         return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
++                    }
+                 }
+             }
++
++            free(this_start);
++            free(this_count);
+         }
++
++        free(tmp_start);
++        free(tmp_count);
+     }
+ 
+ #ifdef TIMING
