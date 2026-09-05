@@ -153,6 +153,12 @@ class Esmf(MakefilePackage, PythonExtension):
     # Needed for GCC 15, patch only works from 8.5 on, will be fixed in 8.9
     patch("yaml_cpp.patch", when="@8.5:8.8 %gcc@15:")
 
+    # Zoltan_PartDist_MPIOp() ignores the *len argument MPI passes to a
+    # user-defined reduction op and always writes 6 ints.  OpenMPI 5's
+    # coll/han invokes it with *len == 3, so it writes 12 bytes past the
+    # destination and corrupts the heap.  See the patch header for detail.
+    patch("zoltan_partdist_len.patch", when="@8.9.1")
+
     @when("+python")
     def patch(self):
         # The pyproject.toml file uses a dynamically generated version from git
