@@ -48,6 +48,8 @@ class Gcom(Package):
             mach_c = "ifort"
         elif spec.satisfies("%gcc"):
             mach_c = "gfortran"
+        elif spec.satisfies("%oneapi"):
+            mach_c = "oneapi"
         else:
             raise NotImplementedError("Unknown compiler")
         if spec.satisfies("+mpi"):
