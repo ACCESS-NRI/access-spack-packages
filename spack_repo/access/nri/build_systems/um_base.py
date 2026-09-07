@@ -45,153 +45,17 @@ class UmBasePackage(Package):
 
     maintainers("penguian")
 
-    _projects = (
-        "casim",
-        "jules",
-        "shumlib",
-        "socrates",
-        "ukca",
-        "um",
-    )
+    # The variants correspond to the meaningful entries in the build
+    # rose-app.conf files.
 
-    # Bool variants have their default value set to True here.
-    _bool_variants = (
-        "DR_HOOK",
-        "eccodes",
-        "netcdf"
-    )
-    for var in _bool_variants:
-        variant(var, default=True, sticky=True, description=var)
+    # Start with the boolean variants, which set library inclusions
+    variant("DR_HOOK", default=True, sticky=True, description="DR_HOOK")
+    variant("eccodes", default=True, sticky=True, description="eccodes")
+    variant("netcdf", default=True, sticky=True, description="netcdf")
+    variant("cable", default=False, sticky=True, description="CABLE library")
 
-    # We don't want cable to be on by default, but otherwise we want it treated like a bool variant
-    variant("cable", default=False, sticky=True, description="Whether to use CABLE library")
-    _bool_variants = _bool_variants + ("cable",)
-    
-    # Off/on variants have 3-value "none" "off", "on" logic.
-    _off_on_variants = (
-        "openmp",
-        "platagnostic",
-        "thread_utils")
-    for var in _off_on_variants:
-        variant(var, default="none", sticky=True, description=var,
-            values=("none", "off", "on"), multi=False)
-
-    # String variants have their default values set to "none" here.
-    # For all string variants other than Git reference variants,
-    # the real default is set by the model.
-
-    # Project-based collections.
-
-    # Revision variants. Needed only for Subversion sources.
-    _rev_variants = []
-    # Sources variants.  Needed only for Subversion sources.
-    _sources_variants = []
-    # Configuraion items to use when GitHub sources are needed.
-    _project_cfg = {}
-
-    for _project in _projects:
-        # Revision variants.
-        if _project != "um":
-            _rev_var = f"{_project}_rev"
-            _rev_variants.append(_rev_var)
-            variant(
-                _rev_var,
-                default="none",
-                sticky=True,
-                values="*",
-                multi=False,
-                description=f"Subversion revision for {_project}. "
-                            f"Defaults to automatic versioning if 'none'."
-            )
-
-        # Sources variants
-        _sources_var = f"{_project}_sources"
-        _sources_variants.append(_sources_var)
-        variant(
-            _sources_var,
-            default="none",
-            sticky=True,
-            values="*",
-            multi=False,
-            description=f"FCM diff extract location of {_project}."
-        )
-
-        # Git reference variants.
-        _ref_var = f"{_project}_ref"
-        variant(_ref_var, default="none", sticky=True, values="*", multi=False,
-            description=f"Git branch/tag/commit for {_project}. "
-                        f"Overrides Subversion. "
-                        f"Defaults to automatic tagging if 'none'.")
-
-        # Configuraion items to use when GitHub sources are needed.
-        _project_cfg[_project] = {
-            "location_var": f"{_project}_project_location",
-            "sources_var": f"{_project}_sources",
-            "url": f"https://github.com/ACCESS-NRI/{_project}.git",
-            "ref_var": _ref_var,
-        }
-
-    # Other string variants.
-    _other_variants = [
-        "compile_atmos",
-        "compile_createbc",
-        "compile_crmstyle_coarse_grid",
-        "compile_pptoanc",
-        "compile_recon",
-        "compile_scm",
-        "compile_sstpert_lib",
-        "compile_wafccb_lib",
-        "config_revision",
-        "config_root_path",
-        "config_type",
-        "COUPLER",
-        "extract",
-        "fcflags_overrides",
-        "gwd_ussp_precision",
-        "land_surface_model",
-        "ldflags_overrides_prefix",
-        "ldflags_overrides_suffix",
-        "ls_precipitation_precision",
-        "mirror",
-        "mpp_version",
-        "optimisation_level",
-        "platform_config_dir",
-        "portio_version",
-        "prebuild",
-        "recon_mpi",
-        "stash_version",
-        "timer_version",
-    ]
-
-    for _var in _other_variants:
-        variant(
-            _var,
-            default="none",
-            sticky=True,
-            values="*",
-            multi=False,
-            description=_var
-        )
-
-    depends_on("c", type="build")
-    depends_on("fortran", type="build")
-
-    # The 'site=nci-gadi' variant of fcm defines the keywords
-    # used by the FCM configuration of UM.
-    depends_on("fcm site=nci-gadi", type="build")
-    depends_on("fiat@um", type=("build", "link", "run"),
-        when="+DR_HOOK")
-    depends_on("eccodes +fortran +netcdf", type=("build", "link", "run"),
-        when="+eccodes")
-    depends_on("netcdf-fortran@4.5.2:", type=("build", "link", "run"),
-        when="+netcdf")
-    depends_on("cable library='access3'", type=("build", "link", "run"),
-        when="+cable")
-
-    phases = ["build", "install"]
-
-    # The dependency name, include paths, and ld_flags from
-    # the FCM config for each library configured via FCM.
+    # Each of the libraries needs information about how to locate them at
+    # build time
     _lib_cfg = {
         "DR_HOOK": {
             "includes": [
@@ -217,6 +81,180 @@ class UmBasePackage(Package):
             "fcm_name": "cable",
             "fcm_ld_flags": ""}}
 
+    # Now set up component variants, which are used to specify where to source
+    # components from. Given we need to construct a few variants for each of
+    # these components, we'll do it iteratively.
+    _components = ("casim", "jules", "shumlib", "socrates", "ukca", "um")
+    for component in _components:
+        # The _rev variants specify components to retrieve from the MOSRS
+        # SVN repository
+        variant(
+            f"{component}_rev",
+            default="",
+            sticky=True,
+            values=str,
+            description=f"SVN Revision to use for {component}."
+            )
+
+        # The _sources variants specify changesets to add from MOSRS
+        variant(
+            f"{component}_sources",
+            multi=True,
+            default="",
+            sticky=True,
+            values=str,
+            description=f"Additional changesets to retrieve for {component}."
+            )
+
+        # The _ref variants specify components to retrieve from Github
+        variant(
+            f"{component}_ref",
+            default="",
+            sticky=True,
+            values=str,
+            description=f"Github ref to use for {component}."
+            )
+
+    # Set up a few variants that decide what is built. In the original
+    # rose-app.conf files, these all follow the same template of
+    # compile_<name>=preprocess-<name> build-<name>, so we'll make
+    # compile_<name> the variant which maps to desired name when setting the
+    # build environment.
+    variant(
+        "compile_atmos",
+        default=True,
+        sticky=True,
+        description="Preprocess and compile atmosphere executable."
+        )
+
+    variant(
+        "compile_recon",
+        default=True,
+        sticky=True,
+        description="Preprocess and compile atmosphere executable."
+        )
+
+    variant(
+        "compile_createbc",
+        default=False,
+        sticky=True,
+        description="Preprocess and compile createbc executable."
+        )
+
+    variant(
+        "compile_scm",
+        default=False,
+        sticky=True,
+        description="Preprocess and compile single-column model executable."
+        )
+
+    # Now just take a subset of the other build options available in the
+    # rose-app.conf and set them meaningfully, based off the previously defined
+    # base rose-app.conf (i.e. vn13).
+    variant(
+        "fcflags_overrides",
+        multi=True,
+        default="",
+        values=str,
+        description="fcflags to append to the compilation."
+        )
+
+    variant(
+        "platform_config_dir",
+        default="nci-x86-ifort",
+        values=str,
+        description="Which FCM build configuration to use."
+        )
+
+    variant(
+        "optimisation_level",
+        default="safe",
+        values=("safe", "debug", "rigorous", "high")
+        description="Base optimisation level to apply."
+        )
+
+    variant(
+        "openmp",
+        default=True,
+        description="Whether to include openmp."
+        )
+
+    variant(
+        "thread_utils",
+        default=True,
+        description="Whether to include multi-threading utils."
+        )
+
+    depends_on("c", type="build")
+    depends_on("fortran", type="build")
+
+    # The 'site=nci-gadi' variant of fcm defines the keywords
+    # used by the FCM configuration of UM.
+    depends_on("fcm site=nci-gadi", type="build")
+    depends_on("fiat@um", type=("build", "link", "run"),
+        when="+DR_HOOK")
+    depends_on("eccodes +fortran +netcdf", type=("build", "link", "run"),
+        when="+eccodes")
+    depends_on("netcdf-fortran@4.5.2:", type=("build", "link", "run"),
+        when="+netcdf")
+    depends_on("cable library='access3'", type=("build", "link", "run"),
+        when="+cable")
+
+    phases = ["build", "install"]
+
+    def setup_build_environment(self, env):
+        """
+        Configure the environment using the specified variants, for the FCM
+        build.
+        """
+        
+        # We need to run through the variants, and turn them into the values
+        # expected by the FCM build.
+        # Start with the library variants
+        converter = lambda v: "true" if v else "false"
+        for var in ("DR_HOOK", "eccodes", "netcdf", "cable"):
+            as_FCM_value = converter(self.spec.variants[var].value)
+            env.set(var, as_FCM_value)
+
+        # Now the on/off variants (which are really boolean, but FCM wants
+        # on/off instead
+        converter = lambda v: "on" if v else "off"
+        for var in ("openmp", "thread_utils"):
+            as_FCM_value = converter(self.spec.variants[var].value)
+            env.set(var, as_FCM_value)
+
+        # Now we handle the components. We need more complex logic here- it's
+        # not allowed to specify a _rev and a _ref for the same component, and
+        # _sources cannot be mixed with _ref for a component.
+        for component in _components:
+            component_rev = self.spec.variants[f"{component}_rev"].value
+            component_sources = self.spec.variants[f"{component_sources"].value
+            component_ref = self.spec.variants[f"{component}_ref"].value
+
+            if component_rev and component_ref:
+                # Specified a rev and a ref- this is not allowed
+                raise KeyError("""Cannot specify a _rev and a _ref for the same
+                    component.""")
+
+            if component_ref and component_sources:
+                # Specified a ref and sources- this is not allowed
+                raise KeyError("""Cannot specify a _ref and _sources for the
+                    same component- _sources is strictly a SVN/MOSRS 
+                    concept.""")
+
+            # Now we can set the revs in the environment- the refs don't need
+            # this.
+            if component_rev:
+                env.set(f"{component}_rev", component_rev)
+            
+            # For the sources, we need to make sure they're in the right format
+            # which is one source per line
+            if spec_sources:
+                as_FCM_value = "\n".join(spec_sources)
+                env.set(f"{component}_sources", as_FCM_value)
+
+    # The dependency name, include paths, and ld_flags from
+    # the FCM config for each library configured via FCM.
     # List of model variants that have Github sources.
     # Should be overridden by child classes.
     github_models = ()
