@@ -9,7 +9,7 @@ class Fcm(Package):
 
     homepage = "https://github.com/metomi/fcm"
 
-    maintainers("scottwales", "penguian")
+    maintainers("scottwales", "paul-leopardi")
 
     version(
         "2021.05.0",

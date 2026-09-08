@@ -20,7 +20,7 @@ class Um7(Package):
     homepage = "https://code.metoffice.gov.uk/trac/um"
     git = "https://github.com/ACCESS-NRI/UM7.git"
 
-    maintainers("penguian", "Whyborn")
+    maintainers("paul-leopardi", "Whyborn")
 
     # https://code.metoffice.gov.uk/trac/um/wiki/PastReleases
     version("stable", branch="dev-access-esm1.6", preferred=True)

@@ -17,7 +17,7 @@ class Fiat(CMakePackage):
     git = "https://github.com/ACCESS-NRI/fiat.git"
     url = "https://github.com/ecmwf-ifs/fiat/archive/1.0.0.tar.gz"
 
-    maintainers("climbfuji", "penguian")
+    maintainers("climbfuji", "paul-leopardi")
 
     license("Apache-2.0")
 

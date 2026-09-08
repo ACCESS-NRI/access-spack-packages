@@ -20,7 +20,7 @@ class Gcom4(Package):
     homepage = "https://code.metoffice.gov.uk/trac/gcom"
     git = "https://github.com/ACCESS-NRI/GCOM4.git"
 
-    maintainers("penguian")
+    maintainers("paul-leopardi")
 
     version("stable", branch="access-esm1.6", preferred=True)
     version(

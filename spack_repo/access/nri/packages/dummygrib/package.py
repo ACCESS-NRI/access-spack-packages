@@ -18,7 +18,7 @@ class Dummygrib(MakefilePackage):
     homepage = "https://github.com/ACCESS-NRI/dummygrib"
     git = "https://github.com/ACCESS-NRI/dummygrib.git"
 
-    maintainers("penguian")
+    maintainers("paul-leopardi")
 
     version("1.0", branch="master")
 

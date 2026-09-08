@@ -22,7 +22,7 @@ class AccessRam3(BundlePackage):
 
     git = "https://github.com/ACCESS-NRI/ACCESS-RAM3.git"
 
-    maintainers("harshula", "penguian")
+    maintainers("harshula", "paul-leopardi")
 
     version("latest")
 
