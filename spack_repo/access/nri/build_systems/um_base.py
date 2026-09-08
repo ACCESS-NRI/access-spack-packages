@@ -102,7 +102,7 @@ class UmBasePackage(Package):
         # SVN repository
         variant(
             f"{component}_rev",
-            default="",
+            default="none",
             sticky=True,
             values=str,
             description=f"SVN Revision to use for {component}."
@@ -112,7 +112,6 @@ class UmBasePackage(Package):
         variant(
             f"{component}_sources",
             multi=True,
-            default="",
             sticky=True,
             values=str,
             description=f"Additional changesets to retrieve for {component}."
@@ -121,7 +120,7 @@ class UmBasePackage(Package):
         # The _ref variants specify components to retrieve from Github
         variant(
             f"{component}_ref",
-            default="",
+            default="none",
             sticky=True,
             values=str,
             description=f"Github ref to use for {component}."
@@ -166,7 +165,6 @@ class UmBasePackage(Package):
     variant(
         "fcflags_overrides",
         multi=True,
-        default="",
         values=str,
         description="fcflags to append to the compilation."
         )
@@ -286,12 +284,12 @@ class UmBasePackage(Package):
             component_sources = self.spec.variants[f"{component}_sources"].value
             component_ref = self.spec.variants[f"{component}_ref"].value
 
-            if component_rev and component_ref:
+            if component_rev != "none" and component_ref != "none":
                 # Specified a rev and a ref- this is not allowed
                 raise KeyError("""Cannot specify a _rev and a _ref for the same
                     component.""")
 
-            if component_ref and component_sources:
+            if component_ref != "none" and component_sources:
                 # Specified a ref and sources- this is not allowed
                 raise KeyError("""Cannot specify a _ref and _sources for the
                     same component- _sources is strictly a SVN/MOSRS 
