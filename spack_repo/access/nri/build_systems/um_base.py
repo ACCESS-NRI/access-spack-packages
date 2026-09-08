@@ -105,7 +105,7 @@ class UmBasePackage(Package):
             default="none",
             sticky=True,
             values=str,
-            description=f"SVN Revision to use for {component}."
+            description=f"SVN revision to use for {component}."
             )
 
         # The _sources variants specify changesets to add from MOSRS
@@ -162,13 +162,6 @@ class UmBasePackage(Package):
     # Now just take a subset of the other build options available in the
     # rose-app.conf and set them meaningfully, based off the previously defined
     # base rose-app.conf (i.e. vn13).
-    variant(
-        "fcflags_overrides",
-        multi=True,
-        values=str,
-        description="fcflags to append to the compilation."
-        )
-
     variant(
         "platform_config_dir",
         default="nci-x86-ifort",
