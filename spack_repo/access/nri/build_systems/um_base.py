@@ -36,11 +36,9 @@ class UmBasePackage(Package):
     # we get the build from MOSRS or Github. We only configure spack versions 
     # for the versions of the UM we have tested. Other versions are still
     # retrievable by explicitly setting the _ref or _rev variants.
-    version("13.0", svn=svn, revision=111272, when="+MOSRS_build")
-    version("13.1", git=git, tag="UKMO_vn13.1", commit="90088a4acfc99091f5a837de16341afb21855a76", when="~MOSRS_build")
-    version("13.5", svn=svn, revision=123226, when="+MOSRS_build")
-    version("13.8", svn=svn, revision=128625, when="+MOSRS_build", preferred=True)
-    version("13.8", git=git, tag="UKMO_vn13.8", commit="eeb15ab24ee6f76a9316b083dd7f85109518a16a", when="~MOSRS_build", preferred=True)
+    version("13.1", git=git, tag="UKMO_vn13.1", commit="90088a4acfc99091f5a837de16341afb21855a76")
+    version("13.5", git=git, tag="UKMO_vn13.5", commit="e2ba73bd64c31f0fa986a1ede4f96802d14e22a9")
+    version("13.8", git=git, tag="UKMO_vn13.8", commit="eeb15ab24ee6f76a9316b083dd7f85109518a16a", preferred=True)
 
     # See 'fcm kp fcm:um.xm' for release versions.
     # Needed only for Subversion builds.
@@ -56,10 +54,6 @@ class UmBasePackage(Package):
         "13.8": 128625,
         "13.9": 130128,
     }
-    _max_minor = 9
-    for v in range(1 + _max_minor):
-        _version = f"13.{v}"
-        version(_version, revision=_revision[_version], preferred=(v == 8))
 
     maintainers("penguian")
 
@@ -187,7 +181,7 @@ class UmBasePackage(Package):
     variant(
         "optimisation_level",
         default="safe",
-        values=("safe", "debug", "rigorous", "high")
+        values=("safe", "debug", "rigorous", "high"),
         description="Base optimisation level to apply."
         )
 
@@ -289,7 +283,7 @@ class UmBasePackage(Package):
         # _sources cannot be mixed with _ref for a component.
         for component in _components:
             component_rev = self.spec.variants[f"{component}_rev"].value
-            component_sources = self.spec.variants[f"{component_sources"].value
+            component_sources = self.spec.variants[f"{component}_sources"].value
             component_ref = self.spec.variants[f"{component}_ref"].value
 
             if component_rev and component_ref:
@@ -339,6 +333,19 @@ class UmBasePackage(Package):
             self.spec.variants["optimisation_level"].value
             )
         
+    @property
+    def fetcher(self):
+        """
+        Define a separate fetcher for MOSRS builds.
+        """
+        if self.spec.variants["MOSRS_build"].value:
+            return fs.from_kwargs(
+                svn=self.svn,
+                revision=self._revision[self.spec.version]
+                )
+        else:
+            return super().fetcher
+
     def patch(self):
         """
         Patch the staging directory, by copying the desired Github components
