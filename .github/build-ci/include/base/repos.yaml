@@ -1,4 +1,6 @@
-# These are sensible defaults for manifests as part of build-ci, and can be overridden
+# These are sensible defaults for manifests as part of build-ci, and can be overridden.
+# We clone these repos every time under the environment because it is quicker for spack to clone the repo fresh 
+# rather than fetch/unshallow/merge new changes as the image itself becomes more and more out of date.
 repos:
   access_spack_packages:
     git: https://github.com/ACCESS-NRI/access-spack-packages.git
