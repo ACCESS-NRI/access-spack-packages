@@ -5,7 +5,7 @@
 # Copyright 2024-2026 ACCESS-NRI
 # Based on https://github.com/nci/spack-repo/blob/main/packages/um/package.py
 
-from spack_repo.access.nri.build_systems.um_base import UmBasePackage
+from spack_repo.access.nri.build_systems.um_base_new import UmBasePackageNew
 from spack.version.version_types import StandardVersion
 from spack.package import *
 from os.path import exists
