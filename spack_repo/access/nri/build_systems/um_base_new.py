@@ -267,23 +267,6 @@ class UmBasePackage(Package):
 
         # ---- Finish setting up the component information ---- #
 
-        # Now set the executables to compile
-        converter = lambda v: f"preprocess-{v} build-{v}"
-        for exe in ("atmos", "recon", "createbc", "scm"):
-            if self.spec.variants[f"compile_{exe}"].value:
-                as_FCM_value = converter(exe)
-                env.set(f"compile_{exe}", as_FCM_value)
-
-        # Finally, the last 2 variants can be taken simply as is
-        env.set(
-            "platform_config_dir",
-            self.spec.variants["platform_config_dir"].value
-            )
-        env.set(
-            "optimisation_level",
-            self.spec.variants["optimisation_level"].value
-            )
-
     def resource_path(self, component):
         """
         Set the location for the component resource.
