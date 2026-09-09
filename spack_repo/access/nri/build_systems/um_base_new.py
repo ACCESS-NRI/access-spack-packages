@@ -14,7 +14,7 @@ import spack.llnl.util.tty as tty
 import spack.util.git
 import spack.fetch_strategy as fs
 
-class UmBasePackage(Package):
+class UmBasePackageNew(Package):
     """
     UmBasePackage is the base build system class for numerical weather
     prediction and climate modelling software packages based on

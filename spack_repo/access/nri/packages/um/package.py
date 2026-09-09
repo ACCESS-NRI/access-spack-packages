@@ -10,7 +10,7 @@ from spack.version.version_types import StandardVersion
 from spack.package import *
 from os.path import exists
 
-class Um(UmBasePackage):
+class Um(UmBasePackageNew):
     """
     UM is a numerical weather prediction and climate modelling software package.
     """
