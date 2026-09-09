@@ -43,7 +43,7 @@ class UmBasePackage(Package):
         _version = f"13.{v}"
         version(_version, revision=_revision[_version], preferred=(v == 8))
 
-    maintainers("penguian")
+    maintainers("paul-leopardi")
 
     _projects = (
         "casim",

@@ -23,7 +23,7 @@ class AccessEsm1p5(BundlePackage):
 
     git = "https://github.com/ACCESS-NRI/ACCESS-ESM1.5.git"
 
-    maintainers("penguian")
+    maintainers("paul-leopardi")
 
     version("latest")
 
