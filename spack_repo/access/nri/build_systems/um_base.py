@@ -29,8 +29,8 @@ class UmBasePackage(Package):
         )
 
     homepage = "https://code.metoffice.gov.uk/trac/um"
-    git = " https://github.com/ACCESS-NRI/UM"
-    svn = "file:///g/data/ki32/mosrs/um/main/trunk"
+    git = "https://github.com/ACCESS-NRI/UM"
+    _svn = "file:///g/data/ki32/mosrs/um/main/trunk"
 
     # Set up the versions- the version setup will differ depending on whether
     # we get the build from MOSRS or Github. We only configure spack versions 
@@ -112,6 +112,7 @@ class UmBasePackage(Package):
         variant(
             f"{component}_sources",
             multi=True,
+            default="none",
             sticky=True,
             values=str,
             description=f"Additional changesets to retrieve for {component}."
@@ -217,9 +218,13 @@ class UmBasePackage(Package):
         
         # We need to run through the variants, and turn them into the values
         # expected by the FCM build.
-        # If we're using a Github build config, need to override the config
-        # root path
-        if not self.spec.variants["MOSRS_build"]:
+        if self.spec.satisfies("+MOSRS_build"):
+            # If building from MOSRS, use the MOSRS config
+            env.set("config_root_path", "fcm:um.xm_tr")
+            env.set("config_revision", f"@{self.version}")
+        else:
+            # If we're using a Github build config, need to override the config
+            # root path
             env.set(
                 "config_root_path",
                 join_path(self.stage.source_path,
@@ -228,6 +233,8 @@ class UmBasePackage(Package):
                     )
                 )
             env.set("config_revision", "")
+
+        env.set("config_type", "atmos")
 
         # Now set the library variants
         converter = lambda v: "true" if v else "false"
@@ -240,31 +247,30 @@ class UmBasePackage(Package):
                 for path in ("CPATH", "FPATH"):
                     prefix = self.spec[self._lib_cfg[lib]["dep_name"]].prefix
                     for inc in self._lib_cfg[lib]["includes"]:
-                        env.prepend_path(path, prefix.join(include))
+                        env.prepend_path(path, prefix.join(inc))
 
                 # Set up the linker args, used by FCM
                 dep_name = self._lib_cfg[lib]["dep_name"]
                 ld_flags = [
-                    self.spec[dep_name].lib.ld_flags,
+                    self.spec[dep_name].libs.ld_flags,
                     self._lib_cfg[lib]["fcm_ld_flags"]
                     ]
                 # The reason for the explicit -rpath is:
                 # https://github.com/ACCESS-NRI/access-spack-packages/issues/14#issuecomment-1653651447
-                rpaths = ["-Wl,-rpath" + d for d in spec[dep_name].libs.directories]
+                rpaths = ["-Wl,-rpath=" + d for d in self.spec[dep_name].libs.directories]
                 env.set(f"ldflags_{lib}_on", " ".join(ld_flags + rpaths))
 
         # The gcom library does not contain shared objects and
         # therefore must be statically linked.
-        env.prepend_path("LIBRARY_PATH", spec["gcom"].prefix.lib)
+        env.prepend_path("LIBRARY_PATH", self.spec["gcom"].prefix.lib)
 
         # And finally locate the FCM binary
-        env.prepend_path("PATH", spec["fcm"].prefix.bin)
+        env.prepend_path("PATH", self.spec["fcm"].prefix.bin)
 
         # ---- Finish setting up the external libraries ---- #
 
-        # Now the on/off variants (which are really boolean, but FCM wants
-        # on/off instead)
-        converter = lambda v: "on" if v else "off"
+        # Now the interal true/false variants
+        converter = lambda v: "true" if v else "false"
         for var in ("openmp", "thread_utils"):
             as_FCM_value = converter(self.spec.variants[var].value)
             env.set(var, as_FCM_value)
@@ -272,7 +278,7 @@ class UmBasePackage(Package):
         # Now we handle the components. We need more complex logic here- it's
         # not allowed to specify a _rev and a _ref for the same component, and
         # _sources cannot be mixed with _ref for a component.
-        for component in _components:
+        for component in self._components:
             component_rev = self.spec.variants[f"{component}_rev"].value
             component_sources = self.spec.variants[f"{component}_sources"].value
             component_ref = self.spec.variants[f"{component}_ref"].value
@@ -282,7 +288,7 @@ class UmBasePackage(Package):
                 raise KeyError("""Cannot specify a _rev and a _ref for the same
                     component.""")
 
-            if component_ref != "none" and component_sources:
+            if component_ref != "none" and component_sources[0] != "none":
                 # Specified a ref and sources- this is not allowed
                 raise KeyError("""Cannot specify a _ref and _sources for the
                     same component- _sources is strictly a SVN/MOSRS 
@@ -290,13 +296,13 @@ class UmBasePackage(Package):
 
             # Now we can set the revs in the environment- the refs don't need
             # this, as they are retrieved dynamically at patch time.
-            if component_rev:
+            if component_rev != "none":
                 env.set(f"{component}_rev", component_rev)
             
             # For the sources, we need to make sure they're in the right format
             # which is one source per line
-            if spec_sources:
-                as_FCM_value = "\n".join(spec_sources)
+            if component_sources[0] != "none":
+                as_FCM_value = "\n".join(component_sources)
                 env.set(f"{component}_sources", as_FCM_value)
 
         # ---- Finish setting up the component information ---- #
@@ -308,12 +314,6 @@ class UmBasePackage(Package):
                 as_FCM_value = converter(exe)
                 env.set(f"compile_{exe}", as_FCM_value)
 
-        # Finally the last bits and pieces
-        # The fcflags_overrides may be "multi-valued" (meaning containing
-        # commas)- we should just join them.
-        as_FCM_value = ",".join(self.spec.variants["fcflags_overrides"].value)
-        env.set("fcflags_overrides", as_FCM_value)
-
         # Finally, the last 2 variants can be taken simply as is
         env.set(
             "platform_config_dir",
@@ -323,19 +323,7 @@ class UmBasePackage(Package):
             "optimisation_level",
             self.spec.variants["optimisation_level"].value
             )
-        
-    @property
-    def fetcher(self):
-        """
-        Define a separate fetcher for MOSRS builds.
-        """
-        if self.spec.variants["MOSRS_build"].value:
-            return fs.from_kwargs(
-                svn=self.svn,
-                revision=self._revision[self.spec.version]
-                )
-        else:
-            return super().fetcher
+
 
     def patch(self):
         """
@@ -343,7 +331,8 @@ class UmBasePackage(Package):
         into the stage directory as dynamic resources.
         """
         for component in self._components:
-            if self.spec.variants[f"{component}_ref"].value:
+            component_ref = self.spec.variants[f"{component}_ref"].value
+            if component_ref != "none":
                 # The ref is non-empty, so we want it to come from Github
                 url = f"https://github.com/ACCESS-NRI/{component}.git"
                 dest_dir = join_path(
@@ -358,34 +347,39 @@ class UmBasePackage(Package):
 
                 # Check out the repository at the desired ref
                 try:
-                    tty.msg(f"Attempting to checkout branch {ref}")
-                    git("clone", "--depth", "1", "--branch", ref, url, dst_dir)
+                    git("clone", "--depth", "1", "--branch", component_ref, url, dest_dir)
                 except ProcessError:
-                    tty.warn(f"ref '{ref}' may be a commit/tag, retrying.")
-                    git("clone", url, dst_dir)
-                    with working_dir(dst_dir):
-                        git("checkout", ref)
+                    git("clone", url, dest_dir)
+                    with working_dir(dest_dir):
+                        git("checkout", component_ref)
+
+    def build_dir(self):
+        return join_path(self.stage.source_path, "..", "spack-build")
 
     def build(self, spec, prefix):
         """
         Use FCM to build the executables.
         """
-        config_file = join_path(self.package_dir, "fcm-make.cfg")
-        build_dir = join_path(self.stage.source_path, "..", "spack-build")
-        mkdirp(build_dir)
+        orig_config = join_path(self.package_dir, "fcm-make.cfg")
+        build_path = self.build_dir()
+        mkdirp(build_path)
 
         # Set up the config for the components, by setting 'extract' locations
-        # for the cloned components
-        with open(config_file, "a") as f:
+        # for the cloned components and diffs for any sources
+        copy(orig_config, build_path)
+        new_config = join_path(build_path, "fcm-make.cfg")
+        with open(new_config, "a") as f:
             for component in self._components:
-                if self.spec.variants[f"{component}_ref"].value:
-                   f.write(f"extract.location[{component}] = {self._component_path(component)}") 
+                if self.spec.variants[f"{component}_ref"].value != "none":
+                    f.write(f"extract.location[{component}] = {self._component_path(component)}\n") 
+                if self.spec.variants[f"{component}_sources"].value[0] != "none":
+                    f.write(f"extract.location{{diff}}[{component}] = {component}_sources")
 
         fcm = which("fcm")
         fcm(
             "make",
-            f"--config-file={config_file}",
-            "directory={build_dir}",
+            f"--config-file={new_config}",
+            f"--directory={build_path}",
             "--jobs=4"
             )
         
