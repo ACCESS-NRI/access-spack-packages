@@ -127,47 +127,17 @@ class UmBasePackage(Package):
             description=f"Github ref to use for {component}."
             )
 
-    # Set up a few variants that decide what is built. In the original
-    # rose-app.conf files, these all follow the same template of
-    # compile_<name>=preprocess-<name> build-<name>, so we'll make
-    # compile_<name> the variant which maps to desired name when setting the
-    # build environment.
+    # Use variants to decide which component to build. The possible components
+    # are:
+    # "atmos", which builds both um-atmos and um-recon
+    # "scm", which builds um-scm (single column model)
+    # "createbc", which creates um-createbc
     variant(
-        "compile_atmos",
-        default=True,
+        "config_type",
+        default="atmos",
+        values=any_combination_of("atmos", "scm", "createbc")
         sticky=True,
-        description="Preprocess and compile atmosphere executable."
-        )
-
-    variant(
-        "compile_recon",
-        default=True,
-        sticky=True,
-        description="Preprocess and compile atmosphere executable."
-        )
-
-    variant(
-        "compile_createbc",
-        default=False,
-        sticky=True,
-        description="Preprocess and compile createbc executable."
-        )
-
-    variant(
-        "compile_scm",
-        default=False,
-        sticky=True,
-        description="Preprocess and compile single-column model executable."
-        )
-
-    # Now just take a subset of the other build options available in the
-    # rose-app.conf and set them meaningfully, based off the previously defined
-    # base rose-app.conf (i.e. vn13).
-    variant(
-        "platform_config_dir",
-        default="nci-x86-ifort",
-        values=str,
-        description="Which FCM build configuration to use."
+        description="Which UM executables to build."
         )
 
     variant(
@@ -177,6 +147,15 @@ class UmBasePackage(Package):
         description="Base optimisation level to apply."
         )
 
+    # Now just take a subset of the other build options available in the
+    # rose-app.conf and set them meaningfully, based off the previously defined
+    # base rose-app.conf (i.e. vn13).
+    variant(
+        "platform",
+        default="nci-x86-ifort",
+        values=str,
+        description="Which FCM build configuration to use."
+        )
     variant(
         "openmp",
         default=True,
@@ -216,27 +195,8 @@ class UmBasePackage(Package):
         desired libraries.
         """
         
-        # We need to run through the variants, and turn them into the values
-        # expected by the FCM build.
-        if self.spec.satisfies("+MOSRS_build"):
-            # If building from MOSRS, use the MOSRS config
-            env.set("config_root_path", "fcm:um.xm_tr")
-            env.set("config_revision", f"@{self.version}")
-        else:
-            # If we're using a Github build config, need to override the config
-            # root path
-            env.set(
-                "config_root_path",
-                join_path(self.stage.source_path,
-                    "resources",
-                    "um"
-                    )
-                )
-            env.set("config_revision", "")
-
-        env.set("config_type", "atmos")
-
-        # Now set the library variants
+        # Now set the library env variables based on the variants
+        # Unfortunately these are still necessary due to the way FCM picks
         converter = lambda v: "true" if v else "false"
         for lib in ("DR_HOOK", "eccodes", "netcdf", "cable"):
             as_FCM_value = converter(self.spec.variants[lib].value)
@@ -324,6 +284,11 @@ class UmBasePackage(Package):
             self.spec.variants["optimisation_level"].value
             )
 
+    def resource_path(self, component):
+        """
+        Set the location for the component resource.
+        """
+        return join_path(self.stage.source_path, "resources", component)
 
     def patch(self):
         """
@@ -335,11 +300,7 @@ class UmBasePackage(Package):
             if component_ref != "none":
                 # The ref is non-empty, so we want it to come from Github
                 url = f"https://github.com/ACCESS-NRI/{component}.git"
-                dest_dir = join_path(
-                    self.stage.source_path,
-                    "resources",
-                    component
-                    )
+                dest_dir = self.resource_path(component)
 
                 mkdirp(dest_dir)
 
@@ -358,31 +319,66 @@ class UmBasePackage(Package):
 
     def build(self, spec, prefix):
         """
-        Use FCM to build the executables.
+        Use FCM to build the executables. Creates the `fcm-make.cfg`
+        dynamically based on the supplied variants.
         """
-        orig_config = join_path(self.package_dir, "fcm-make.cfg")
         build_path = self.build_dir()
         mkdirp(build_path)
+        fcm = which("fcm")
 
-        # Set up the config for the components, by setting 'extract' locations
-        # for the cloned components and diffs for any sources
-        copy(orig_config, build_path)
-        new_config = join_path(build_path, "fcm-make.cfg")
-        with open(new_config, "a") as f:
+        # For each executable we want to build, build the dynamic fcm-make
+        # file. The contents of each are going to be effectively the same- an
+        # "include" line, which points to the desired machine config to use,
+        # and lists of possible _sources and extract locations.
+
+        # In the original fcm-make.cfg file, the include line looks like:
+        # include = $config_root_path/fcm-make/$platform_config_dir/um-$config_type-$optimisation_level.cfg$config_revision
+        # where the environment variables are interpolated in. It's easier to
+        # simply set them directly here.
+
+        # The "include" line is the only one that will change, so build a base
+        # config file and append the correct include line for each executable.
+        # Even then, the only part of the "include" line that will change is
+        # the config type.
+        
+        if spec.satisfies("+MOSRS_build"):
+            conf_path = "fcm:um.xm_tr"
+            conf_rev = f"${self.version}"
+        else:
+            conf_path = self.resource_path("um")
+            conf_rev = ""
+
+        platform = spec.variants["platform"].value
+        optim = spec.variants["optimisation_level"].value
+
+        # Now build the base config
+        base_config = join_path(build_path, "fcm-make.cfg")
+        with open(base_config, "w") as f:
+            # Set the unchanging bits
             for component in self._components:
                 if self.spec.variants[f"{component}_ref"].value != "none":
                     f.write(f"extract.location[{component}] = {self._component_path(component)}\n") 
                 if self.spec.variants[f"{component}_sources"].value[0] != "none":
-                    f.write(f"extract.location{{diff}}[{component}] = {component}_sources")
+                    f.write(f"extract.location{{diff}}[{component}] = ${component}_sources\n")
 
-        fcm = which("fcm")
-        fcm(
-            "make",
-            f"--config-file={new_config}",
-            f"--directory={build_path}",
-            "--jobs=4"
-            )
+        # Duplicate the base_config for each config type
+        for exe in spec.variants["config_type"].value:
+            exe_config = join_path(build_path, "fcm-make-${conf}.cfg")
+            copy(base_config, exe_config)
+            # We open in read+write mode, as we want to insert the "include"
+            # line at the top so that following options take precedence
+            with open(exe_config, "r+") as f:
+                include = f"{conf_path}/fcm-make/{platform}/um-{exe}-{optim}.cfg{conf_rev}\n"
+                orig_contents = f.read()
+                f.seek(0)
+                f.write(include + orig_contents)
+
+            fcm(
+                "make",
+                f"--config-file={exe_config}",
+                f"--directory={build_path}",
+                "--jobs=4"
+                )
         
-
     def _component_path(self, component):
         return join_path(self.stage.source_path, "resources", component)
