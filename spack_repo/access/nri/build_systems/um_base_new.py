@@ -14,7 +14,7 @@ import spack.llnl.util.tty as tty
 import spack.util.git
 import spack.fetch_strategy as fs
 
-class UmBasePackageNew(Package):
+class UmBasePackage(Package):
     """
     UmBasePackage is the base build system class for numerical weather
     prediction and climate modelling software packages based on
@@ -134,8 +134,7 @@ class UmBasePackageNew(Package):
     # "createbc", which creates um-createbc
     variant(
         "config_type",
-        default="atmos",
-        values=any_combination_of("atmos", "scm", "createbc")
+        values=any_combination_of("atmos", "scm", "createbc"),
         sticky=True,
         description="Which UM executables to build."
         )
@@ -151,7 +150,7 @@ class UmBasePackageNew(Package):
     # rose-app.conf and set them meaningfully, based off the previously defined
     # base rose-app.conf (i.e. vn13).
     variant(
-        "platform",
+        "platform_config",
         default="nci-x86-ifort",
         values=str,
         description="Which FCM build configuration to use."
@@ -326,12 +325,12 @@ class UmBasePackageNew(Package):
         
         if spec.satisfies("+MOSRS_build"):
             conf_path = "fcm:um.xm_tr"
-            conf_rev = f"${self.version}"
+            conf_rev = f"@{self.version}"
         else:
             conf_path = self.resource_path("um")
             conf_rev = ""
 
-        platform = spec.variants["platform"].value
+        platform = spec.variants["platform_config"].value
         optim = spec.variants["optimisation_level"].value
 
         # Now build the base config
@@ -346,7 +345,7 @@ class UmBasePackageNew(Package):
 
         # Duplicate the base_config for each config type
         for exe in spec.variants["config_type"].value:
-            exe_config = join_path(build_path, "fcm-make-${conf}.cfg")
+            exe_config = join_path(build_path, f"fcm-make-${conf}.cfg")
             copy(base_config, exe_config)
             # We open in read+write mode, as we want to insert the "include"
             # line at the top so that following options take precedence
