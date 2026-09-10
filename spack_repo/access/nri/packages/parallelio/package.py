@@ -57,6 +57,15 @@ class Parallelio(CMakePackage):
     # Remove this patch once it has been accepted upstream.
     patch("heap_allocate_read_darray_vlas.patch", when="@2.6.1:2.6.8")
 
+    # PIOc_read_darray() sizes IO task 0's read buffer from iodesc->maxiobuflen,
+    # but pio_read_darray_nc_serial() sends each remote IO task's iodesc->llen
+    # elements out of that buffer.  With the subset rearranger maxiobuflen is
+    # derived from the regions, which are built from rllen -- and rllen counts
+    # only distinct offsets.  A decomposition with duplicate offsets (ESMF's
+    # mesh reader, where partition-boundary nodes are read by several PETs)
+    # therefore has llen > maxiobuflen and IO task 0 reads past the buffer.
+    patch("pio_maxiobuflen_llen.patch", when="@2.6.8")
+
     depends_on("c", type="build")  # generated
     depends_on("cxx", type="build")  # generated
     depends_on("fortran", type="build")  # generated
