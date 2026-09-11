@@ -1,0 +1,4 @@
+# These are sensible defaults for manifests as part of build-ci, and can be overridden
+repos:
+  # Local paths require a directory with a repos.yaml - doesn't respect git-based spack-repo-index.yaml!
+  access_spack_packages: $CALLER_REPOSITORY_PATH/spack_repo/access/nri
