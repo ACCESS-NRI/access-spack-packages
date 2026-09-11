@@ -24,6 +24,9 @@ class AccessMom6(CMakePackage):
     license("Apache-2.0", when="@2026.05:", checked_by="dougiesquire")
 
     version("stable", branch="2026.05", preferred=True)   # need to update branch for new major versions
+    # NVHPC GPU offload support (+openmp_offload); not in any release yet, see
+    # https://github.com/ACCESS-NRI/MOM6/pull/77
+    version("develop-gpu", branch="dev/gpu")
     version("2026.05.002", tag="2026.05.002", commit="6432010e3ab29df43994adabb413b69fe718d94c")
     version("2026.05.001", tag="2026.05.001", commit="4dfe73f8e483500dcc576b2a343317e1b0fc9ef2")
     version("2026.05.000", tag="2026.05.000", commit="1300cda7cd1aeda5f41a10738e52ca2958dcb7ea")
@@ -51,8 +54,46 @@ class AccessMom6(CMakePackage):
         description="Install MOM6 solo executable",
         when="@2025.07.001:"
     )
+    variant(
+        "openmp_offload",
+        default=False,
+        sticky=True,
+        when="@develop-gpu",
+        description="Enable NVHPC OpenMP/OpenACC/do-concurrent GPU offload flags. Requires the "
+                    "MOM6_OPENMP_OFFLOAD CMake option, which is only on the dev/gpu branch so "
+                    "far, and the NVHPC compiler."
+    )
+    variant(
+        "offload_mem_model",
+        default="separate",
+        sticky=True,
+        values=("unified", "managed", "separate"),
+        multi=False,
+        when="+openmp_offload",
+        description="GPU memory model for +openmp_offload (maps to -gpu=mem:<model>)"
+    )
+    variant(
+        "offload_cc",
+        sticky=True,
+        values=any_combination_of(
+            "35", "50", "60", "61", "70", "75", "80", "86", "87", "88", "89", "90",
+            "100", "101", "103", "110", "120", "121",
+        ),
+        when="+openmp_offload",
+        description="GPU compute capabilities to target for +openmp_offload, as any combination "
+                    "of the values NVHPC's -gpu=ccXY supports (per `nvc -gpu=help`). E.g. "
+                    "offload_cc=70,80,90 for Volta/Ampere/Hopper GPUs (V100/A100/H100). Defaults "
+                    "to offload_cc=none, which omits -gpu=cc entirely and leaves the arch "
+                    "decision to the compiler (the GPUs detected on the build host, or NVHPC's "
+                    "default compute capability if no GPU is detected)."
+    )
 
     conflicts("~access3", when="~mom6_solo", msg="At least one of access3 or mom6_solo must be enabled")
+    requires(
+        "%fortran=nvhpc",
+        when="+openmp_offload",
+        msg="+openmp_offload requires the NVHPC Fortran compiler"
+    )
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")
@@ -73,6 +114,14 @@ class AccessMom6(CMakePackage):
             self.define_from_variant("MOM6_ASYMMETRIC", "asymmetric_mem"),
             self.define_from_variant("MOM6_ACCESS3", "access3"),
             self.define_from_variant("MOM6_SOLO"),
+            self.define_from_variant("MOM6_OPENMP_OFFLOAD", "openmp_offload"),
+            self.define_from_variant("MOM6_OFFLOAD_MEM_MODEL", "offload_mem_model"),
         ]
+
+        if self.spec.satisfies("+openmp_offload"):
+            offload_cc = self.spec.variants["offload_cc"].value
+            if "none" in offload_cc:
+                offload_cc = []
+            args.append(self.define("MOM6_OFFLOAD_CC", sorted(offload_cc)))
 
         return args
