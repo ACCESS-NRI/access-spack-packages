@@ -1,0 +1,7 @@
+include:
+  # For PRs in special repos that source manifests from this repo: Use spack config from the caller instead, from an env set in build-ci
+  - path: $CALLER_REPOSITORY_CONFIG_PATH
+    when: "'CALLER_REPOSITORY_CONFIG_PATH' in env"
+
+  # For PRs from a component repository: We use the base spack config from access-spack-packages
+  - path: ../base

@@ -1,0 +1,4 @@
+# We don't unify dependencies because some manifests have multiple of the same spec,
+# differing only in hash, which fails if concretizer.unify:true
+concretizer:
+  unify: false
