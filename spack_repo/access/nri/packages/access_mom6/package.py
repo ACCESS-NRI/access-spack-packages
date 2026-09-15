@@ -27,6 +27,7 @@ class AccessMom6(CMakePackage):
     # NVHPC GPU offload support (+openmp_offload); not in any release yet, see
     # https://github.com/ACCESS-NRI/MOM6/pull/77
     version("develop-gpu", branch="dev/gpu")
+    version("2026.05.003", tag="2026.05.003", commit="d11a149ccba676d524312328f7eb62560a156dc3")
     version("2026.05.002", tag="2026.05.002", commit="6432010e3ab29df43994adabb413b69fe718d94c")
     version("2026.05.001", tag="2026.05.001", commit="4dfe73f8e483500dcc576b2a343317e1b0fc9ef2")
     version("2026.05.000", tag="2026.05.000", commit="1300cda7cd1aeda5f41a10738e52ca2958dcb7ea")
