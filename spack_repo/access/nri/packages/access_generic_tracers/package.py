@@ -20,6 +20,7 @@ class AccessGenericTracers(CMakePackage):
     maintainers("harshula", "dougiesquire")
 
     version("stable", branch="main", preferred=True)
+    version("2026.09.000", tag="2026.09.000", commit="115890145fc60799593aaae5a881f90cc9afa506")
     version("2026.05.000", tag="2026.05.000", commit="8afe03201dbf9d6a1412f37159bf25e186fc36ee")
     version("2026.04.000", tag="2026.04.000", commit="19d9b3f4426ee5af30d10391622bf71503d471b7")
     version("2026.02.001", tag="2026.02.001", commit="6c471278026a97f3f19c54a56f680d170fefeb92")
