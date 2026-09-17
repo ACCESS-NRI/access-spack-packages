@@ -21,6 +21,11 @@ class Mom5(CMakePackage):
 
     version("stable", branch="master", preferred=True)
     version(
+        "2026.02.002",
+        tag="2026.02.002",
+        commit="19a9ef084d6ab447d0c1b336b086a450b16ba94d"
+    )
+    version(
         "2026.02.001",
         tag="2026.02.001",
         commit="56261d353c3803e075408ed8421e8c7bf1802887"
