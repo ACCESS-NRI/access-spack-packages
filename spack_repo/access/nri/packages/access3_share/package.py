@@ -68,6 +68,19 @@ class Access3Share(CMakePackage):
     patch("cdeps-strdata-timers.patch", working_dir="CDEPS/CDEPS", when="@2026.03.000:")
     patch("cdeps-strdata-timers.patch", working_dir="CDEPS/CDEPS", when="@stable")
 
+    # Reuse identical stream route handles instead of calling ESMF_FieldRegridStore
+    # once per stream. That call generates interpolation weights and measured 94.9%
+    # of datm_strdata_init (112.5 s of 118.6 s, 12.5 s x 9 streams) on ACCESS-OM3
+    # 8 km, where all 9 DATM streams share one source mesh, one model mesh and two
+    # mapalgo values -- so two handles are needed and nine were built. Expected
+    # saving ~89 s, about 10% of a 1-day benchmark.
+    # MUST be listed AFTER cdeps-strdata-timers.patch: it applies on top of it, and
+    # the trace regions are how the change is verified (strdata_regridstore Count
+    # falls from the stream count to the number of distinct handles).
+    patch("cdeps-routehandle-cache.patch", working_dir="CDEPS/CDEPS", when="@2026.03.000:")
+    patch("cdeps-routehandle-cache.patch", working_dir="CDEPS/CDEPS", when="@stable")
+
+
     def cmake_args(self):
         args = [
             self.define("ACCESS3_LIB_INSTALL", True),

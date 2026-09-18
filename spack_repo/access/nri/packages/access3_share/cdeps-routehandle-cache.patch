@@ -1,0 +1,137 @@
+CDEPS: reuse identical stream route handles instead of rebuilding per stream
+
+APPLIES ON TOP OF cdeps-strdata-timers.patch. The trace regions it adds are also
+how this change is verified: the Count column of strdata_regridstore falls from
+the stream count to the number of distinct route handles.
+
+shr_strdata_init called ESMF_FieldRegridStore once per stream, unconditionally.
+That call generates interpolation weights; for a large model mesh it dominates
+data model initialisation, and a configuration whose streams share a source mesh
+and a mapalgo pays the whole cost again for every stream.
+
+Measured on ACCESS-OM3 at 8 km, 8216 PETs:
+
+  datm_strdata_init                  1   118.5573
+    strdata_streamloop               1   113.0859   95.4%
+      strdata_regridstore            9   112.5007   94.9%   <- 12.50 s per stream
+      strdata_streammesh             9     0.5656    0.5%
+      strdata_fldbun                 9     0.0106    0.0%
+    strdata_modelmesh                1     5.2561    4.4%
+    strdata_readxml                  1     0.2097    0.2%
+
+That configuration has 9 DATM streams which all name the same
+JRA55do-datm-ESMFmesh.nc, all regrid to the same 4320x3672 model mesh, and use
+two distinct mapalgo values (consf x4, patch x5). Two route handles are needed;
+nine were built. DROF repeats it smaller: 2 streams, both consd, one mesh.
+Collapsing 9 -> 2 and 2 -> 1 should return about 89 s, roughly 10% of a 1-day
+benchmark for this configuration and about 1% of a 1-month production segment.
+
+Why the reuse is sound: a route handle depends on the source geometry, the
+destination geometry and the regrid options, not on the particular fields passed
+to the store call, so it is valid for any later ESMF_FieldRegrid between fields
+of the same geometry. This routine already relies on that -- the handle built
+from field_stream is used at shr_strdata_advance with field_stream_vector, which
+carries an extra ungridded dimension.
+
+The scan never leaves one sdat, so the destination mesh and the VM are the same
+by construction. What must match is the stream mesh file name, stream_nlev (it
+decides whether field_stream has an ungridded dimension), the mapalgo string
+(which also carries the weight file path for mapfile:), and src_mask_val and
+dst_mask_val, both of which are passed to ESMF_FieldRegridStore.
+
+Nothing in CDEPS destroys sdat%pstrm(:)%routehandle, so sharing introduces no
+double-free today. routehandle_isowner records which stream built the handle so
+a future ESMF_RouteHandleDestroy can be added safely; routehandle_created marks
+entries usable at all -- streams with mapalgo 'none' are neither cached nor
+reused. Every decision is written to the component log.
+
+Touches mediator-side nothing; only streams/dshr_strdata_mod.F90.
+
+diff --git a/streams/dshr_strdata_mod.F90 b/streams/dshr_strdata_mod.F90
+index 814cbcc..64147d2 100644
+--- a/streams/dshr_strdata_mod.F90
++++ b/streams/dshr_strdata_mod.F90
+@@ -97,6 +97,10 @@ module dshr_strdata_mod
+      type(io_desc_t)                     :: stream_pio_iodesc               ! stream pio descriptor
+      logical                             :: stream_pio_iodesc_set =.false.  ! true=>pio iodesc has been set
+      type(ESMF_RouteHandle)              :: routehandle                     ! stream n -> model mesh mapping
++     logical                             :: routehandle_created = .false.   ! true => routehandle is usable
++     logical                             :: routehandle_isowner = .false.   ! false => shared from an earlier
++                                                                            ! stream; do not destroy via this
++                                                                            ! stream
+      character(len=CL), allocatable      :: fldlist_stream(:)               ! names of stream file fields
+      character(len=CL), allocatable      :: fldlist_model(:)                ! names of stream model fields
+      integer                             :: stream_nlev                     ! number of vertical levels in stream
+@@ -477,6 +481,8 @@ contains
+     type(ESMF_VM)                :: vm
+     integer                      :: nvars
+     integer                      :: i, stream_nlev, index, istat
++    integer                      :: ns_rh, i_rh     ! route handle reuse: match index, scan index
++    character(len=CX)            :: filename_cmp    ! mesh file of the stream being compared against
+     character(len=CL)            :: stream_vector_names
+     character(len=CL)            :: mapfile
+     character(len=*), parameter  :: subname='(shr_sdat_init)'
+@@ -656,7 +662,46 @@ contains
+        if (.not.  ESMF_MeshIsCreated(stream_mesh)) then
+           sdat%stream(ns)%mapalgo = 'none'
+        else
+-          if (trim(sdat%stream(ns)%mapalgo) == "bilinear") then
++          ! Reuse an identical route handle from an earlier stream rather than building
++          ! another one. ESMF_FieldRegridStore generates interpolation weights, and for a
++          ! large model mesh that dominates data model initialisation; configurations
++          ! whose streams share a source mesh and a mapalgo pay for it once per stream.
++          !
++          ! A route handle depends on the source geometry, the destination geometry and
++          ! the regrid options, not on the particular fields handed to the store call, so
++          ! it is valid for any later ESMF_FieldRegrid between fields of the same geometry.
++          ! This routine already relies on that: the handle built below from field_stream
++          ! is used with field_stream_vector, which carries an extra ungridded dimension.
++          !
++          ! The destination is sdat%model_mesh and the search is confined to this sdat, so
++          ! the destination geometry and the VM are the same by construction. What must
++          ! match is the source mesh file, the number of stream levels (it decides whether
++          ! field_stream carries an ungridded dimension), the mapalgo string (which also
++          ! carries the weight file path in the mapfile: case) and both mask values.
++          ns_rh = 0
++          do i_rh = 1, ns-1
++             if (.not. sdat%pstrm(i_rh)%routehandle_created)                      cycle
++             if (sdat%pstrm(i_rh)%stream_nlev /= stream_nlev)                     cycle
++             if (trim(sdat%stream(i_rh)%mapalgo) /= trim(sdat%stream(ns)%mapalgo)) cycle
++             if (sdat%stream(i_rh)%src_mask_val /= sdat%stream(ns)%src_mask_val)  cycle
++             if (sdat%stream(i_rh)%dst_mask_val /= sdat%stream(ns)%dst_mask_val)  cycle
++             call shr_stream_getMeshFileName(sdat%stream(i_rh), filename_cmp)
++             if (trim(filename_cmp) /= trim(filename))                            cycle
++             ns_rh = i_rh
++             exit
++          end do
++
++          if (ns_rh > 0) then
++             sdat%pstrm(ns)%routehandle         = sdat%pstrm(ns_rh)%routehandle
++             sdat%pstrm(ns)%routehandle_created = .true.
++             sdat%pstrm(ns)%routehandle_isowner = .false.
++             if (sdat%mainproc) then
++                write(sdat%logunit,'(a,i0,a,i0,4a)') subname//' stream ',ns, &
++                     ' reuses the route handle built for stream ',ns_rh, &
++                     ', mapalgo ',trim(sdat%stream(ns)%mapalgo), &
++                     ', mesh ',trim(filename)
++             end if
++          else if (trim(sdat%stream(ns)%mapalgo) == "bilinear") then
+              call ESMF_FieldRegridStore(sdat%pstrm(ns)%field_stream, lfield_dst, &
+                   routehandle=sdat%pstrm(ns)%routehandle, &
+                   regridmethod=ESMF_REGRIDMETHOD_BILINEAR,  &
+@@ -720,6 +765,15 @@ contains
+              call shr_log_error('ERROR: map algo '//trim(sdat%stream(ns)%mapalgo)//' is not supported', rc=rc)
+              return
+           end if
++          if (ns_rh == 0 .and. trim(sdat%stream(ns)%mapalgo) /= 'none') then
++             sdat%pstrm(ns)%routehandle_created = .true.
++             sdat%pstrm(ns)%routehandle_isowner = .true.
++             if (sdat%mainproc) then
++                write(sdat%logunit,'(a,i0,4a)') subname//' stream ',ns, &
++                     ' built a route handle, mapalgo ',trim(sdat%stream(ns)%mapalgo), &
++                     ', mesh ',trim(filename)
++             end if
++          end if
+        end if
+        call ESMF_TraceRegionExit('strdata_regridstore')
+ 
