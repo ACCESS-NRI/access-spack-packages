@@ -56,6 +56,18 @@ class Access3Share(CMakePackage):
     patch("cmeps-mediator-restart-io.patch", working_dir="CMEPS/CMEPS", when="@2025.08.000:")
     patch("cmeps-mediator-restart-io.patch", working_dir="CMEPS/CMEPS", when="@stable")
 
+    # DIAGNOSTIC ONLY -- ESMF trace regions inside the CDEPS data-model stream
+    # initialisation, so ESMF_Profile.summary breaks datm_strdata_init (114.8 s of a
+    # 866.7 s ACCESS-OM3 8 km 1-day run) into model-mesh read, xml parse, model
+    # domain, and per-stream mesh create / field bundle / regrid store. Purely
+    # additive: nothing but ESMF_TraceRegionEnter/Exit calls and comments, so it
+    # cannot change results. Remove once the per-stream Counts have answered
+    # whether caching the stream meshes and route handles is worth writing.
+    # Verified against the CDEPS commits pinned by @2026.03.000 through
+    # @2026.03.002; @2025.08.000 and earlier pin a CDEPS where 2 of 7 hunks miss.
+    patch("cdeps-strdata-timers.patch", working_dir="CDEPS/CDEPS", when="@2026.03.000:")
+    patch("cdeps-strdata-timers.patch", working_dir="CDEPS/CDEPS", when="@stable")
+
     def cmake_args(self):
         args = [
             self.define("ACCESS3_LIB_INSTALL", True),
