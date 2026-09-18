@@ -1,0 +1,306 @@
+CMEPS mediator restart I/O: drop the per-FieldBundle collective flush, and
+make the duplicate coordinate copies optional.
+
+Tested against access-nri/cmeps at tag cmeps1.1.35-x (17ddb2ee). Two
+independent changes to the mediator write path:
+
+ 1. med_io_write_FB ended its data pass with pio_syncfile, once per
+    FieldBundle. Under pio_typename = netcdf4p that is a collective
+    H5Fflush on a file still growing toward 25 GB, ~14 times per restart,
+    and med_io_close already flushes on close. Removed. The neighbouring
+    pio_freedecomp is kept -- the decomposition is still built per call,
+    so it must still be released per call.
+
+ 2. Every FieldBundle wrote its own <pre>_lon / <pre>_lat full-mesh
+    doubles -- identical for every bundle sharing a mesh, 3.55 GB of a
+    25.26 GB restart file at 8 km. (The source carried the comment
+    "why is this being done each time?".) med_io_write_FB gains an
+    optional write_coords argument, defaulting to .true. so history
+    output is unchanged; the restart path passes the new module variable
+    write_restart_coords.
+
+Change 1 takes effect as soon as the patch is built. Change 2 does NOT:
+write_restart_coords defaults to .true., so the restart file keeps its
+historical contents until a run opts out with
+
+    MED_attributes::
+        write_restart_coords = .false.
+    ::
+
+in nuopc.runconfig. (The mediator reads no Fortran namelist; every
+mediator setting arrives as a NUOPC component attribute, so that is where
+the control lives. It is read in med_phases_restart_alarm_init with the
+same isPresent/isSet pattern as write_restart_at_endofrun, and echoed to
+the mediator log beside it.) With it set to .false. the coordinate
+variables are neither defined nor written, the ESMF_MeshGet(
+ownedElemCoords=...) extraction and its three allocations are skipped,
+and the <pre>_lon / <pre>_lat variables disappear from the file -- so a
+byte-for-byte restart comparison will differ. Field data is untouched and
+nothing reads the coordinates back (med_io_read_FB never references
+coordvarnames, and no field carries a CF "coordinates" attribute pointing
+at them).
+
+Touches mediator/med_io_mod.F90 and mediator/med_phases_restart_mod.F90.
+
+NOTE: if you edit the Fortran inside this patch by hand, the @@ line counts
+must be updated to match, or the patch becomes malformed. Prefer editing a
+patched checkout and regenerating with git diff; validate-patch.py in the
+delivery directory checks every hunk's counts.
+
+diff --git a/mediator/med_io_mod.F90 b/mediator/med_io_mod.F90
+index 2c61cdbd..5ce0514d 100644
+--- a/mediator/med_io_mod.F90
++++ b/mediator/med_io_mod.F90
+@@ -692,7 +692,7 @@ contains
+
+   !===============================================================================
+   subroutine med_io_write_FB(io_file, FB, whead, wdata, nx, ny, nt, &
+-       fillval, pre, flds, tavg, use_float, ntile, rc)
++       fillval, pre, flds, tavg, use_float, ntile, write_coords, rc)
+
+     !---------------
+     ! Write FB to netcdf file
+@@ -707,7 +707,6 @@ contains
+     use pio  , only : var_desc_t, io_desc_t, pio_offset_kind
+     use pio  , only : pio_def_dim, pio_inq_dimid, pio_real, pio_def_var, pio_put_att, pio_double
+     use pio  , only : pio_inq_varid, pio_setframe, pio_write_darray, pio_initdecomp, pio_freedecomp
+-    use pio  , only : pio_syncfile
+
+     ! input/output variables
+     type(file_desc_t)                       :: io_file
+@@ -723,6 +722,8 @@ contains
+     logical,          optional , intent(in) :: tavg      ! is this a tavg
+     logical,          optional , intent(in) :: use_float ! write output as float rather than double
+     integer,          optional , intent(in) :: ntile     ! number of nx * ny tiles
++    logical,          optional , intent(in) :: write_coords ! emit this bundle's coordinate
++                                                            ! variables (default .true.)
+     integer                    , intent(out):: rc
+
+     ! local variables
+@@ -750,6 +751,7 @@ contains
+     character(CS)                 :: coordunits(2)      ! coordinate units
+     integer                       :: lnx,lny,lntile
+     logical                       :: luse_float
++    logical                       :: lwrite_coords
+     real(r8)                      :: lfillvalue
+     integer, pointer              :: minIndexPTile(:,:)
+     integer, pointer              :: maxIndexPTile(:,:)
+@@ -777,6 +779,8 @@ contains
+     if (present(pre)) lpre = trim(pre)
+     luse_float = .false.
+     if (present(use_float)) luse_float = use_float
++    lwrite_coords = .true.
++    if (present(write_coords)) lwrite_coords = write_coords
+
+     tiles = .false.
+     if (present(ntile)) then
+@@ -840,7 +844,7 @@ contains
+     end if
+
+     ! Set element coordinates
+-    if (.not. allocated(ownedElemCoords) .and. ndims > 0 .and. nelements > 0) then
++    if (lwrite_coords .and. .not. allocated(ownedElemCoords) .and. ndims > 0 .and. nelements > 0) then
+        allocate(ownedElemCoords(ndims*nelements))
+        allocate(ownedElemCoords_x(ndims*nelements/2))
+        allocate(ownedElemCoords_y(ndims*nelements/2))
+@@ -997,16 +1001,18 @@ contains
+        end do
+
+        ! Add coordinate information to file
+-       do n = 1,ndims
+-          if (luse_float) then
+-             rcode = pio_def_var(io_file, trim(coordvarnames(n)), PIO_REAL, dimid, varid)
+-          else
+-             rcode = pio_def_var(io_file, trim(coordvarnames(n)), PIO_DOUBLE, dimid, varid)
+-          end if
+-          rcode = pio_put_att(io_file, varid, "long_name", trim(coordnames(n)))
+-          rcode = pio_put_att(io_file, varid, "units", trim(coordunits(n)))
+-          rcode = pio_put_att(io_file, varid, "standard_name", trim(coordnames(n)))
+-       end do
++       if (lwrite_coords) then
++          do n = 1,ndims
++             if (luse_float) then
++                rcode = pio_def_var(io_file, trim(coordvarnames(n)), PIO_REAL, dimid, varid)
++             else
++                rcode = pio_def_var(io_file, trim(coordvarnames(n)), PIO_DOUBLE, dimid, varid)
++             end if
++             rcode = pio_put_att(io_file, varid, "long_name", trim(coordnames(n)))
++             rcode = pio_put_att(io_file, varid, "units", trim(coordunits(n)))
++             rcode = pio_put_att(io_file, varid, "standard_name", trim(coordnames(n)))
++          end do
++       end if
+     end if
+
+     if (wdata) then
+@@ -1092,23 +1098,29 @@ contains
+           end if ! end if not "hgt"
+        end do  ! end loop over fields in FB
+
+-       ! Fill coordinate variables - why is this being done each time?
+-       rcode = pio_inq_varid(io_file, trim(coordvarnames(1)), varid)
+-       call pio_setframe(io_file,varid,frame)
+-       if (luse_float) then
+-          call pio_write_darray(io_file, varid, iodesc, real(ownedElemCoords_x,r4), rcode, fillval=real(lfillvalue,r4))
+-       else
+-          call pio_write_darray(io_file, varid, iodesc, ownedElemCoords_x, rcode, fillval=lfillvalue)
+-       end if
++       ! Fill coordinate variables. Each bundle emits its own <pre>_lon/_lat, so a file
++       ! with many bundles on one mesh carries many identical full-mesh copies. Callers
++       ! that do not need them (restarts) pass write_coords=.false.
++       if (lwrite_coords) then
++          rcode = pio_inq_varid(io_file, trim(coordvarnames(1)), varid)
++          call pio_setframe(io_file,varid,frame)
++          if (luse_float) then
++             call pio_write_darray(io_file, varid, iodesc, real(ownedElemCoords_x,r4), rcode, fillval=real(lfillvalue,r4))
++          else
++             call pio_write_darray(io_file, varid, iodesc, ownedElemCoords_x, rcode, fillval=lfillvalue)
++          end if
+
+-       rcode = pio_inq_varid(io_file, trim(coordvarnames(2)), varid)
+-       call pio_setframe(io_file,varid,frame)
+-       if (luse_float) then
+-          call pio_write_darray(io_file, varid, iodesc, real(ownedElemCoords_y,r4), rcode, fillval=real(lfillvalue,r4))
+-       else
+-          call pio_write_darray(io_file, varid, iodesc, ownedElemCoords_y, rcode, fillval=lfillvalue)
++          rcode = pio_inq_varid(io_file, trim(coordvarnames(2)), varid)
++          call pio_setframe(io_file,varid,frame)
++          if (luse_float) then
++             call pio_write_darray(io_file, varid, iodesc, real(ownedElemCoords_y,r4), rcode, fillval=real(lfillvalue,r4))
++          else
++             call pio_write_darray(io_file, varid, iodesc, ownedElemCoords_y, rcode, fillval=lfillvalue)
++          end if
+        end if
+-       call pio_syncfile(io_file)
++       ! No pio_syncfile here: it is a collective flush per FieldBundle, and med_io_close
++       ! already flushes via pio_closefile. The freedecomp is unconditional -- the
++       ! decomposition is built for the field data, not for the coordinates.
+        call pio_freedecomp(io_file, iodesc)
+     endif
+     if(allocated(ownedElemCoords)) then
+diff --git a/mediator/med_phases_restart_mod.F90 b/mediator/med_phases_restart_mod.F90
+index 59dbbbf5..0ceffe70 100644
+--- a/mediator/med_phases_restart_mod.F90
++++ b/mediator/med_phases_restart_mod.F90
+@@ -29,6 +29,13 @@ module med_phases_restart_mod
+   private :: med_phases_restart_alarm_init
+
+   logical :: write_restart_at_endofrun = .false.
++  ! Emit the per-FieldBundle <pre>_lon/<pre>_lat coordinate copies into the mediator
++  ! restart file. They are identical for every bundle sharing a mesh, nothing reads
++  ! them back, and on a large configuration they are a sizeable fraction of the file.
++  ! The default is on (".true.") to keep backwards compatibility. Set the MED attribute
++  ! write_restart_coords to .false. to stop writing duplicate fields (but that setting
++  ! will alter the file contents since the duplicate coordinates will be missing).
++  logical :: write_restart_coords = .true.
+ #ifndef CESMCOUPLED
+   type(is_restart_fh_type) :: restartfh_info ! For flexible restarts in UFS
+ #endif
+@@ -115,6 +122,14 @@ contains
+        if (trim(cvalue) .eq. '.true.') write_restart_at_endofrun = .true.
+     end if
+
++    ! Handle optional coordinate variables in the restart file
++    call NUOPC_CompAttributeGet(gcomp, name="write_restart_coords", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
++    if (ChkErr(rc,__LINE__,u_FILE_u)) return
++    if (isPresent .and. isSet) then
++       if (trim(cvalue) .eq. '.true.' ) write_restart_coords = .true.
++       if (trim(cvalue) .eq. '.false.') write_restart_coords = .false.
++    end if
++
+     ! Write mediator diagnostic output
+     if (maintask) then
+        write(logunit,*)
+@@ -122,6 +137,7 @@ contains
+        write(logunit,'(a,2x,i8)') trim(subname)//" set restart alarm with option "//&
+             trim(restart_option)//" and frequency ",restart_n
+        write(logunit,'(a,l7)') trim(subname)//" write_restart_at_endofrun : ", write_restart_at_endofrun
++       write(logunit,'(a,l7)') trim(subname)//" write_restart_coords      : ", write_restart_coords
+        write(logunit,*)
+     end if
+
+@@ -384,19 +400,19 @@ contains
+                 ! Write import field bundles
+                 if (ESMF_FieldBundleIsCreated(is_local%wrap%FBimp(n,n),rc=rc)) then
+                    call med_io_write(io_file, is_local%wrap%FBimp(n,n), whead(m), wdata(m), nx, ny, &
+-                        nt=1, pre=trim(compname(n))//'Imp', rc=rc)
++                        nt=1, write_coords=write_restart_coords, pre=trim(compname(n))//'Imp', rc=rc)
+                    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+                 endif
+                 ! Write export field bundles
+                 if (ESMF_FieldBundleIsCreated(is_local%wrap%FBexp(n),rc=rc)) then
+                    call med_io_write(io_file, is_local%wrap%FBexp(n), whead(m), wdata(m), nx, ny, &
+-                        nt=1, pre=trim(compname(n))//'Exp', rc=rc)
++                        nt=1, write_coords=write_restart_coords, pre=trim(compname(n))//'Exp', rc=rc)
+                    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+                 endif
+                 ! Write fraction field bundles
+                 if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n),rc=rc)) then
+                    call med_io_write(io_file, is_local%wrap%FBfrac(n), whead(m), wdata(m), nx, ny, &
+-                        nt=1, pre=trim(compname(n))//'Frac', rc=rc)
++                        nt=1, write_coords=write_restart_coords, pre=trim(compname(n))//'Frac', rc=rc)
+                    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+                 endif
+              end if
+@@ -407,7 +423,7 @@ contains
+              nx = is_local%wrap%nx(compocn)
+              ny = is_local%wrap%ny(compocn)
+              call med_io_write(io_file, is_local%wrap%FBExpAccumOcn, whead(m), wdata(m), nx, ny, &
+-                  nt=1, pre='ocnExpAccum', rc=rc)
++                  nt=1, write_coords=write_restart_coords, pre='ocnExpAccum', rc=rc)
+              if (ChkErr(rc,__LINE__,u_FILE_u)) return
+              call med_io_write(io_file, is_local%wrap%ExpAccumOcnCnt, 'ocnExpAccum_cnt', whead(m), wdata(m), rc=rc)
+              if (ChkErr(rc,__LINE__,u_FILE_u)) return
+@@ -418,7 +434,7 @@ contains
+              nx = is_local%wrap%nx(compwav)
+              ny = is_local%wrap%ny(compwav)
+              call med_io_write(io_file, is_local%wrap%FBExpAccumWav, whead(m), wdata(m), nx, ny, &
+-                  nt=1, pre='wavExpAccum', rc=rc)
++                  nt=1, write_coords=write_restart_coords, pre='wavExpAccum', rc=rc)
+              if (ChkErr(rc,__LINE__,u_FILE_u)) return
+              call med_io_write(io_file, is_local%wrap%ExpAccumWavCnt, 'wavExpAccum_cnt', whead(m), wdata(m), rc=rc)
+              if (ChkErr(rc,__LINE__,u_FILE_u)) return
+@@ -429,7 +445,7 @@ contains
+              nx = is_local%wrap%nx(complnd)
+              ny = is_local%wrap%ny(complnd)
+              call med_io_write(io_file, FBlndAccum2rof_l, whead(m), wdata(m), nx, ny, &
+-                  nt=1, pre='lndImpAccum2rof', rc=rc)
++                  nt=1, write_coords=write_restart_coords, pre='lndImpAccum2rof', rc=rc)
+              if (ChkErr(rc,__LINE__,u_FILE_u)) return
+              call med_io_write(io_file, lndAccum2rof_cnt, 'lndImpAccum2rof_cnt', whead(m), wdata(m), rc=rc)
+              if (ChkErr(rc,__LINE__,u_FILE_u)) return
+@@ -440,7 +456,7 @@ contains
+              nx = is_local%wrap%nx(complnd)
+              ny = is_local%wrap%ny(complnd)
+              call med_io_write(io_file, FBlndAccum2glc_l, whead(m), wdata(m), nx, ny, &
+-                  nt=1, pre='lndImpAccum2glc', rc=rc)
++                  nt=1, write_coords=write_restart_coords, pre='lndImpAccum2glc', rc=rc)
+              if (ChkErr(rc,__LINE__,u_FILE_u)) return
+              call med_io_write(io_file, lndAccum2glc_cnt, 'lndImpAccum2glc_cnt', whead(m), wdata(m), rc=rc)
+              if (ChkErr(rc,__LINE__,u_FILE_u)) return
+@@ -451,7 +467,7 @@ contains
+              nx = is_local%wrap%nx(compocn)
+              ny = is_local%wrap%ny(compocn)
+              call med_io_write(io_file, FBocnAccum2glc_o, whead(m), wdata(m), nx, ny, &
+-                  nt=1, pre='ocnImpAccum2glc_o', rc=rc)
++                  nt=1, write_coords=write_restart_coords, pre='ocnImpAccum2glc_o', rc=rc)
+              if (ChkErr(rc,__LINE__,u_FILE_u)) return
+              call med_io_write(io_file, ocnAccum2glc_cnt, 'ocnImpAccum2glc_cnt', whead(m), wdata(m), rc=rc)
+              if (ChkErr(rc,__LINE__,u_FILE_u)) return
+@@ -462,7 +478,7 @@ contains
+              nx = is_local%wrap%nx(compocn)
+              ny = is_local%wrap%ny(compocn)
+              call med_io_write(io_file, is_local%wrap%FBMed_ocnalb_o, whead(m), wdata(m), nx, ny, &
+-                  nt=1, pre='MedOcnAlb_o', rc=rc)
++                  nt=1, write_coords=write_restart_coords, pre='MedOcnAlb_o', rc=rc)
+              if (ChkErr(rc,__LINE__,u_FILE_u)) return
+           end if
+
+@@ -476,7 +492,7 @@ contains
+                    ny = is_local%wrap%ny(nc)
+                    call med_io_write(io_file, auxcomp(nc)%files(nf)%FBaccum, &
+                         whead(m), wdata(m), nx, ny, &
+-                        nt=1, pre=trim(compname(nc))//trim(auxcomp(nc)%files(nf)%auxname), rc=rc)
++                        nt=1, write_coords=write_restart_coords, pre=trim(compname(nc))//trim(auxcomp(nc)%files(nf)%auxname), rc=rc)
+                    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+                    call med_io_write(io_file, auxcomp(nc)%files(nf)%accumcnt, &
+                         trim(compname(nc))//trim(auxcomp(nc)%files(nf)%auxname)//'_accumcnt', &
