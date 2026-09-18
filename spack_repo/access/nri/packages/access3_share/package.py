@@ -42,6 +42,20 @@ class Access3Share(CMakePackage):
                 "cflags='-qno-opt-dynamic-align -fp-model precise -std=gnu99'"),
                 when="%intel")  # consistency with access-om3-nuopc builds, e.g. https://github.com/ACCESS-NRI/spack-packages/blob/e2bdb46e56af8ac14183e7ed25da9235486c973a/packages/access-om3-nuopc/package.py#L65
 
+    # Mediator restart I/O containing two changes - i) Drops the per-FieldBundle
+    # pio_syncfile (a collective H5Fflush of a still-growing multi-GB file, ~14 '
+    # times per restart), and ii) optionally stops writing duplicate
+    # <pre>_lon / <pre>_lat copies into the restart file. Default is set to "true" -
+    # which preserves the old behaviour of writing out the duplicate coordinates.
+    # Setting  write_restart_coords = .false. (under MED_attributes:: in nuopc.runconfig)
+    # will stop writing the duplicate coordinates, but naturally, the restart file
+    # contents will be different.
+    # Applies to the bundled CMEPS submodule only. Verified against the CMEPS
+    # commits pinned by @2025.08.000 through @2026.03.002; @2025.03.x pin a CMEPS
+    # whose med_phases_restart_mod.F90 predates the context hunk 1 needs.
+    patch("cmeps-mediator-restart-io.patch", working_dir="CMEPS/CMEPS", when="@2025.08.000:")
+    patch("cmeps-mediator-restart-io.patch", working_dir="CMEPS/CMEPS", when="@stable")
+
     def cmake_args(self):
         args = [
             self.define("ACCESS3_LIB_INSTALL", True),
