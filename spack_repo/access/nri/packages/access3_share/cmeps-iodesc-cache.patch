@@ -1,0 +1,361 @@
+CMEPS: cache PIO decompositions instead of rebuilding them per FieldBundle
+
+APPLIES ON TOP OF cmeps-mediator-restart-io.patch AND cmeps-restart-timers.patch
+(with the ESMF_TraceRegionEnter/Exit import that the first version of the timer
+patch was missing).
+
+Measured with those trace regions, ACCESS-OM3 8 km, 8216 PETs, 1-day segment:
+
+  MED:(med_phases_restart_write)              326.58
+    med_io_FB_initdecomp      Count 12        274.40   84.0%   22.87 s/bundle
+    med_io_FB_freedecomp      Count 12         14.14    4.3%
+    med_io_close              Count  1          6.85    2.1%
+    med_io_FB_darray          Count 12          0.76    0.2%
+    residual (untimed)                         30.35    9.3%
+
+pio_initdecomp is 84% of the mediator restart write; the pio_write_darray loop
+that moves the 25 GB is 0.76 s. Build plus free is 288.5 s of 326.6 s.
+
+The min/max columns show why: on one PET initdecomp is 5.91 s and freedecomp is
+320.30 s; on another 276.39 s and 11.66 s. They are collectives and whoever
+arrives early waits in the next one, so the pair is the cost.
+
+The 12 FieldBundles in this restart differ in nothing pio_initdecomp depends on:
+ATM, ICE, OCN and ROF share one ESMFmesh at 4320 x 3672. Cache the decomposition,
+keyed on the PIO base type, the global dimensions and this PET's local degrees of
+freedom compared element-wise.
+
+Collective safety is the delicate part -- a lookup that leaves PETs disagreeing
+about whether to call the collective pio_initdecomp is a hang, not a wrong
+answer. Each PET reduces its local hit index with one ESMF_VMAllReduce, sending
+(hit, -hit) with MAX so a single collective yields both the maximum and the
+minimum; the hit is taken only when they agree and are positive. Any
+disagreement, including two PETs hitting different slots, falls through to a
+build on every PET.
+
+io_desc_t is a single integer handle, so returning a copy cannot alias anything
+later freed, and the decomposition belongs to the iosystem rather than to a file.
+The per-call pio_freedecomp is removed; med_io_finalize (called from
+med_finalize, outside the maintask guard because it is collective) releases
+everything and logs hit and build counts. The med_io_FB_freedecomp trace region
+goes with it.
+
+EXPECTED: initdecomp 274.40 -> 22.87 s and freedecomp 14.14 -> 0, so about
+-266 s on the restart write, 326.6 s -> roughly 61 s, about a third of the 1-day
+wall clock. The med_io_FB_initdecomp region is kept around the cache lookup so
+the profile shows this directly -- its Count stays at 12 (the region wraps the
+lookup as well as any build); the TIME is the signal.
+
+Touches mediator/med_io_mod.F90 and mediator/med.F90.
+
+diff --git a/mediator/med.F90 b/mediator/med.F90
+index a34e91b9..6aacb34f 100644
+--- a/mediator/med.F90
++++ b/mediator/med.F90
+@@ -2733,13 +2733,20 @@ contains
+ 
+   subroutine med_finalize(gcomp, rc)
+ 
+-    use ESMF, only : ESMF_GridComp, ESMF_SUCCESS
++    use ESMF       , only : ESMF_GridComp, ESMF_SUCCESS
++    use med_io_mod , only : med_io_finalize
+ 
+     type(ESMF_GridComp)  :: gcomp
+     integer, intent(out) :: rc
+ 
+     rc = ESMF_SUCCESS
+     call memcheck("med_finalize", 0, maintask)
++
++    ! Release the cached PIO decompositions. Collective, so outside the
++    ! maintask guard below.
++    call med_io_finalize(rc)
++    if (ChkErr(rc,__LINE__,u_FILE_u)) return
++
+     if (maintask) then
+        write(logunit,*)' SUCCESSFUL TERMINATION OF CMEPS'
+        call med_phases_profile_finalize()
+diff --git a/mediator/med_io_mod.F90 b/mediator/med_io_mod.F90
+index b15d8243..de700532 100644
+--- a/mediator/med_io_mod.F90
++++ b/mediator/med_io_mod.F90
+@@ -13,7 +13,7 @@ module med_io_mod
+   use ESMF                  , only : ESMF_VMGetCurrent, ESMF_VMGet, ESMF_VMBroadCast, ESMF_Finalize
+   use NUOPC                 , only : NUOPC_FieldDictionaryGetEntry
+   use NUOPC                 , only : NUOPC_FieldDictionaryHasEntry
+-  use pio                   , only : file_desc_t, iosystem_desc_t
++  use pio                   , only : file_desc_t, iosystem_desc_t, io_desc_t
+   use pio                   , only : pio_seterrorhandling, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
+   use med_internalstate_mod , only : logunit, med_id, maintask
+   use med_constants_mod     , only : dbug_flag    => med_constants_dbug_flag
+@@ -41,9 +41,11 @@ module med_io_mod
+   public :: med_io_date2yyyymmdd
+   public :: med_io_datetod2string
+   public :: med_io_ymd2date
++  public :: med_io_finalize
+ 
+   ! private member functions
+   private :: med_io_file_exists
++  private :: med_io_get_iodesc
+ 
+   ! public data members:
+   interface med_io_read
+@@ -83,6 +85,31 @@ module med_io_mod
+   integer                        :: pio_iotype
+   integer                        :: pio_ioformat
+   type(iosystem_desc_t), pointer :: io_subsystem
++
++  ! --- cached PIO decompositions -------------------------------------------
++  ! med_io_write_FB used to build and free a PIO decomposition on every call.
++  ! A mediator restart writes ~15-20 FieldBundles, so that is ~15-20 full
++  ! rearranger schedule builds over the whole mesh across every mediator PET,
++  ! per restart -- and in any configuration whose components share a mesh they
++  ! are all identical. Entries are keyed on everything pio_initdecomp depends
++  ! on: the PIO type, the global dimensions, and this PET's local degrees of
++  ! freedom. Whether a hit is taken is agreed across all PETs with a single
++  ! collective, so a cache lookup can never desynchronise the collective
++  ! pio_initdecomp that follows a miss.
++  integer, parameter             :: med_io_maxiodesc = 8
++  type med_io_iodesc_type
++     logical              :: inuse    = .false.
++     integer              :: piotype  = -1
++     integer              :: ndim     = 0
++     integer              :: gdims(3) = 0
++     integer              :: ns       = -1
++     integer, allocatable :: dof(:)
++     type(io_desc_t)      :: iodesc
++  end type med_io_iodesc_type
++  type(med_io_iodesc_type), save :: med_io_iodesc_cache(med_io_maxiodesc)
++  integer, save                  :: med_io_iodesc_victim = 0
++  integer, save                  :: med_io_iodesc_hits   = 0
++  integer, save                  :: med_io_iodesc_misses = 0
+   character(*),parameter         :: u_FILE_u = &
+        __FILE__
+ 
+@@ -700,6 +727,151 @@ contains
+   end function med_io_sec2hms
+ 
+   !===============================================================================
++  !===============================================================================
++  subroutine med_io_get_iodesc(piotype, gdims, dof, iodesc, rc)
++
++    !---------------
++    ! Return a PIO decomposition for (piotype, gdims, dof), reusing a cached one
++    ! when this PET -- and every other PET in the mediator VM -- already has it.
++    !---------------
++
++    use ESMF , only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMAllReduce, ESMF_REDUCE_MAX
++    use pio  , only : pio_initdecomp, pio_freedecomp
++
++    ! input/output variables
++    integer         , intent(in)  :: piotype   ! pio_real or pio_double
++    integer         , intent(in)  :: gdims(:)  ! global dimensions
++    integer         , intent(in)  :: dof(:)    ! this PET's degrees of freedom
++    type(io_desc_t) , intent(out) :: iodesc    ! io_desc_t is an integer handle, so copying is free
++    integer         , intent(out) :: rc
++
++    ! local variables
++    type(ESMF_VM)          :: vm
++    integer                :: n, ndim, ns, slot
++    integer                :: lhit(2), ghit(2)
++    character(CL)          :: tmpstr
++    character(*),parameter :: subName = '(med_io_get_iodesc) '
++    !---------------------------------------------------------------------------
++
++    rc   = ESMF_SUCCESS
++    ndim = size(gdims)
++    ns   = size(dof)
++
++    if (ndim > size(med_io_iodesc_cache(1)%gdims)) then
++       call shr_log_error(trim(subname)//' ERROR: too many dimensions for cache key', rc=rc)
++       return
++    end if
++
++    ! --- local lookup --------------------------------------------------------
++    lhit(1) = 0
++    do n = 1,med_io_maxiodesc
++       if (.not. med_io_iodesc_cache(n)%inuse)        cycle
++       if (med_io_iodesc_cache(n)%piotype /= piotype) cycle
++       if (med_io_iodesc_cache(n)%ndim    /= ndim)    cycle
++       if (med_io_iodesc_cache(n)%ns      /= ns)      cycle
++       if (any(med_io_iodesc_cache(n)%gdims(1:ndim) /= gdims(1:ndim))) cycle
++       if (ns > 0) then
++          if (any(med_io_iodesc_cache(n)%dof(1:ns) /= dof(1:ns))) cycle
++       end if
++       lhit(1) = n
++       exit
++    end do
++
++    ! --- every PET must agree, or the pio_initdecomp after a miss would hang --
++    ! Send (hit, -hit) and reduce with MAX, so one collective yields both the
++    ! maximum and (negated) the minimum local hit index.
++    lhit(2) = -lhit(1)
++    call ESMF_VMGetCurrent(vm, rc=rc)
++    if (chkerr(rc,__LINE__,u_FILE_u)) return
++    call ESMF_VMAllReduce(vm, lhit(1:2), ghit(1:2), 2, ESMF_REDUCE_MAX, rc=rc)
++    if (chkerr(rc,__LINE__,u_FILE_u)) return
++
++    if (ghit(1) > 0 .and. ghit(1) == -ghit(2)) then
++       ! unanimous hit on the same slot
++       med_io_iodesc_hits = med_io_iodesc_hits + 1
++       iodesc = med_io_iodesc_cache(ghit(1))%iodesc
++       if (dbug_flag > 1) then
++          write(tmpstr,*) subname,' hit slot ',ghit(1),' hits/misses ', &
++               med_io_iodesc_hits, med_io_iodesc_misses
++          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO)
++       end if
++       return
++    end if
++
++    ! --- miss ----------------------------------------------------------------
++    ! Slot choice must be identical on every PET. Occupancy and the victim
++    ! counter are only ever modified here, which all PETs reach together, so
++    ! "first free, else round-robin" is consistent by construction.
++    slot = 0
++    do n = 1,med_io_maxiodesc
++       if (.not. med_io_iodesc_cache(n)%inuse) then
++          slot = n
++          exit
++       end if
++    end do
++    if (slot == 0) then
++       med_io_iodesc_victim = mod(med_io_iodesc_victim, med_io_maxiodesc) + 1
++       slot = med_io_iodesc_victim
++       call pio_freedecomp(io_subsystem, med_io_iodesc_cache(slot)%iodesc)
++       med_io_iodesc_cache(slot)%inuse = .false.
++    end if
++
++    call pio_initdecomp(io_subsystem, piotype, gdims, dof, med_io_iodesc_cache(slot)%iodesc)
++
++    med_io_iodesc_cache(slot)%piotype       = piotype
++    med_io_iodesc_cache(slot)%ndim          = ndim
++    med_io_iodesc_cache(slot)%gdims         = 0
++    med_io_iodesc_cache(slot)%gdims(1:ndim) = gdims(1:ndim)
++    med_io_iodesc_cache(slot)%ns            = ns
++    if (allocated(med_io_iodesc_cache(slot)%dof)) deallocate(med_io_iodesc_cache(slot)%dof)
++    allocate(med_io_iodesc_cache(slot)%dof(ns))
++    if (ns > 0) med_io_iodesc_cache(slot)%dof(1:ns) = dof(1:ns)
++    med_io_iodesc_cache(slot)%inuse         = .true.
++    med_io_iodesc_misses = med_io_iodesc_misses + 1
++
++    iodesc = med_io_iodesc_cache(slot)%iodesc
++
++    if (dbug_flag > 1) then
++       write(tmpstr,*) subname,' built slot ',slot,' hits/misses ', &
++            med_io_iodesc_hits, med_io_iodesc_misses
++       call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO)
++    end if
++
++  end subroutine med_io_get_iodesc
++
++  !===============================================================================
++  subroutine med_io_finalize(rc)
++
++    !---------------
++    ! Release every cached PIO decomposition. Collective over the mediator PETs.
++    !---------------
++
++    use pio  , only : pio_freedecomp
++
++    ! input/output variables
++    integer, intent(out) :: rc
++
++    ! local variables
++    integer :: n
++    !---------------------------------------------------------------------------
++
++    rc = ESMF_SUCCESS
++
++    do n = 1,med_io_maxiodesc
++       if (med_io_iodesc_cache(n)%inuse) then
++          call pio_freedecomp(io_subsystem, med_io_iodesc_cache(n)%iodesc)
++          med_io_iodesc_cache(n)%inuse = .false.
++       end if
++       if (allocated(med_io_iodesc_cache(n)%dof)) deallocate(med_io_iodesc_cache(n)%dof)
++    end do
++
++    if (maintask) then
++       write(logunit,'(a,i0,a,i0)') ' (med_io_finalize) PIO decomposition cache hits = ', &
++            med_io_iodesc_hits, ', builds = ', med_io_iodesc_misses
++    end if
++
++  end subroutine med_io_finalize
++
+   subroutine med_io_write_FB(io_file, FB, whead, wdata, nx, ny, nt, &
+        fillval, pre, flds, tavg, use_float, ntile, write_coords, rc)
+ 
+@@ -715,7 +887,7 @@ contains
+     use ESMF , only : ESMF_CoordSys_Flag, ESMF_COORDSYS_SPH_DEG, ESMF_COORDSYS_SPH_RAD, ESMF_COORDSYS_CART
+     use pio  , only : var_desc_t, io_desc_t, pio_offset_kind
+     use pio  , only : pio_def_dim, pio_inq_dimid, pio_real, pio_def_var, pio_put_att, pio_double
+-    use pio  , only : pio_inq_varid, pio_setframe, pio_write_darray, pio_initdecomp, pio_freedecomp
++    use pio  , only : pio_inq_varid, pio_setframe, pio_write_darray
+ 
+     ! input/output variables
+     type(file_desc_t)                       :: io_file
+@@ -759,6 +931,7 @@ contains
+     character(CS)                 :: coordnames(2)      ! coordinate long names
+     character(CS)                 :: coordunits(2)      ! coordinate units
+     integer                       :: lnx,lny,lntile
++    integer                       :: lpiotype
+     logical                       :: luse_float
+     logical                       :: lwrite_coords
+     real(r8)                      :: lfillvalue
+@@ -1040,25 +1213,27 @@ contains
+        call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO)
+        call ESMF_TraceRegionExit('med_io_FB_dof')
+ 
+-       ! pio_initdecomp builds the rearranger schedule. It is collective, it runs once
+-       ! per FieldBundle, and it writes nothing to the file -- so if the restart grows
+-       ! in bursts separated by pauses, this is the leading candidate for a pause.
++       ! Acquire the PIO decomposition. Built fresh per FieldBundle this measured
++       ! 274.4 s of a 326.6 s mediator restart write on ACCESS-OM3 at 8 km -- 22.9 s
++       ! per bundle, 84% of the region -- while the pio_write_darray loop beside it
++       ! was 0.76 s. med_io_get_iodesc returns a cached decomposition when this PET,
++       ! and every other PET in the mediator VM, already has an identical one. The
++       ! trace region is kept so the profile shows the effect directly: its time
++       ! should fall to roughly one build.
+        call ESMF_TraceRegionEnter('med_io_FB_initdecomp')
++       if (luse_float) then
++          lpiotype = pio_real
++       else
++          lpiotype = pio_double
++       end if
+        if (tiles) then
+-          if (luse_float) then
+-             call pio_initdecomp(io_subsystem, pio_real, (/lnx,lny,lntile/), dof, iodesc)
+-          else
+-             call pio_initdecomp(io_subsystem, pio_double, (/lnx,lny,lntile/), dof, iodesc)
+-          end if
++          call med_io_get_iodesc(lpiotype, (/lnx,lny,lntile/), dof, iodesc, rc)
+        else
+-          if (luse_float) then
+-             call pio_initdecomp(io_subsystem, pio_real, (/lnx,lny/), dof, iodesc)
+-          else
+-             call pio_initdecomp(io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
+-          end if
++          call med_io_get_iodesc(lpiotype, (/lnx,lny/), dof, iodesc, rc)
+           !call pio_writedof(lpre, (/lnx,lny/), int(dof,kind=PIO_OFFSET_KIND), mpicom)
+        end if
+        call ESMF_TraceRegionExit('med_io_FB_initdecomp')
++       if (chkerr(rc,__LINE__,u_FILE_u)) return
+        deallocate(dof)
+ 
+        ! the only span in the data pass that should be moving bytes
+@@ -1145,12 +1320,11 @@ contains
+           end if
+        end if
+        call ESMF_TraceRegionExit('med_io_FB_coords')
+-       ! No pio_syncfile here: it is a collective flush per FieldBundle, and med_io_close
+-       ! already flushes via pio_closefile. The freedecomp is unconditional -- the
+-       ! decomposition is built for the field data, not for the coordinates.
+-       call ESMF_TraceRegionEnter('med_io_FB_freedecomp')
+-       call pio_freedecomp(io_file, iodesc)
+-       call ESMF_TraceRegionExit('med_io_FB_freedecomp')
++       ! No pio_syncfile here: it is a collective flush per FieldBundle, and
++       ! med_io_close already flushes via pio_closefile. No pio_freedecomp either:
++       ! the decomposition now belongs to the module-level cache and is released in
++       ! med_io_finalize. The med_io_FB_freedecomp region goes with it -- it measured
++       ! 14.1 s per restart, all of it waiting in a collective.
+     endif
+     if(allocated(ownedElemCoords)) then
+        deallocate(ownedElemCoords)

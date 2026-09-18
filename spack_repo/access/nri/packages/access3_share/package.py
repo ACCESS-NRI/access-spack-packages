@@ -68,6 +68,18 @@ class Access3Share(CMakePackage):
     patch("cmeps-restart-timers.patch", working_dir="CMEPS/CMEPS", when="@2025.08.000:")
     patch("cmeps-restart-timers.patch", working_dir="CMEPS/CMEPS", when="@stable")
 
+    # Cache PIO decompositions instead of calling pio_initdecomp once per
+    # FieldBundle. Measured with the trace regions above: pio_initdecomp was 274.4 s
+    # of a 326.6 s mediator restart write on ACCESS-OM3 8 km (84%, 22.9 s per bundle)
+    # while the pio_write_darray loop beside it was 0.76 s. The 12 bundles share one
+    # ESMFmesh, so they collapse to one decomposition. Expected ~-266 s, taking the
+    # restart write to roughly 61 s.
+    # MUST be listed AFTER cmeps-restart-timers.patch. Narrower version range than
+    # the patches above: @2026.03.000 and earlier pin a CMEPS whose module-level
+    # "use pio" block differs.
+    patch("cmeps-iodesc-cache.patch", working_dir="CMEPS/CMEPS", when="@2026.03.001:")
+    patch("cmeps-iodesc-cache.patch", working_dir="CMEPS/CMEPS", when="@stable")
+
 
     # DIAGNOSTIC ONLY -- ESMF trace regions inside the CDEPS data-model stream
     # initialisation, so ESMF_Profile.summary breaks datm_strdata_init (114.8 s of a
