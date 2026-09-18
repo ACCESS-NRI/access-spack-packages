@@ -1,0 +1,184 @@
+CMEPS: ESMF trace regions for the mediator restart write path (diagnostic only)
+
+APPLIES ON TOP OF cmeps-mediator-restart-io.patch.
+
+Purely additive. No existing line is modified or removed; the only new code is
+ESMF_TraceRegionEnter/Exit calls, and use statements for those Trace Regions, and
+comments, so it cannot change results. The regions nest under the existing
+MED:(med_phases_restart_write) entry in ESMF_Profile.summary -- no new output
+files, no tooling, no namelist.
+
+Why: med_phases_restart_write is 288-336 s of an ACCESS-OM3 8 km 1-day run,
+34-39% of the wall clock, with 6697 of 8216 PETs idle through it, and it is one
+opaque block -- med_io_mod has no timers at all.
+
+Watching the restart file grow shows it arriving in bursts of a few GB separated
+by pauses of tens of seconds: roughly one cycle per FieldBundle (25.26 GB in ~14
+bundles, 1.80 GB and ~24 s each). That points at a per-bundle cost that moves no
+file bytes, and two candidates sit exactly there -- pio_initdecomp, which builds
+the rearranger schedule collectively once per FieldBundle, and the unconditional
+ESMF_LogWrite of the dof array beside it. Neither has ever been timed.
+
+What you get:
+
+  med_io_wopen             1                file create/open
+  med_io_FB_defvar         per whead call   variable definitions
+  med_io_enddef            1                pio_enddef
+  med_io_FB_dof            per wdata call   distgrid query + per-bundle LogWrite
+  med_io_FB_initdecomp     per wdata call   pio_initdecomp -- no file I/O
+  med_io_FB_darray         per wdata call   pio_write_darray loop -- the bytes
+  med_io_FB_coords         per wdata call   coordinate writes, if enabled
+  med_io_FB_freedecomp     per wdata call   pio_freedecomp
+  med_io_close             1                pio_closefile -- under netcdf4p this is
+                                            where HDF5 finally flushes, so a large
+                                            cost here is the write landing, not a
+                                            close
+
+How to read it:
+
+  med_io_FB_initdecomp large -> the pauses are the decomposition build, and the
+      cache dropped from this patch series is the fix
+  med_io_FB_darray ~= all of it -> the write really is bandwidth bound and fewer
+      bytes is the only lever
+  med_io_close large -> the per-bundle picture is wrong and the cost is one
+      deferred flush at the end
+  med_io_FB_dof large -> it is the per-bundle ESMF_LogWrite, which is a one-line
+      fix
+
+Those are three different fixes. Do not write any of them before the numbers say
+which.
+
+Caveat: med_io_FB_defvar, med_io_FB_dof, med_io_FB_darray and med_io_wopen span
+blocks containing if (ChkErr(...)) return, so on an error path they exit without
+closing and that run's profile is unbalanced. med_io_FB_initdecomp,
+med_io_FB_coords, med_io_FB_freedecomp, med_io_enddef and med_io_close are
+enter/call/exit with no return in between. An error aborts the run anyway.
+
+Touches mediator/med_io_mod.F90 only.
+
+diff --git a/mediator/med_io_mod.F90 b/mediator/med_io_mod.F90
+index 5ce0514d..1882d0fe 100644
+--- a/mediator/med_io_mod.F90
++++ b/mediator/med_io_mod.F90
+@@ -9,6 +9,7 @@ module med_io_mod
+   use med_constants_mod     , only : fillvalue => SHR_CONST_SPVAL
+   use ESMF                  , only : ESMF_VM, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LOGMSG_ERROR, ESMF_LogFoundError
+   use ESMF                  , only : ESMF_SUCCESS, ESMF_LOGERR_PASSTHRU
++  use ESMF                  , only : ESMF_TraceRegionEnter, ESMF_TraceRegionExit
+   use ESMF                  , only : ESMF_VMGetCurrent, ESMF_VMGet, ESMF_VMBroadCast, ESMF_Finalize
+   use NUOPC                 , only : NUOPC_FieldDictionaryGetEntry
+   use NUOPC                 , only : NUOPC_FieldDictionaryHasEntry
+@@ -522,6 +523,7 @@ contains
+     character(*),parameter :: subName = '(med_io_wopen) '
+     !-------------------------------------------------------------------------------
+
++    call ESMF_TraceRegionEnter('med_io_wopen')
+     lversion=trim(version)
+
+     lclobber = .false.
+@@ -578,6 +580,7 @@ contains
+     else
+        ! filename is already open, just return
+     endif
++    call ESMF_TraceRegionExit('med_io_wopen')
+
+   end subroutine med_io_wopen
+
+@@ -601,9 +604,13 @@ contains
+
+     rc = ESMF_SUCCESS
+
++    ! Under pio_typename = netcdf4p this is where HDF5 finally flushes the file, so
++    ! a large cost here is the write landing rather than a close.
++    call ESMF_TraceRegionEnter('med_io_close')
+     if (pio_file_is_open(io_file)) then
+        call pio_closefile(io_file)
+     endif
++    call ESMF_TraceRegionExit('med_io_close')
+
+   end subroutine med_io_close
+
+@@ -635,7 +642,9 @@ contains
+     integer :: rcode
+     !-------------------------------------------------------------------------------
+
++    call ESMF_TraceRegionEnter('med_io_enddef')
+     rcode = pio_enddef(io_file)
++    call ESMF_TraceRegionExit('med_io_enddef')
+
+   end subroutine med_io_enddef
+
+@@ -900,6 +909,7 @@ contains
+     end if
+
+     ! Write header
++    if (whead) call ESMF_TraceRegionEnter('med_io_FB_defvar')
+     if (whead) then
+       if (tiles) then
+        rcode = pio_def_dim(io_file, trim(lpre)//'_nx', lnx, dimid3(1))
+@@ -1014,15 +1024,26 @@ contains
+           end do
+        end if
+     end if
++    if (whead) call ESMF_TraceRegionExit('med_io_FB_defvar')
+
+     if (wdata) then
+        ! use distgrid extracted from field 1 above
++       ! Timed separately from the decomposition itself: this span contains one
++       ! unconditional ESMF_LogWrite per FieldBundle, a per-bundle cost that moves no
++       ! file bytes.
++       call ESMF_TraceRegionEnter('med_io_FB_dof')
+        call ESMF_DistGridGet(distgrid, localDE=0, elementCount=ns, rc=rc)
+        if (chkerr(rc,__LINE__,u_FILE_u)) return
+        allocate(dof(ns))
+        call ESMF_DistGridGet(distgrid, localDE=0, seqIndexList=dof, rc=rc)
+        write(tmpstr,*) subname,' dof = ',ns,size(dof),dof(1),dof(ns)  !,minval(dof),maxval(dof)
+        call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO)
++       call ESMF_TraceRegionExit('med_io_FB_dof')
++
++       ! pio_initdecomp builds the rearranger schedule. It is collective, it runs once
++       ! per FieldBundle, and it writes nothing to the file -- so if the restart grows
++       ! in bursts separated by pauses, this is the leading candidate for a pause.
++       call ESMF_TraceRegionEnter('med_io_FB_initdecomp')
+        if (tiles) then
+           if (luse_float) then
+              call pio_initdecomp(io_subsystem, pio_real, (/lnx,lny,lntile/), dof, iodesc)
+@@ -1037,8 +1058,11 @@ contains
+           end if
+           !call pio_writedof(lpre, (/lnx,lny/), int(dof,kind=PIO_OFFSET_KIND), mpicom)
+        end if
++       call ESMF_TraceRegionExit('med_io_FB_initdecomp')
+        deallocate(dof)
+
++       ! the only span in the data pass that should be moving bytes
++       call ESMF_TraceRegionEnter('med_io_FB_darray')
+        do k = 1,nf
+           ! Determine field name
+           if (present(flds)) then
+@@ -1097,10 +1121,12 @@ contains
+
+           end if ! end if not "hgt"
+        end do  ! end loop over fields in FB
++       call ESMF_TraceRegionExit('med_io_FB_darray')
+
+        ! Fill coordinate variables. Each bundle emits its own <pre>_lon/_lat, so a file
+        ! with many bundles on one mesh carries many identical full-mesh copies. Callers
+        ! that do not need them (restarts) pass write_coords=.false.
++       call ESMF_TraceRegionEnter('med_io_FB_coords')
+        if (lwrite_coords) then
+           rcode = pio_inq_varid(io_file, trim(coordvarnames(1)), varid)
+           call pio_setframe(io_file,varid,frame)
+@@ -1118,10 +1144,13 @@ contains
+              call pio_write_darray(io_file, varid, iodesc, ownedElemCoords_y, rcode, fillval=lfillvalue)
+           end if
+        end if
++       call ESMF_TraceRegionExit('med_io_FB_coords')
+        ! No pio_syncfile here: it is a collective flush per FieldBundle, and med_io_close
+        ! already flushes via pio_closefile. The freedecomp is unconditional -- the
+        ! decomposition is built for the field data, not for the coordinates.
++       call ESMF_TraceRegionEnter('med_io_FB_freedecomp')
+        call pio_freedecomp(io_file, iodesc)
++       call ESMF_TraceRegionExit('med_io_FB_freedecomp')
+     endif
+     if(allocated(ownedElemCoords)) then
+        deallocate(ownedElemCoords)
