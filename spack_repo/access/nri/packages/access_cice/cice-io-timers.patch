@@ -1,0 +1,218 @@
+diff --git a/cicecore/cicedyn/infrastructure/io/io_pio2/ice_history_write.F90 b/cicecore/cicedyn/infrastructure/io/io_pio2/ice_history_write.F90
+index acbd7d8..88478d3 100644
+--- a/cicecore/cicedyn/infrastructure/io/io_pio2/ice_history_write.F90
++++ b/cicecore/cicedyn/infrastructure/io/io_pio2/ice_history_write.F90
+@@ -26,6 +26,9 @@ module ice_history_write
+       use icepack_intfc, only: icepack_query_parameters
+       use ice_calendar, only: write_ic, histfreq
+       use ice_pio
++#ifdef CESMCOUPLED
++      use perf_mod, only: t_startf, t_stopf
++#endif
+ 
+       implicit none
+       private
+@@ -50,6 +53,18 @@ module ice_history_write
+ 
+       contains
+ 
++#ifndef CESMCOUPLED
++!     ESMF trace regions are only available in the coupled build. These stubs
++!     keep the call sites below free of preprocessor noise in every other build.
++      subroutine t_startf(string)
++      character(len=*) :: string
++      end subroutine t_startf
++
++      subroutine t_stopf(string)
++      character(len=*) :: string
++      end subroutine t_stopf
++#endif
++
+ !=======================================================================
+ !
+ ! write average ice quantities or snapshots
+@@ -192,10 +207,13 @@ subroutine ice_write_hist (ns)
+ 
+       ! create file
+       File%fh=-1
++      call t_startf ('cice_hist_open')
+       call ice_pio_init(mode='write', filename=trim(filename), File=File, &
+            clobber=.true., fformat=trim(history_format), rearr=trim(history_rearranger), &
+            iotasks=history_iotasks, root=history_root, stride=history_stride, debug=first_call)
++      call t_stopf ('cice_hist_open')
+ 
++      call t_startf ('cice_hist_initdecomp')
+       call ice_pio_initdecomp(iodesc=iodesc2d, precision=history_precision)
+       call ice_pio_initdecomp(ndim3=ncat_hist, iodesc=iodesc3dc, precision=history_precision)
+       call ice_pio_initdecomp(ndim3=nzilyr,    iodesc=iodesc3di, precision=history_precision)
+@@ -206,6 +224,9 @@ subroutine ice_write_hist (ns)
+       call ice_pio_initdecomp(ndim3=nzilyr,    ndim4=ncat_hist, iodesc=iodesc4di, precision=history_precision)
+       call ice_pio_initdecomp(ndim3=nzslyr,    ndim4=ncat_hist, iodesc=iodesc4ds, precision=history_precision)
+       call ice_pio_initdecomp(ndim3=nfsd_hist, ndim4=ncat_hist, iodesc=iodesc4df, precision=history_precision)
++      call t_stopf ('cice_hist_initdecomp')
++
++      call t_startf ('cice_hist_defvar')
+ 
+       ! option of turning on double precision history files
+       lprecision = pio_real
+@@ -710,8 +731,14 @@ subroutine ice_write_hist (ns)
+       ! end define mode
+       !-----------------------------------------------------------------
+ 
++      call t_stopf ('cice_hist_defvar')
++
++      call t_startf ('cice_hist_enddef')
+       call ice_pio_check(pio_enddef(File), &
+            subname//' ERROR: ending pio definitions',file=__FILE__,line=__LINE__)
++      call t_stopf ('cice_hist_enddef')
++
++      call t_startf ('cice_hist_darray')
+ 
+       !-----------------------------------------------------------------
+       ! write time and time bounds info
+@@ -1351,6 +1378,9 @@ subroutine ice_write_hist (ns)
+       !-----------------------------------------------------------------
+       call pio_seterrorhandling(File, PIO_INTERNAL_ERROR)
+ 
++      call t_stopf ('cice_hist_darray')
++
++      call t_startf ('cice_hist_freedecomp')
+       call pio_freedecomp(File,iodesc2d)
+       call pio_freedecomp(File,iodesc3dv)
+       call pio_freedecomp(File,iodesc3dc)
+@@ -1361,12 +1391,15 @@ subroutine ice_write_hist (ns)
+       call pio_freedecomp(File,iodesc4di)
+       call pio_freedecomp(File,iodesc4ds)
+       call pio_freedecomp(File,iodesc4df)
++      call t_stopf ('cice_hist_freedecomp')
+ 
+       !-----------------------------------------------------------------
+       ! close output dataset
+       !-----------------------------------------------------------------
+ 
++      call t_startf ('cice_hist_close')
+       call pio_closefile(File)
++      call t_stopf ('cice_hist_close')
+       if (my_task == master_task) then
+          write(nu_diag,*) subname,' Finished writing ',trim(ncfile)
+       endif
+diff --git a/cicecore/cicedyn/infrastructure/io/io_pio2/ice_restart.F90 b/cicecore/cicedyn/infrastructure/io/io_pio2/ice_restart.F90
+index 0186d73..a9747b7 100644
+--- a/cicecore/cicedyn/infrastructure/io/io_pio2/ice_restart.F90
++++ b/cicecore/cicedyn/infrastructure/io/io_pio2/ice_restart.F90
+@@ -16,6 +16,9 @@ module ice_restart
+       use ice_restart_shared
+       use ice_pio
+       use pio
++#ifdef CESMCOUPLED
++      use perf_mod, only: t_startf, t_stopf
++#endif
+       use icepack_intfc, only: icepack_warnings_flush, icepack_warnings_aborted
+       use icepack_intfc, only: icepack_query_tracer_flags, icepack_query_tracer_indices
+       use icepack_intfc, only: icepack_query_parameters, icepack_query_tracer_sizes
+@@ -38,6 +41,18 @@ module ice_restart
+ 
+       contains
+ 
++#ifndef CESMCOUPLED
++!     ESMF trace regions are only available in the coupled build. These stubs
++!     keep the call sites below free of preprocessor noise in every other build.
++      subroutine t_startf(string)
++      character(len=*) :: string
++      end subroutine t_startf
++
++      subroutine t_stopf(string)
++      character(len=*) :: string
++      end subroutine t_stopf
++#endif
++
+ !=======================================================================
+ 
+ ! Sets up restart file for reading.
+@@ -240,10 +255,13 @@ subroutine init_restart_write(filename_spec)
+       endif
+ 
+       File%fh=-1
++      call t_startf ('cice_rest_open')
+       call ice_pio_init(mode='write',filename=trim(filename), File=File, &
+            clobber=.true., fformat=trim(restart_format), rearr=trim(restart_rearranger), &
+            iotasks=restart_iotasks, root=restart_root, stride=restart_stride, &
+            debug=first_call)
++      call t_stopf ('cice_rest_open')
++      call t_startf ('cice_rest_defvar')
+ 
+       call pio_seterrorhandling(File, PIO_RETURN_ERROR)
+ 
+@@ -680,7 +698,10 @@ subroutine init_restart_write(filename_spec)
+       endif   !z_tracers
+ 
+       deallocate(dims)
++      call t_stopf ('cice_rest_defvar')
++      call t_startf ('cice_rest_enddef')
+       call ice_pio_check(pio_enddef(File), subname//' ERROR: enddef',file=__FILE__,line=__LINE__)
++      call t_stopf ('cice_rest_enddef')
+ 
+       call pio_seterrorhandling(File, PIO_INTERNAL_ERROR)
+ 
+@@ -860,6 +881,7 @@ subroutine write_restart_field(nu,nrec,work,atype,vname,ndim3,diag)
+       call ice_pio_check(pio_inq_varndims(File, vardesc, ndims), &
+            subname// " ERROR: missing varndims "//trim(vname),file=__FILE__,line=__LINE__)
+ 
++      call t_startf ('cice_rest_darray')
+       if (ndims==3) then
+          call pio_write_darray(File, vardesc, iodesc3d_ncat,work(:,:,:,1:nblocks), &
+               status, fillval=c0)
+@@ -869,6 +891,7 @@ subroutine write_restart_field(nu,nrec,work,atype,vname,ndim3,diag)
+       else
+          write(nu_diag,*) "ndims not supported",ndims,ndim3
+       endif
++      call t_stopf ('cice_rest_darray')
+ 
+       call ice_pio_check(status, &
+            subname//" ERROR: writing "//trim(vname),file=__FILE__,line=__LINE__)
+@@ -910,7 +933,9 @@ subroutine final_restart()
+ 
+       call PIO_freeDecomp(File,iodesc2d)
+       call PIO_freeDecomp(File,iodesc3d_ncat)
++      call t_startf ('cice_rest_close')
+       call pio_closefile(File)
++      call t_stopf ('cice_rest_close')
+       call ice_pio_finalize()
+ 
+       if (my_task == master_task) then
+diff --git a/cicecore/drivers/nuopc/cmeps/CICE_RunMod.F90 b/cicecore/drivers/nuopc/cmeps/CICE_RunMod.F90
+index 9d487ea..3c1958d 100644
+--- a/cicecore/drivers/nuopc/cmeps/CICE_RunMod.F90
++++ b/cicecore/drivers/nuopc/cmeps/CICE_RunMod.F90
+@@ -356,18 +356,23 @@ subroutine ice_step
+       !-----------------------------------------------------------------
+ 
+          call ice_timer_start(timer_diags)  ! diagnostics
++         call t_startf ('cice_diags')
+          if (mod(istep,diagfreq) == 0) then
+             call runtime_diags(dt)          ! log file
+             if (skl_bgc .or. z_tracers)  call bgc_diags
+             if (tr_brine) call hbrine_diags
+          endif
++         call t_stopf ('cice_diags')
+          call ice_timer_stop(timer_diags)   ! diagnostics
+ 
+          call ice_timer_start(timer_hist)   ! history
++         call t_startf ('cice_hist')
+          call accum_hist (dt)               ! history file
++         call t_stopf ('cice_hist')
+          call ice_timer_stop(timer_hist)    ! history
+ 
+          call ice_timer_start(timer_readwrite)  ! reading/writing
++         call t_startf ('cice_rest')
+          if (write_restart == 1) then
+             call dumpfile     ! core variables for restarting
+             if (tr_iage)      call write_restart_age
+@@ -387,6 +392,7 @@ subroutine ice_step
+             call final_restart
+          endif
+ 
++         call t_stopf ('cice_rest')
+          call ice_timer_stop(timer_readwrite)  ! reading/writing
+          if (my_task == master_task) then
+             do ns = 1,nstreams
