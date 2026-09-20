@@ -1,7 +1,6 @@
 spack:
   specs:
   # package is defined in the workflows inputs.spack-manifest-data-pairs
-  # intel_compiler_ver is defined in the standard_definitions.json data file
   - '{{ package }}'
   packages:
     access3:
@@ -14,16 +13,7 @@ spack:
     access-cice:
       require:
       - '@git.3286c36f9b9125ffddbc4d3aa9f98ff87ae1aded=CICE6.6.3-0'
-    python:
-      require:
-        - '@3.11.14'
-    intel-oneapi-compilers-classic:
-      require:
-        - '{{ intel_compiler_ver }}'
     all:
       require:
         - '%access_intel'
-        - 'target={{ target }}'
-  concretizer:
-    unify: false
   view: false
