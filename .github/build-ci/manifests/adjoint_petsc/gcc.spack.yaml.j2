@@ -2,6 +2,9 @@
 # This file exists because the recipe currently conflicts with %intel and %oneapi,
 # so CI must force a GCC concretization for this package.
 spack:
+  include:
+  # Include configuration from this repository, with the environment variable defined in build-ci
+  - path: $SPACK_MANIFEST_REPOSITORY_PATH/.github/build-ci/config/include
   specs:
   # package is defined in the workflows inputs.spack-manifest-data-pairs
   - '{{ package }}'

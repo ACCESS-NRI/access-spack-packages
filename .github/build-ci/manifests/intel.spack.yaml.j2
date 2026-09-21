@@ -1,5 +1,8 @@
 # This manifest is used by default for packages without a specific manifest under .github/build-ci/manifests/PACKAGE/*.j2
 spack:
+  include:
+  # Include configuration from this repository, with the environment variable defined in build-ci
+  - path: $SPACK_MANIFEST_REPOSITORY_PATH/.github/build-ci/config/include
   specs:
   # package is defined in the workflows inputs.spack-manifest-data-pairs
   - '{{ package }}'

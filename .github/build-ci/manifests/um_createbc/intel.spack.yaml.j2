@@ -1,5 +1,8 @@
 # This manifest is used specifically for um_createbc
 spack:
+  include:
+  # Include configuration from this repository, with the environment variable defined in build-ci
+  - path: $SPACK_MANIFEST_REPOSITORY_PATH/.github/build-ci/config/include
   specs:
   - '{{ package }}'
   packages:
