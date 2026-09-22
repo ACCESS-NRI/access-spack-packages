@@ -1,0 +1,36 @@
+diff --git a/cicecore/drivers/nuopc/cmeps/CICE_RunMod.F90 b/cicecore/drivers/nuopc/cmeps/CICE_RunMod.F90
+index 9d487ea..3c1958d 100644
+--- a/cicecore/drivers/nuopc/cmeps/CICE_RunMod.F90
++++ b/cicecore/drivers/nuopc/cmeps/CICE_RunMod.F90
+@@ -356,18 +356,23 @@ subroutine ice_step
+       !-----------------------------------------------------------------
+ 
+          call ice_timer_start(timer_diags)  ! diagnostics
++         call t_startf ('cice_diags')
+          if (mod(istep,diagfreq) == 0) then
+             call runtime_diags(dt)          ! log file
+             if (skl_bgc .or. z_tracers)  call bgc_diags
+             if (tr_brine) call hbrine_diags
+          endif
++         call t_stopf ('cice_diags')
+          call ice_timer_stop(timer_diags)   ! diagnostics
+ 
+          call ice_timer_start(timer_hist)   ! history
++         call t_startf ('cice_hist')
+          call accum_hist (dt)               ! history file
++         call t_stopf ('cice_hist')
+          call ice_timer_stop(timer_hist)    ! history
+ 
+          call ice_timer_start(timer_readwrite)  ! reading/writing
++         call t_startf ('cice_rest')
+          if (write_restart == 1) then
+             call dumpfile     ! core variables for restarting
+             if (tr_iage)      call write_restart_age
+@@ -387,6 +392,7 @@ subroutine ice_step
+             call final_restart
+          endif
+ 
++         call t_stopf ('cice_rest')
+          call ice_timer_stop(timer_readwrite)  ! reading/writing
+          if (my_task == master_task) then
+             do ns = 1,nstreams
