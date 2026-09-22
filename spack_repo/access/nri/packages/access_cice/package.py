@@ -60,7 +60,7 @@ class AccessCice(CMakePackage):
     # summary instead of being hidden inside cice_run_total. No-op stubs are
     # compiled in when CESMCOUPLED is not defined, so non-coupled builds are
     # unaffected. Verified to apply cleanly against CICE6.6.3-2 and stable.
-    patch("cice-io-timers.patch", when="+io_timers")
+    patch("cice-io-timers-minimal.patch", when="+io_timers")
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")
