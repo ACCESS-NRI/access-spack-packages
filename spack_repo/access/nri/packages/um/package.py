@@ -138,7 +138,7 @@ Name: {lib}
 Description: UM {version_str} {lib} Library for Fortran
 Version: {version_str}
 Requires: libgcom
-Libs: -L${{libdir}} -l{pkg}
+Libs: -L${{libdir}} -l{pkg} -lm
 Cflags: -I${{includedir}}
 """
             pcpath = join_path(pkgdir, f"{lib}.pc")
