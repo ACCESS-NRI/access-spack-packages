@@ -7,6 +7,7 @@
 from spack_repo.builtin.build_systems.cmake import CMakePackage
 from spack.package import *
 
+# This is a test
 
 class Mom5(CMakePackage):
     """MOM is a numerical ocean model based on the hydrostatic primitive equations."""

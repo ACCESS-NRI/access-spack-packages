@@ -138,7 +138,7 @@ jobs:
     uses: access-nri/build-ci/.github/workflows/ci.yml@v4
     with:
       spack-manifest-repository: ${{ matrix.package.repository }}
-      spack-manifest-repository-ref: ${{ matrix.package.ref }}
+      spack-manifest-repository-ref: infra-v4
       spack-manifest-path: ${{ matrix.package.filepath }}
       spack-manifest-data-pairs: |-
         package ${{ matrix.package.template_value }}

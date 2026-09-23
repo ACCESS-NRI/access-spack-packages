@@ -2,3 +2,7 @@
 repos:
   # Local paths require a directory with a repos.yaml - doesn't respect git-based spack-repo-index.yaml!
   access_spack_packages: $CALLER_REPOSITORY_PATH/spack_repo/access/nri
+  builtin:
+    git: https://github.com/ACCESS-NRI/upstream-spack-packages.git
+    commit: 489fe7683dfcbdad75f26e7cd4e5b8980212c05c
+    destination: $env/package-repos/spack-packages
