@@ -2,3 +2,9 @@
 repos:
   # Local paths require a directory with a repos.yaml - doesn't respect git-based spack-repo-index.yaml!
   access_spack_packages: $CALLER_REPOSITORY_PATH/spack_repo/access/nri
+  # If you want to add a custom builtin ref (if you were testing both a change to access-spack-packages and builtin),
+  # you can add the following in this scope:
+  # builtin:
+  #   git: https://github.com/ACCESS-NRI/upstream-spack-packages.git
+  #   branch: BRANCH
+  #   destination: $env/package-repos/spack-packages
