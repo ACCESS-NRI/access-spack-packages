@@ -47,4 +47,4 @@ This configuration directory is the lowest precedence and contains the most comm
 > [!NOTE]
 > This scope shouldn't be edited by users unless they have tested it extensively - it will most likely affect the concretization process for all callers.
 
-If this is specific to ASP, one should put changed config in `local`.
+If proposed config changes are specific to ASP, one should put them in `local`.
