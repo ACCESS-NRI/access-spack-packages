@@ -2,13 +2,13 @@
 
 This folder details build-ci-specific spack configuration that is inherited by all component repositories (CRs) and this `access-spack-packages` (ASP) repository. It is higher precedence than `spack-config`.
 
-It is structured in this format:
+The structure is:
 
 ```txt
 .github/build-ci/config/
-├── base
 ├── include
-└── local
+├── local
+└── base
 ```
 
 Each configuration folder included will be explained from highest to lowest precedence below:
