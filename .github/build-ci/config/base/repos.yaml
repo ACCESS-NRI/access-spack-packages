@@ -1,6 +1,7 @@
-# These are sensible defaults for manifests as part of build-ci, and can be overridden.
-# We clone these repos every time under the environment because it is quicker for spack to clone the repo fresh
-# rather than fetch/unshallow/merge new changes as the image itself becomes more and more out of date.
+# These are sensible defaults for manifests in build-ci, and can be overridden.
+# We clone these repos under the environment because it is quicker for spack
+# to clone the repo fresh rather than fetch/unshallow/merge new changes
+# as the image itself becomes more and more out of date.
 ### Don't edit this file - prefer to override it in a higher scope ###
 repos:
   access_spack_packages:
