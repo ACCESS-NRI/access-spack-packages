@@ -115,7 +115,6 @@ jobs:
         # GitHub does not treat empty-string inputs as eligible for substitution with a default
         # Since we are supporting both workflow_dispatch and pull_request triggers, the entrypoint inputs need to be filled in
         # So we are getting the default values from the workflow file itself, and passing them back into the workflow
-        # builtin-spack-packages-ref does not need this as the input handles the empty string default.
         run: |
           default_spack_ref=$(yq '.on.workflow_call.inputs."spack-ref".default' build-ci/.github/workflows/ci.yml)
           default_spack_config_ref=$(yq '.on.workflow_call.inputs."spack-config-ref".default' build-ci/.github/workflows/ci.yml)
