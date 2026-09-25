@@ -10,14 +10,6 @@ on:
         required: true
         type: string
         default: 'ALL'
-      builtin-spack-packages-ref:
-        description: 'spack/spack-packages ref to use'
-        required: true
-        type: string
-      access-spack-packages-ref:
-        description: 'access-nri/access-spack-packages ref to use'
-        required: true
-        type: string
       spack-config-ref:
         description: 'spack-config ref to use'
         required: true
@@ -39,19 +31,17 @@ jobs:
     container: ghcr.io/access-nri/build-ci-runner:rocky
     env:
       # Note, this needs to be updated in line with refs in the ci job below
-      BUILD_CI_WORKFLOW_VERSION: v3
+      BUILD_CI_WORKFLOW_VERSION: v4
       PACKAGES_ROOT_DIR: spack_repo/access/nri/packages
     outputs:
       # Output both a matrix of {repo, ref, path, package}s, and a matrix of packages for exclusion
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       exclude-matrix: ${{ steps.set-matrix.outputs.exclude-matrix }}
-      builtin-spack-packages-ref: ${{ inputs.builtin-spack-packages-ref }}
-      access-spack-packages-ref: ${{ inputs.access-spack-packages-ref || github.event.pull_request.head.sha }}
       spack-config-ref: ${{ inputs.spack-config-ref || steps.defaults.outputs.spack-config-ref }}
       spack-ref: ${{ inputs.spack-ref || steps.defaults.outputs.spack-ref }}
     steps:
       - name: Checkout spack-packages
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: PR - Get packages
         id: get-packages-changed
@@ -114,7 +104,7 @@ jobs:
           token: ${{ secrets.SPACK_INSTALL_COMMAND_PAT }}
 
       - name: Checkout build-ci
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: access-nri/build-ci
           ref: ${{ env.BUILD_CI_WORKFLOW_VERSION }}
@@ -125,7 +115,6 @@ jobs:
         # GitHub does not treat empty-string inputs as eligible for substitution with a default
         # Since we are supporting both workflow_dispatch and pull_request triggers, the entrypoint inputs need to be filled in
         # So we are getting the default values from the workflow file itself, and passing them back into the workflow
-        # builtin-spack-packages-ref does not need this as the input handles the empty string default.
         run: |
           default_spack_ref=$(yq '.on.workflow_call.inputs."spack-ref".default' build-ci/.github/workflows/ci.yml)
           default_spack_config_ref=$(yq '.on.workflow_call.inputs."spack-config-ref".default' build-ci/.github/workflows/ci.yml)
@@ -145,16 +134,13 @@ jobs:
       matrix:
         package: ${{ fromJson(needs.setup-ci.outputs.matrix) }}
         exclude: ${{ fromJson(needs.setup-ci.outputs.exclude-matrix) }}
-    uses: access-nri/build-ci/.github/workflows/ci.yml@v3
+    uses: access-nri/build-ci/.github/workflows/ci.yml@v4
     with:
       spack-manifest-repository: ${{ matrix.package.repository }}
       spack-manifest-repository-ref: ${{ matrix.package.ref }}
       spack-manifest-path: ${{ matrix.package.filepath }}
-      spack-manifest-data-path: .github/build-ci/data/standard.json
       spack-manifest-data-pairs: |-
         package ${{ matrix.package.template_value }}
-      builtin-spack-packages-ref: ${{ needs.setup-ci.outputs.builtin-spack-packages-ref }}
-      access-spack-packages-ref: ${{ needs.setup-ci.outputs.access-spack-packages-ref }}
       spack-config-ref: ${{ needs.setup-ci.outputs.spack-config-ref }}
       spack-ref: ${{ needs.setup-ci.outputs.spack-ref }}
       ref: ${{ matrix.package.ref }}
