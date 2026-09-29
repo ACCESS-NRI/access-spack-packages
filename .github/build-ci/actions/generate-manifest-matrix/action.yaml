@@ -45,7 +45,7 @@ runs:
 
 
     - name: Checkout fallback repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: ACCESS-NRI/access-spack-packages
         ref: ${{ inputs.ref }}
@@ -66,13 +66,58 @@ runs:
 
         echo "ref=$ref" >> $GITHUB_OUTPUT
 
-    - name: Update access-spack-packages repository linked to spack
-      uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
+    # The following steps update the access_spack_packages repository linked to spack,
+    # so that the package recipes interrogated below match steps.default.outputs.ref
+    - name: Get initial SHA of spack-linked access-spack-packages
+      id: initial
+      shell: bash
+      run: |
+        sha=$(git -C ${{ steps.spack-info.outputs.access-spack-packages-path }} rev-parse HEAD^{})
+        echo "access_spack_packages Initial SHA: $sha"
+        echo "sha=$sha" >> $GITHUB_OUTPUT
+
+    - name: Fetch latest for spack-linked access-spack-packages
+      shell: bash
+      # We don't fetch blobs (repo content) as `spack repo update` can handle that if required.
+      # NOTE: This won't be required if there is a `spack repo update --force` option in the future.
+      run: git -C ${{ steps.spack-info.outputs.access-spack-packages-path }} fetch --force --tags --filter=blob:none
+
+    - name: Get SHA for ref
+      id: ref-sha
+      uses: access-nri/actions/.github/actions/get-git-ref-info@main
       with:
-        spack-packages-repository-name: access_spack_packages
-        spack-packages-repository-path: ${{ steps.spack-info.outputs.access-spack-packages-path }}
+        repository-path: ${{ steps.spack-info.outputs.access-spack-packages-path }}
         ref: ${{ steps.default.outputs.ref }}
-        spack-instance-root-path: ${{ steps.spack-info.outputs.SPACK_ROOT }}
+
+    - name: Update ref via Spack
+      id: update
+      shell: bash
+      continue-on-error: true
+      # We need to explicitly set the repo in the user scope as without that step, it will only add
+      # the commit section to the repos.yaml (not the existing git or destination section), as the
+      # upstream repos.REPO:: section ignores lower precedence scopes (where those other sections are set)
+      run: |
+        . ${{ steps.spack-info.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+        spack repo set --scope=access.nri.ci.user access_spack_packages
+        spack repo update --scope=access.nri.ci.user access_spack_packages --commit ${{ steps.ref-sha.outputs.sha }}
+        spack config blame repos
+
+    - name: Force Update ref via Git if Failure
+      if: steps.update.outcome == 'failure'
+      shell: bash
+      # FIXME: If there is ever a `spack repo update --force` option, use that for the above command and delete this step
+      run: git -C ${{ steps.spack-info.outputs.access-spack-packages-path }} checkout --force ${{ steps.ref-sha.outputs.sha }}
+
+    - name: Check if updated
+      shell: bash
+      run: |
+        current_sha=$(git -C ${{ steps.spack-info.outputs.access-spack-packages-path }} rev-parse HEAD)
+
+        if [ "${{ steps.initial.outputs.sha }}" != "$current_sha" ]; then
+          echo "Repository was updated from ${{ steps.initial.outputs.sha }} to ${{ steps.default.outputs.ref }} ($current_sha)"
+        else
+          echo "Repository was not updated, stayed at ${{ steps.default.outputs.ref }} (${{ steps.initial.outputs.sha }})"
+        fi
 
     - name: Generate matrix
       id: gen
