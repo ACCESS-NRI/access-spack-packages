@@ -15,7 +15,7 @@ class Cable(CMakePackage):
     homepage = "https://github.com/CABLE-LSM/CABLE"
     git = "https://github.com/CABLE-LSM/CABLE.git"
 
-    maintainers("SeanBryan51", "Whyborn")
+    maintainers("bschroeter", "Whyborn")
 
     license("LicenseRef-CSIRO-Open-Source-Software-License-v1.0", checked_by="anton-seaice")
 
