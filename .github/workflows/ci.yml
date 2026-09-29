@@ -100,7 +100,7 @@ jobs:
         with:
           packages: ${{ steps.set-matrix-pr.outputs.pkgs || steps.set-matrix-dispatch.outputs.pkgs }}
           packages-root-dir: ${{ env.PACKAGES_ROOT_DIR }}
-          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.event.ref }}
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
           token: ${{ secrets.SPACK_INSTALL_COMMAND_PAT }}
 
       - name: Checkout build-ci
