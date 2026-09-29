@@ -45,7 +45,7 @@ runs:
 
 
     - name: Checkout fallback repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: ACCESS-NRI/access-spack-packages
         ref: ${{ inputs.ref }}
@@ -111,8 +111,10 @@ runs:
     - name: Check if updated
       shell: bash
       run: |
-        if [ "${{ steps.initial.outputs.sha }}" != "${{ steps.ref-sha.outputs.sha }}" ]; then
-          echo "Repository was updated from ${{ steps.initial.outputs.sha }} to ${{ steps.default.outputs.ref }} (${{ steps.ref-sha.outputs.sha }})"
+        current_sha=$(git -C ${{ steps.spack-info.outputs.access-spack-packages-path }} rev-parse HEAD)
+
+        if [ "${{ steps.initial.outputs.sha }}" != "$current_sha" ]; then
+          echo "Repository was updated from ${{ steps.initial.outputs.sha }} to ${{ steps.default.outputs.ref }} ($current_sha)"
         else
           echo "Repository was not updated, stayed at ${{ steps.default.outputs.ref }} (${{ steps.initial.outputs.sha }})"
         fi
