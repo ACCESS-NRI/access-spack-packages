@@ -38,6 +38,7 @@ class Um(UmBasePackage):
     depends_on("gcom@8.3", when="@13.5:13.7", type=("build", "link"))
     depends_on("gcom@8.4", when="@13.8", type=("build", "link"))
     depends_on("gcom@8.4:", when="@13.9:", type=("build", "link"))
+    # Comment to trigger CI on um
 
     # Include openmpi directly.
     # https://github.com/ACCESS-NRI/access-spack-packages/issues/293
