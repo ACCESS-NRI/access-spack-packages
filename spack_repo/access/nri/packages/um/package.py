@@ -57,8 +57,7 @@ class Um(UmBasePackage):
         Set the built path into the environment.
         """
         # Add the built executables to the path
-        if not self.spec.variants["access3"].value:
-            env.prepend_path("PATH", join_path(self.prefix, "build-atmos", "bin"))
+        env.prepend_path("PATH", join_path(self.prefix, "build-atmos", "bin"))
         env.prepend_path("PATH", join_path(self.prefix, "build-recon", "bin"))
 
 
