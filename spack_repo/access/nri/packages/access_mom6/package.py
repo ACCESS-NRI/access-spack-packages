@@ -59,7 +59,7 @@ class AccessMom6(CMakePackage):
         "openmp_offload",
         default=False,
         sticky=True,
-        when="@develop-gpu",
+        when="@dev-gpu",
         description="Enable NVHPC OpenMP/OpenACC/do-concurrent GPU offload flags. Requires the "
                     "MOM6_OPENMP_OFFLOAD CMake option, which is only on the dev/gpu branch so "
                     "far, and the NVHPC compiler."
