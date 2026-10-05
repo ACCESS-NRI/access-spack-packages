@@ -53,7 +53,7 @@ class AccessMom6(CMakePackage):
         default=False,
         sticky=True,
         description="Install MOM6 solo executable",
-        when="@2025.07.001:"
+        when="@2025.07.001:,dev-gpu"
     )
     variant(
         "openmp_offload",
