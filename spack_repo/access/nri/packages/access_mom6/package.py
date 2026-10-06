@@ -53,13 +53,13 @@ class AccessMom6(CMakePackage):
         default=False,
         sticky=True,
         description="Install MOM6 solo executable",
-        when="@2025.07.001:"
+        when="@2025.07.001:,dev-gpu"
     )
     variant(
         "openmp_offload",
         default=False,
         sticky=True,
-        when="@develop-gpu",
+        when="@dev-gpu",
         description="Enable NVHPC OpenMP/OpenACC/do-concurrent GPU offload flags. Requires the "
                     "MOM6_OPENMP_OFFLOAD CMake option, which is only on the dev/gpu branch so "
                     "far, and the NVHPC compiler."
