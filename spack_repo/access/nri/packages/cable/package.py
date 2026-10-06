@@ -31,6 +31,14 @@ class Cable(CMakePackage):
         description="Build MPI executable.",
     )
 
+    variant(
+        "pio",
+        default=False,
+        sticky=True,
+        description="Whether to use ParallelIO for IO",
+        when="+mpi"
+        )
+
     # Different library definition for each application
     variant(
         "library",
@@ -58,10 +66,12 @@ class Cable(CMakePackage):
     depends_on("cmake@3.24.2:", type="build")
     depends_on("netcdf-fortran@4.5.2:")
     depends_on("mpi", when="+mpi")
+    depends_on("parallelio@2.6.0:", when="+pio")
 
     def cmake_args(self):
         args = []
         args.append(self.define_from_variant("CABLE_MPI", "mpi"))
+        args.append(self.define_from_variant("CABLE_PIO", "pio"))
         args.append(self.define("CABLE_LIBRARY", self.spec.variants["library"].value != "none"))
         args.append(self.define_from_variant("CABLE_LIBRARY_TARGET", "library"))
         return args
