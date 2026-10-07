@@ -69,7 +69,7 @@ class Um(UmBasePackage):
         When +access3, the package installs libum-atmos.a
         um-recon.exe is always installed.
         """
-        if self.spec.variants["access3"].value:
+        if spec.satisfies("+access3"):
 
             # Create a pkgconf file for the um library
             self.__create_pkgconfig(spec, prefix)
