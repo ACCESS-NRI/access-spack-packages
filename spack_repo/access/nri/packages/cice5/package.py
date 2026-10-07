@@ -138,16 +138,16 @@ class Cice5(CMakePackage):
 
             # These are the default layouts, inc 3 executables for OM2
             # alternatively, supply the 5 layout variants to produce 1 executable
-            OM2_LAYOUTS = [
-                    {"nxglob": "360", "nyglob": "300", "blckx": "15", "blcky": "300", "mxblcks": "1"},
-                    {"nxglob": "1440", "nyglob": "1080", "blckx": "30", "blcky": "27", "mxblcks": "4"},
-                    {"nxglob": "3600", "nyglob": "2700", "blckx": "40", "blcky": "30", "mxblcks": "12"},
-                ]
-            ESM1P6_LAYOUTS = [
+            om2_layouts = [
+                {"nxglob": "360", "nyglob": "300", "blckx": "15", "blcky": "300", "mxblcks": "1"},
+                {"nxglob": "1440", "nyglob": "1080", "blckx": "30", "blcky": "27", "mxblcks": "4"},
+                {"nxglob": "3600", "nyglob": "2700", "blckx": "40", "blcky": "30", "mxblcks": "12"},
+            ]
+            esm1p6_layouts = [
                 {"nxglob": "360", "nyglob": "300", "blckx": "30", "blcky": "300", "mxblcks": "1"},
             ]
 
-            layout_variants = OM2_LAYOUTS[0].keys()
+            layout_variants = om2_layouts[0].keys()
 
             # if all 5 layouts variants are available, set the layouts dict
             if all([
@@ -162,9 +162,9 @@ class Cice5(CMakePackage):
                 for variant in layout_variants
             ]):
                 if self.spec.variants["model"].value == "access-esm1.6":
-                    layouts = ESM1P6_LAYOUTS
+                    layouts = esm1p6_layouts
                 else:
-                    layouts = OM2_LAYOUTS
+                    layouts = om2_layouts
             else:
                 raise Error(f"All of {layout_variants} "
                             "variants must be set if any are set")
