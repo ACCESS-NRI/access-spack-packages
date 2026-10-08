@@ -25,7 +25,7 @@ class Gcom(Package):
     version("8.1", tag="vn8.1", commit="e061e2787bd643d9a65679f153fb8e3ffd9d3186")
     version("8.2", tag="vn8.2", commit="fd143bb38e21fe03c7150c0754852c80e15df3d4")
     version("8.3", tag="vn8.3", commit="b7b890a181d8e31e4e80b731b9f8ad9a6e1a8bed")
-    version("8.4", tag="vn8.4", commit="f4fa92eb4af4f1e4cf9d608b441e3c96f77b6a6d")
+    version("8.4", tag="2026.09.000", commit="e72bbaa4e4ee5a7f67e5dbb971df19c13434c98f")
 
     variant("mpi", default=True, sticky=True, description="Build with MPI")
 
