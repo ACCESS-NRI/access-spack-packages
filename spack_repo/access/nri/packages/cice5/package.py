@@ -7,6 +7,20 @@
 from spack_repo.builtin.build_systems.cmake import CMakePackage
 from spack.package import *
 
+# Default layouts for cice5 @:2026.07 only, inc 3 executables for OM2.
+# Alternatively, supply the 5 layout variants to produce 1 executable.
+# From cice5 PR#113 (@2026.08:), the layout is set at run time in domain_nml
+# and these are not used.
+OM2_LAYOUTS = [
+        {"nxglob": "360", "nyglob": "300", "blckx": "15", "blcky": "300", "mxblcks": "1"},
+        {"nxglob": "1440", "nyglob": "1080", "blckx": "30", "blcky": "27", "mxblcks": "4"},
+        {"nxglob": "3600", "nyglob": "2700", "blckx": "40", "blcky": "30", "mxblcks": "12"},
+    ]
+ESM1P6_LAYOUTS = [
+    {"nxglob": "360", "nyglob": "300", "blckx": "30", "blcky": "300", "mxblcks": "1"},
+]
+
+
 def _int_validator(s):
     """Test a string variant is a valid integer"""
     if (s != "none"):
@@ -43,15 +57,14 @@ class Cice5(CMakePackage):
     variant("deterministic", default=False, sticky=True, description="Deterministic build.")
 
     variant("io_type", default="NetCDF", sticky=True, values=("NetCDF", "PIO"), description="CICE IO Method")
-    # User set integer cmake options:
-    # From cice5 PR#113, these become runtime domain_nml settings and the
-    # matching CMake cache variables are removed, so the variants no longer
-    # apply once the layout is decided at run time.
-    variant("nxglob", default="none", sticky=True, values=_int_validator, description="Size of model grid in x", when="@:2026.07")
-    variant("nyglob", default="none", sticky=True, values=_int_validator, description="Size of model grid in y", when="@:2026.07")
-    variant("blckx", default="none", sticky=True, values=_int_validator, description="Size of computational blocks in x", when="@:2026.07")
-    variant("blcky", default="none", sticky=True, values=_int_validator, description="Size of computational blocks in y", when="@:2026.07")
-    variant("mxblcks", default="none", sticky=True, values=_int_validator, description="Max number of blocks per task", when="@:2026.07")
+    # User set integer cmake options.
+    # From cice5 PR#113, these become runtime settings
+    with when("@:2026.07"):
+        variant("nxglob", default="none", sticky=True, values=_int_validator, description="Size of model grid in x")
+        variant("nyglob", default="none", sticky=True, values=_int_validator, description="Size of model grid in y")
+        variant("blckx", default="none", sticky=True, values=_int_validator, description="Size of computational blocks in x")
+        variant("blcky", default="none", sticky=True, values=_int_validator, description="Size of computational blocks in y")
+        variant("mxblcks", default="none", sticky=True, values=_int_validator, description="Max number of blocks per task")
 
     depends_on("c", type="build")
     depends_on("fortran", type="build")
@@ -83,6 +96,7 @@ class Cice5(CMakePackage):
     phases = ["set_layouts", "cmake", "build", "install"]
 
     _all_layouts = [{}]  # all layouts to build,
+    # see OM2_LAYOUTS and ESM1P6_LAYOUTS for examples (@:2026.07 only)
     _layout = {}  # current layout being setup/built/installed
 
     def cmake_args(self):
@@ -95,8 +109,7 @@ class Cice5(CMakePackage):
         else:  # access-om2
             args = [self.define("CICE_DRIVER", "auscom")]
 
-        # From cice5 PR#113, nxglob/nyglob/blckx/blcky/mxblcks become runtime
-        # domain_nml settings and the matching CMake cache variables go away.
+        # From cice5 PR#113, nxglob/nyglob/blckx/blcky/mxblcks become runtime settings
         if self.spec.satisfies("@:2026.07"):
             args.extend([
                 self.define("CICE_NXGLOB", self._layout['nxglob']),
@@ -132,22 +145,11 @@ class Cice5(CMakePackage):
         Otherwise, use defaults."""
 
         # From cice5 PR#113, the layout variants only exist for @:2026.07 -
-        # later versions decide the layout at run time via domain_nml, so a
+        # later versions decide the layout at run time, so a
         # single build with no compile-time layout is enough.
         if self.spec.satisfies("@:2026.07"):
 
-            # These are the default layouts, inc 3 executables for OM2
-            # alternatively, supply the 5 layout variants to produce 1 executable
-            om2_layouts = [
-                {"nxglob": "360", "nyglob": "300", "blckx": "15", "blcky": "300", "mxblcks": "1"},
-                {"nxglob": "1440", "nyglob": "1080", "blckx": "30", "blcky": "27", "mxblcks": "4"},
-                {"nxglob": "3600", "nyglob": "2700", "blckx": "40", "blcky": "30", "mxblcks": "12"},
-            ]
-            esm1p6_layouts = [
-                {"nxglob": "360", "nyglob": "300", "blckx": "30", "blcky": "300", "mxblcks": "1"},
-            ]
-
-            layout_variants = om2_layouts[0].keys()
+            layout_variants = OM2_LAYOUTS[0].keys()
 
             # if all 5 layouts variants are available, set the layouts dict
             if all([
@@ -162,9 +164,9 @@ class Cice5(CMakePackage):
                 for variant in layout_variants
             ]):
                 if self.spec.variants["model"].value == "access-esm1.6":
-                    layouts = esm1p6_layouts
+                    layouts = ESM1P6_LAYOUTS
                 else:
-                    layouts = om2_layouts
+                    layouts = OM2_LAYOUTS
             else:
                 raise Error(f"All of {layout_variants} "
                             "variants must be set if any are set")
