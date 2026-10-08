@@ -21,7 +21,8 @@ class MppnccombineFast(CMakePackage):
 
     license("Apache-2.0", checked_by="dougiesquire")
 
-    version("2025.07.000", sha256="d74ef9b47aa6a6aac2d2f802f146b59d585104a780b65571fe7fda78e69af553")
+    version("2026.10.000", tag="2026.10.000", commit="61a1b60fc66bd2e5255ae69e9e03188f9d564cd3")
+    version("2025.07.000", tag="2025.07.000", commit="0545334d16ef0c7ebebdee0e1430dace21ad4816")
 
     depends_on("c", type="build")
     depends_on("cxx", type="build")
