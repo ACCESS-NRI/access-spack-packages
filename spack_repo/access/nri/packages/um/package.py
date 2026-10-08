@@ -39,6 +39,7 @@ class Um(UmBasePackage):
     depends_on("gcom@8.4", when="@13.8", type=("build", "link"))
     depends_on("gcom@8.4:", when="@13.9:", type=("build", "link"))
 
+
     # Include openmpi directly.
     # https://github.com/ACCESS-NRI/access-spack-packages/issues/293
     variant("mpi", default=True, sticky=True, description="Build with MPI")
