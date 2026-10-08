@@ -237,17 +237,7 @@ class Issm(AutotoolsPackage):
         if self.spec.satisfies("+wrappers"):
             args.append("--with-wrappers=yes")
             args.append(f"--with-triangle-dir={self.spec['access-triangle'].prefix}")
-
-            py_ver = self.spec["python"].version.up_to(2)
-            py_pref = self.spec["python"].prefix
-            np_pref = self.spec["py-numpy"].prefix
-            np_inc = join_path(np_pref, "lib", f"python{py_ver}", "site-packages", "numpy")
-
-            args += [
-                f"--with-python-version={py_ver}",
-                f"--with-python-dir={py_pref}",
-                f"--with-python-numpy-dir={np_inc}",
-            ]
+            args.append(f"--with-python={self.spec['python'].command.path}")
         else:
             args.append("--with-wrappers=no")
 
