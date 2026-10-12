@@ -19,6 +19,7 @@ class Gcom(Package):
 
     maintainers("scottwales", "paulleopardi")
 
+    version("stable", branch="main", preferred=True)
     version("7.8", tag="vn7.8", commit="65c857cc3201833360ff62b285e49082378dae42")
     version("7.9", tag="vn7.9", commit="6319ae016dcadc192842a06178f3dbd21a8af64f")
     version("8.0", tag="vn8.0", commit="5a122e9e2147c9a7486a00b9588356eb65324af9")
