@@ -210,6 +210,7 @@ class UmBasePackage(Package):
 
                 # Set up the linker args, used by FCM
                 dep_name = self._lib_cfg[lib]["dep_name"]
+                fcm_name = self._lib_cfg[lib]["fcm_name"]
                 ld_flags = [
                     self.spec[dep_name].libs.ld_flags,
                     self._lib_cfg[lib]["fcm_ld_flags"]
@@ -217,7 +218,7 @@ class UmBasePackage(Package):
                 # The reason for the explicit -rpath is:
                 # https://github.com/ACCESS-NRI/access-spack-packages/issues/14#issuecomment-1653651447
                 rpaths = ["-Wl,-rpath=" + d for d in self.spec[dep_name].libs.directories]
-                env.set(f"ldflags_{lib}_on", " ".join(ld_flags + rpaths))
+                env.set(f"ldflags_{fcm_name}_on", " ".join(ld_flags + rpaths))
 
         # The gcom library does not contain shared objects and
         # therefore must be statically linked.
@@ -345,12 +346,12 @@ class UmBasePackage(Package):
 
         # Duplicate the base_config for each config type
         for exe in spec.variants["config_type"].value:
-            exe_config = join_path(build_path, f"fcm-make-${conf}.cfg")
+            exe_config = join_path(build_path, f"fcm-make-{exe}.cfg")
             copy(base_config, exe_config)
             # We open in read+write mode, as we want to insert the "include"
             # line at the top so that following options take precedence
             with open(exe_config, "r+") as f:
-                include = f"{conf_path}/fcm-make/{platform}/um-{exe}-{optim}.cfg{conf_rev}\n"
+                include = f"include={conf_path}/fcm-make/{platform}/um-{exe}-{optim}.cfg{conf_rev}\n"
                 orig_contents = f.read()
                 f.seek(0)
                 f.write(include + orig_contents)
