@@ -21,13 +21,6 @@ class UmBasePackage(Package):
     the UK Met Office and Momentum Partnership Unified Model.
     """
 
-    # Top level variant that decides how the package should build
-    variant(
-        "MOSRS_build",
-        default=False,
-        description="Retrieve the FCM build config from MOSRS."
-        )
-
     homepage = "https://code.metoffice.gov.uk/trac/um"
     git = "https://github.com/ACCESS-NRI/UM"
     _svn = "file:///g/data/ki32/mosrs/um/main/trunk"
@@ -98,26 +91,6 @@ class UmBasePackage(Package):
     # these components, we'll do it iteratively.
     _components = ("casim", "jules", "shumlib", "socrates", "ukca", "um")
     for component in _components:
-        # The _rev variants specify components to retrieve from the MOSRS
-        # SVN repository
-        variant(
-            f"{component}_rev",
-            default="none",
-            sticky=True,
-            values=str,
-            description=f"SVN revision to use for {component}."
-            )
-
-        # The _sources variants specify changesets to add from MOSRS
-        variant(
-            f"{component}_sources",
-            multi=True,
-            default="none",
-            sticky=True,
-            values=str,
-            description=f"Additional changesets to retrieve for {component}."
-            )
-
         # The _ref variants specify components to retrieve from Github
         variant(
             f"{component}_ref",
@@ -201,7 +174,7 @@ class UmBasePackage(Package):
             as_FCM_value = converter(self.spec.variants[lib].value)
             env.set(lib, as_FCM_value)
 
-            if self.spec.variants[lib].value:
+            if self.spec.satisfies(f"+{lib}"):
                 # Set up CPATH and FPATH for the environment
                 for path in ("CPATH", "FPATH"):
                     prefix = self.spec[self._lib_cfg[lib]["dep_name"]].prefix
@@ -233,38 +206,6 @@ class UmBasePackage(Package):
         for var in ("openmp", "thread_utils"):
             as_FCM_value = converter(self.spec.variants[var].value)
             env.set(var, as_FCM_value)
-
-        # Now we handle the components. We need more complex logic here- it's
-        # not allowed to specify a _rev and a _ref for the same component, and
-        # _sources cannot be mixed with _ref for a component.
-        for component in self._components:
-            component_rev = self.spec.variants[f"{component}_rev"].value
-            component_sources = self.spec.variants[f"{component}_sources"].value
-            component_ref = self.spec.variants[f"{component}_ref"].value
-
-            if component_rev != "none" and component_ref != "none":
-                # Specified a rev and a ref- this is not allowed
-                raise KeyError("""Cannot specify a _rev and a _ref for the same
-                    component.""")
-
-            if component_ref != "none" and component_sources[0] != "none":
-                # Specified a ref and sources- this is not allowed
-                raise KeyError("""Cannot specify a _ref and _sources for the
-                    same component- _sources is strictly a SVN/MOSRS 
-                    concept.""")
-
-            # Now we can set the revs in the environment- the refs don't need
-            # this, as they are retrieved dynamically at patch time.
-            if component_rev != "none":
-                env.set(f"{component}_rev", component_rev)
-            
-            # For the sources, we need to make sure they're in the right format
-            # which is one source per line
-            if component_sources[0] != "none":
-                as_FCM_value = "\n".join(component_sources)
-                env.set(f"{component}_sources", as_FCM_value)
-
-        # ---- Finish setting up the component information ---- #
 
     def resource_path(self, component):
         """
@@ -314,7 +255,7 @@ class UmBasePackage(Package):
         # and lists of possible _sources and extract locations.
 
         # In the original fcm-make.cfg file, the include line looks like:
-        # include = $config_root_path/fcm-make/$platform_config_dir/um-$config_type-$optimisation_level.cfg$config_revision
+        # include = $conf_path/fcm-make/$platform_config_dir/um-$config_type-$optimisation_level.cfg
         # where the environment variables are interpolated in. It's easier to
         # simply set them directly here.
 
@@ -323,12 +264,7 @@ class UmBasePackage(Package):
         # Even then, the only part of the "include" line that will change is
         # the config type.
         
-        if spec.satisfies("+MOSRS_build"):
-            conf_path = "fcm:um.xm_tr"
-            conf_rev = f"@{self.version}"
-        else:
-            conf_path = self.resource_path("um")
-            conf_rev = ""
+        conf_path = self.resource_path("um")
 
         platform = spec.variants["platform_config"].value
         optim = spec.variants["optimisation_level"].value
@@ -338,10 +274,7 @@ class UmBasePackage(Package):
         with open(base_config, "w") as f:
             # Set the unchanging bits
             for component in self._components:
-                if self.spec.variants[f"{component}_ref"].value != "none":
-                    f.write(f"extract.location[{component}] = {self._component_path(component)}\n") 
-                if self.spec.variants[f"{component}_sources"].value[0] != "none":
-                    f.write(f"extract.location{{diff}}[{component}] = ${component}_sources\n")
+                f.write(f"extract.location[{component}] = {self._component_path(component)}\n") 
 
         # Duplicate the base_config for each config type
         for exe in spec.variants["config_type"].value:
