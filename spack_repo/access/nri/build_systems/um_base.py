@@ -23,7 +23,6 @@ class UmBasePackage(Package):
 
     homepage = "https://code.metoffice.gov.uk/trac/um"
     git = "https://github.com/ACCESS-NRI/UM"
-    _svn = "file:///g/data/ki32/mosrs/um/main/trunk"
 
     # Set up the versions- the version setup will differ depending on whether
     # we get the build from MOSRS or Github. We only configure spack versions 
@@ -32,21 +31,6 @@ class UmBasePackage(Package):
     version("13.1", git=git, tag="UKMO_vn13.1", commit="90088a4acfc99091f5a837de16341afb21855a76")
     version("13.5", git=git, tag="UKMO_vn13.5", commit="e2ba73bd64c31f0fa986a1ede4f96802d14e22a9")
     version("13.8", git=git, tag="UKMO_vn13.8", commit="eeb15ab24ee6f76a9316b083dd7f85109518a16a", preferred=True)
-
-    # See 'fcm kp fcm:um.xm' for release versions.
-    # Needed only for Subversion builds.
-    _revision = {
-        "13.0": 111272,
-        "13.1": 114076,
-        "13.2": 116723,
-        "13.3": 118802,
-        "13.4": 120750,
-        "13.5": 123226,
-        "13.6": 124981,
-        "13.7": 127030,
-        "13.8": 128625,
-        "13.9": 130128,
-    }
 
     maintainers("paul-leopardi", "Whyborn")
 
@@ -284,7 +268,7 @@ class UmBasePackage(Package):
             # We open in read+write mode, as we want to insert the "include"
             # line at the top so that following options take precedence
             with open(exe_config, "r+") as f:
-                include = f"include={conf_path}/fcm-make/{platform}/um-{exe}-{optim}.cfg{conf_rev}\n"
+                include = f"include={conf_path}/fcm-make/{platform}/um-{exe}-{optim}.cfg\n"
                 orig_contents = f.read()
                 f.seek(0)
                 f.write(include + orig_contents)
