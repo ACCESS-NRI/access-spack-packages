@@ -31,6 +31,14 @@ class Cable(CMakePackage):
         description="Build MPI executable.",
     )
 
+    variant(
+        "pio",
+        default=False,
+        sticky=True,
+        description="Use ParallelIO (PIO) for IO",
+        when="@2026.07.000: +mpi library=none"
+    )
+
     # Different library definition for each application
     variant(
         "library",
@@ -58,10 +66,17 @@ class Cable(CMakePackage):
     depends_on("cmake@3.24.2:", type="build")
     depends_on("netcdf-fortran@4.5.2:")
     depends_on("mpi", when="+mpi")
+    depends_on("parallelio@2.6.8:+fortran", when="+pio")
 
     def cmake_args(self):
         args = []
         args.append(self.define_from_variant("CABLE_MPI", "mpi"))
         args.append(self.define("CABLE_LIBRARY", self.spec.variants["library"].value != "none"))
         args.append(self.define_from_variant("CABLE_LIBRARY_TARGET", "library"))
+        # CABLE uses PIO whenever CMake can find it, so make the outcome follow the spec
+        if self.spec.satisfies("+pio"):
+            args.append(self.define("CMAKE_REQUIRE_FIND_PACKAGE_PIO", True))
+        elif self.spec.satisfies("~pio"):
+            args.append(self.define("CMAKE_DISABLE_FIND_PACKAGE_PIO", True))
+
         return args
