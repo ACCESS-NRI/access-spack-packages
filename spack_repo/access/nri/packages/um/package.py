@@ -36,7 +36,7 @@ class Um(UmBasePackage):
     depends_on("gcom@8.1", when="@13.3", type=("build", "link"))
     depends_on("gcom@8.2", when="@13.4", type=("build", "link"))
     depends_on("gcom@8.3", when="@13.5:13.7", type=("build", "link"))
-    depends_on("gcom@8.4", when="@13.8", type=("build", "link"))
+    depends_on("gcom@8.4-1", when="@13.8", type=("build", "link"))
     depends_on("gcom@8.4:", when="@13.9:", type=("build", "link"))
 
     # Include openmpi directly.
