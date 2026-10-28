@@ -123,6 +123,11 @@ class Um(UmBasePackage):
                     f"{dtype(spec_version)} is not a recognised spack version type"
                 )
 
+            if self.spec.satisfies("+cable"):
+                cable_libs = f"{self.spec["cable"].libs.link_flags}"
+            else:
+                cable_libs = ""
+
             text = f"""\
 prefix={prefix}
 exec_prefix=${{prefix}}
@@ -133,7 +138,7 @@ Name: {lib}
 Description: UM {version_str} {lib} Library for Fortran
 Version: {version_str}
 Requires: libgcom
-Libs: -L${{libdir}} -l{pkg}
+Libs: -L${{libdir}} -l{pkg} {cable_libs}
 Cflags: -I${{includedir}}
 """
             pcpath = join_path(pkgdir, f"{lib}.pc")
