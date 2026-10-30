@@ -67,6 +67,8 @@ class Cable(CMakePackage):
     depends_on("netcdf-fortran@4.5.2:")
     depends_on("mpi", when="+mpi")
     depends_on("parallelio@2.6.8:+fortran", when="+pio")
+    depends_on("fortuno~mpi", type="test", when="~mpi~library")
+    depends_on("fortuno+mpi", type="test", when="+mpi~library")
 
     def cmake_args(self):
         args = []
