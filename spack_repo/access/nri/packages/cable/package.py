@@ -67,6 +67,8 @@ class Cable(CMakePackage):
     depends_on("netcdf-fortran@4.5.2:")
     depends_on("mpi", when="+mpi")
     depends_on("parallelio@2.6.8:+fortran", when="+pio")
+    depends_on("fortuno~mpi", type="test", when="~mpi library=none")
+    depends_on("fortuno+mpi", type="test", when="+mpi library=none")
 
     def cmake_args(self):
         args = []
@@ -78,5 +80,7 @@ class Cable(CMakePackage):
             args.append(self.define("CMAKE_REQUIRE_FIND_PACKAGE_PIO", True))
         elif self.spec.satisfies("~pio"):
             args.append(self.define("CMAKE_DISABLE_FIND_PACKAGE_PIO", True))
+
+        tests = self.run_tests
 
         return args
