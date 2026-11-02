@@ -82,5 +82,7 @@ class Cable(CMakePackage):
             args.append(self.define("CMAKE_DISABLE_FIND_PACKAGE_PIO", True))
 
         tests = self.run_tests
+        if tests:
+            args.append(self.define("CABLE_TESTS", True))
 
         return args
