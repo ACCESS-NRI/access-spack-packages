@@ -177,6 +177,11 @@ class UmBasePackage(Package):
                 rpaths = ["-Wl,-rpath=" + d for d in self.spec[dep_name].libs.directories]
                 env.set(f"ldflags_{fcm_name}_on", " ".join(ld_flags + rpaths))
 
+        # Need to tell UM not to retrieve any sources from MOSRS
+        for component in self._components:
+            env.set(f"{component}_sources", "")
+            env.set(f"{component}_project_location", "")
+
         # The gcom library does not contain shared objects and
         # therefore must be statically linked.
         env.prepend_path("LIBRARY_PATH", self.spec["gcom"].prefix.lib)
