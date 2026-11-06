@@ -96,6 +96,12 @@ class UmBasePackage(Package):
         description="Which UM executables to build."
         )
 
+    _required_components = {
+        "atmos"     : ["casim", "jules", "shumlib", "socrates", "ukca", "um"],
+        "scm"       : ["casim", "jules", "shumlib", "socrates", "ukca", "um"],
+        "createbc"  : ["shumlib" "um"]
+        }
+
     variant(
         "optimisation_level",
         default="safe",
@@ -242,41 +248,30 @@ class UmBasePackage(Package):
         # For each executable we want to build, build the dynamic fcm-make
         # file. The contents of each are going to be effectively the same- an
         # "include" line, which points to the desired machine config to use,
-        # and lists of possible _sources and extract locations.
+        # and lists of possible _sources and extract locations. Note that the
+        # config ONLY accepts the component locations that are required- any
+        # additional components are not ignored, they cause a failure. At the
+        # moment, this is really only relevant to createbc, which only requires
+        # shumlib and um.
 
         # In the original fcm-make.cfg file, the include line looks like:
         # include = $conf_path/fcm-make/$platform_config_dir/um-$config_type-$optimisation_level.cfg
         # where the environment variables are interpolated in. It's easier to
         # simply set them directly here.
 
-        # The "include" line is the only one that will change, so build a base
-        # config file and append the correct include line for each executable.
-        # Even then, the only part of the "include" line that will change is
-        # the config type.
-        
         conf_path = self.resource_path("um")
 
         platform = spec.variants["platform_config"].value
         optim = spec.variants["optimisation_level"].value
 
-        # Now build the base config
-        base_config = join_path(build_path, "fcm-make.cfg")
-        with open(base_config, "w") as f:
-            # Set the unchanging bits
-            for component in self._components:
-                f.write(f"extract.location[{component}] = {self._component_path(component)}\n") 
-
         # Duplicate the base_config for each config type
         for exe in spec.variants["config_type"].value:
             exe_config = join_path(build_path, f"fcm-make-{exe}.cfg")
-            copy(base_config, exe_config)
-            # We open in read+write mode, as we want to insert the "include"
-            # line at the top so that following options take precedence
-            with open(exe_config, "r+") as f:
+            with open(exe_config, "w") as f:
                 include = f"include={conf_path}/fcm-make/{platform}/um-{exe}-{optim}.cfg\n"
-                orig_contents = f.read()
-                f.seek(0)
-                f.write(include + orig_contents)
+
+                for component in _required_components[exe]:
+                    f.write(f"extract.location[{component}] = {self._component_path(component)}\n") 
 
             fcm(
                 "make",
