@@ -29,7 +29,7 @@ class AccessMocsy(CMakePackage):
     depends_on("fortran", type="build")
 
     depends_on("cmake@3.22:", type="build")
-    depends_on("mpi")
+    depends_on("mpi", type=("build", "link", "run", "test"))
 
     variant(
         "shared",

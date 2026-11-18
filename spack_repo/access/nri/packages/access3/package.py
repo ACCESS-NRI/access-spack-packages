@@ -72,7 +72,7 @@ class Access3(CMakePackage):
     depends_on("fortran", type="build")
 
     depends_on("cmake@3.18:", type="build")
-    depends_on("mpi")
+    depends_on("mpi", type=("build", "link", "run", "test"))
     depends_on("access3-share")
     depends_on("esmf@8.7.0:")
 

@@ -99,7 +99,7 @@ class Issm(AutotoolsPackage):
     depends_on("m4", type="build")
 
     # Core build + runtime deps
-    depends_on("mpi")
+    depends_on("mpi", type=("build", "link", "run", "test"))
 
     # Conditional dependencies
     # --------------------------------------------------------------------

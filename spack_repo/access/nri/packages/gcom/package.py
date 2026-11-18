@@ -35,7 +35,7 @@ class Gcom(Package):
     depends_on("fortran", type="build")
 
     depends_on("fcm", type="build")
-    depends_on("mpi", when="+mpi", type=("build", "link", "run"))
+    depends_on("mpi", when="+mpi", type=("build", "link", "run", "test"))
     # For the default MPI version for NCI, see (e.g.)
     # https://code.metoffice.gov.uk/trac/gcom/browser/main/trunk/rose-stem/site/nci/suite.rc
     # For cherry picking virtual dependencies, see

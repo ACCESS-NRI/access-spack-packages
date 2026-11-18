@@ -65,7 +65,7 @@ class Gcom4(Package):
     depends_on("fortran", type="build")
 
     depends_on("fcm", type="build")
-    depends_on("mpi", when="+mpi")
+    depends_on("mpi", when="+mpi", type=("build", "link", "run", "test"))
 
     def gcom_machine(self, spec):
         """
