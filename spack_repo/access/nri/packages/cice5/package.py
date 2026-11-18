@@ -72,7 +72,7 @@ class Cice5(CMakePackage):
 
     depends_on("cmake@3.18:", type="build")
 
-    depends_on("mpi", type=("build", "link", "run", "test"))
+    depends_on("mpi", type=("build", "link", "run"))
     depends_on("netcdf-fortran@4.5.2:")
     depends_on("netcdf-c@4.7.4:")
     depends_on("datetime-fortran")

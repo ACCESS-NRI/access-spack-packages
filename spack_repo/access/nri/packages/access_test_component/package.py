@@ -25,6 +25,6 @@ class AccessTestComponent(CMakePackage):
 
     depends_on("fortran", type="build")
     depends_on("cmake@3.20:", type="build")
-    depends_on("mpi", type=("build", "link", "run", "test"))
+    depends_on("mpi", type=("build", "link", "run"))
 
     root_cmakelists_dir = "stub"

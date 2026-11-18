@@ -48,7 +48,7 @@ class AncomsRoms(MakefilePackage):
         description="Turn on symbolic debug information with no optimization",
     )
 
-    depends_on("mpi", when="+mpi", type=("build", "link", "run", "test"))
+    depends_on("mpi", when="+mpi", type=("build", "link", "run"))
     depends_on("netcdf-fortran")
     depends_on("netcdf-c")
     depends_on("hdf5+fortran")

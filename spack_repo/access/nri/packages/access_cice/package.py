@@ -54,7 +54,7 @@ class AccessCice(CMakePackage):
 
     depends_on("access3-share", when="+access3") 
     depends_on("cmake@3.18:", type="build")
-    depends_on("mpi", type=("build", "link", "run", "test"))
+    depends_on("mpi", type=("build", "link", "run"))
     depends_on("netcdf-fortran@4.6.0:", when="io_type=NetCDF")
     depends_on("parallelio@2.5.3:", when="io_type=PIO")
 
