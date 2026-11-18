@@ -21,4 +21,4 @@ class AccessAm3(BundlePackage):
 
     version("latest")
 
-    depends_on("um")
+    depends_on("um", type=("build", "link", "run"))

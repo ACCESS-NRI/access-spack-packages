@@ -24,4 +24,4 @@ class AccessIssm(BundlePackage):
 
     version("latest")
 
-    depends_on("issm")
+    depends_on("issm", type=("build", "link", "run"))

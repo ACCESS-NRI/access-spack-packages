@@ -22,4 +22,4 @@ class CoastriRoms(BundlePackage):
 
     version("latest")
 
-    depends_on("ancoms-roms")
+    depends_on("ancoms-roms", type=("build", "link", "run"))
