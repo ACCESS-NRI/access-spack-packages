@@ -48,7 +48,7 @@ class FreNctools(AutotoolsPackage):
     depends_on("libtool", type="build")
     depends_on("netcdf-c")
     depends_on("netcdf-fortran")
-    depends_on("mpi", when="+mpi")
+    depends_on("mpi", when="+mpi", type=("build", "link", "run"))
     depends_on("nco", when="@2024.05:")
 
     def configure_args(self):

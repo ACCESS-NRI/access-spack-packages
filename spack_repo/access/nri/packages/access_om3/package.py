@@ -23,4 +23,4 @@ class AccessOm3(BundlePackage):
 
     version("latest")
 
-    depends_on("access3")
+    depends_on("access3", type=("build", "link", "run"))

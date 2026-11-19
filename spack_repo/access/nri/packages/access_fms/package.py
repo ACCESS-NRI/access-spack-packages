@@ -55,7 +55,7 @@ class AccessFms(CMakePackage):
     depends_on("cmake@3.12:", type="build")
     depends_on("netcdf-c")
     depends_on("netcdf-fortran")
-    depends_on("mpi")
+    depends_on("mpi", type=("build", "link", "run"))
 
     @property
     def headers(self):
