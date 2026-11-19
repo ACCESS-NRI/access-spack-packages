@@ -146,5 +146,7 @@ jobs:
       ref: ${{ matrix.package.ref }}
       allow-ssh-into-spack-install: false
       # container-image-version: :rocky
+    permissions:
+      checks: write
     secrets:
       spack-install-command-pat: ${{ secrets.SPACK_INSTALL_COMMAND_PAT }}
