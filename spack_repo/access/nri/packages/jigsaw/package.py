@@ -11,7 +11,6 @@ class Jigsaw(CMakePackage):
 
     homepage = "https://github.com/dengwirda/jigsaw"
     git = "https://github.com/dengwirda/jigsaw.git"
-    url = "https://github.com/dengwirda/jigsaw/archive/refs/tags/v0.9.14.tar.gz"
 
     license("LicenseRef-JIGSAW")
 
