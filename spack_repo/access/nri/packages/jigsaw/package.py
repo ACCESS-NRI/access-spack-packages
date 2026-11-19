@@ -16,6 +16,7 @@ class Jigsaw(CMakePackage):
     # See LICENSE file in the source code.
     license("LicenseRef-JIGSAW", checked_by="aidan")
 
+    maintainers("aidan", "helenmacdonald")
     version("develop", branch="master", preferred=True, no_cache=True)
     version("0.9.14", sha256="f312ea0bc3ca697ea0f559b8404d0afe3e35dd0b39efc0efdfb9a9a57bee16d7")
 
