@@ -12,7 +12,11 @@ class Ems(MakefilePackage):
     homepage = "https://github.com/csiro-coasts/EMS"
     git = "https://github.com/csiro-coasts/EMS.git"
 
-    license("LicenseRef-CSIRO-EMS")
+    # Custom CSIRO license. Free and open to use with conditions, see LICENSE.md 
+    # in the source tree for details.
+    license("LicenseRef-CSIRO-EMS", checked_by="aidan")
+
+    maintainers("aidan", "helenmacdonald", "frizwi")
 
     version("1.5.3", tag="v1.5.3", commit="a0f8eb016cebb64470c01407d1362d5ecba61343")
 
