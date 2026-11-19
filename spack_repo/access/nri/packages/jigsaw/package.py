@@ -24,12 +24,3 @@ class Jigsaw(CMakePackage):
     depends_on("cxx", type="build")
     depends_on("cmake@3.9.4:", type="build")
 
-    def patch(self):
-        if self.spec.satisfies("@0.9.14"):
-            # The install rule is in src/, but the public headers are in the top-level inc/.
-            filter_file(
-                "DIRECTORY inc/",
-                'DIRECTORY "${PROJECT_SOURCE_DIR}/inc/"',
-                "src/CMakeLists.txt",
-                string=True,
-            )
