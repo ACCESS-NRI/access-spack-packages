@@ -18,7 +18,7 @@ class Jigsaw(CMakePackage):
 
     maintainers("aidan", "helenmacdonald")
     version("develop", branch="master", preferred=True, no_cache=True)
-    version("0.9.14", sha256="f312ea0bc3ca697ea0f559b8404d0afe3e35dd0b39efc0efdfb9a9a57bee16d7")
+    version("0.9.14", tag="0.9.14", commit="e848583231b6d8a2a366037fa45123a819d4eec2")
 
     depends_on("c", type="build")
     depends_on("cxx", type="build")
