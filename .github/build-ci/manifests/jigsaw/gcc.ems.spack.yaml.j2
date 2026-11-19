@@ -1,0 +1,14 @@
+# This manifest is used by default for packages without a specific manifest under .github/build-ci/manifests/PACKAGE/*.j2
+spack:
+  include:
+  # Include configuration from this repository, with the environment variable defined in build-ci
+  - path: $SPACK_MANIFEST_REPOSITORY_PATH/.github/build-ci/config/include
+  specs:
+  # package is defined in the workflows inputs.spack-manifest-data-pairs
+  # The version is pinned to 0.9.14, which is the release used in EMS.
+  - '{{ package }}'@0.9.14
+  packages:
+    all:
+      require:
+        - '%access_gcc'
+  view: false
