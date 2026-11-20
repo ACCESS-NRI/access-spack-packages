@@ -69,9 +69,10 @@ class Cable(CMakePackage):
     depends_on("parallelio@2.6.8:+fortran", when="+pio")
     # fortuno (unit test framework) needs recent Fortran compilers, so only
     # depend on it when building with a compiler that supports it
-    for fortuno_compiler in ("gcc@14:", "intel-oneapi-compilers@2024:"):
-        depends_on("fortuno~mpi", type="test", when=f"~mpi library=none %fortran={fortuno_compiler}")
-        depends_on("fortuno+mpi", type="test", when=f"+mpi library=none %fortran={fortuno_compiler}")
+    depends_on("fortuno~mpi", type="test", when=f"~mpi library=none %fortran=gcc@14:")
+    depends_on("fortuno~mpi", type="test", when=f"+mpi library=none %fortran=gcc@14:")
+    depends_on("fortuno+mpi", type="test", when=f"~mpi library=none %fortran=intel-oneapi-compilers@2024:")
+    depends_on("fortuno+mpi", type="test", when=f"+mpi library=none %fortran=intel-oneapi-compilers@2024:")
 
     def cmake_args(self):
         args = []
@@ -86,7 +87,7 @@ class Cable(CMakePackage):
 
         # fortuno is only a dependency with supported compilers, so only enable
         # the tests when it is present in the spec
-        if self.run_tests and "fortuno" in self.spec:
+        if self.run_tests:
             args.append(self.define("CABLE_TESTS", True))
 
         return args
