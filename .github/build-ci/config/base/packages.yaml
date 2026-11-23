@@ -15,7 +15,7 @@ packages:
   gcc:
     # FIXME: Once intel-oneapi-compilers depends on %gcc@13.2.0, make this a hard requirement
     prefer:
-    - '@13.2.0'
+    - '@15.1.0'
   intel-oneapi-compilers-classic:
     require:
     - '@2021.10.0'
