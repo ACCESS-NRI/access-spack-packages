@@ -52,7 +52,7 @@ class Ems(AutotoolsPackage):
             "model/hd",
             "model/hd-us",
         ):
-        make("-C", directory)
+            make("-C", directory)
  
     def install(self, spec, prefix):
         # Upstream "make install" is broken, so install the executables directly.
