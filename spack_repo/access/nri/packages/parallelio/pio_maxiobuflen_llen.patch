@@ -1,0 +1,21 @@
+diff --git a/src/clib/pio_rearrange.c b/src/clib/pio_rearrange.c
+index 74627f64..0731e97e 100644
+--- a/src/clib/pio_rearrange.c
++++ b/src/clib/pio_rearrange.c
+@@ -243,6 +243,16 @@ compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
+     }
+     PLOG((2, "compute_maxIObuffersize got totiosize = %lld", totiosize));
+
++    /* The serial read path (pio_read_darray_nc_serial()) has IO task 0 read
++     * every other IO task's data into this buffer and send it back using that
++     * task's llen -- not its region sum. The subset rearranger collapses
++     * duplicate offsets when it builds iomap, so rllen (and hence the region
++     * sum computed above) can be strictly less than llen, and maxiobuflen
++     * would then be too small for the MPI_Send. Take the larger of the two so
++     * maxiobuflen bounds both. */
++    if (iodesc->llen > totiosize)
++        totiosize = iodesc->llen;
++
+     /* Share the max io buffer size with all io tasks. */
+     if ((mpierr = MPI_Allreduce(MPI_IN_PLACE, &totiosize, 1, MPI_OFFSET, MPI_MAX, io_comm)))
+         return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
