@@ -40,6 +40,19 @@ class Ems(AutotoolsPackage):
  
     def setup_build_environment(self, env):
         env.set("NETCDF_ROOT", self.spec["netcdf-c"].prefix)
+
+    def build(self, spec, prefix):
+        # The upstream top-level makefile masks failures in its recursive loop.
+        for directory in (
+            "lib",
+            "model/lib/ecology",
+            "model/lib/sediments",
+            "model/lib/tracerstats",
+            "model/lib/waves",
+            "model/hd",
+            "model/hd-us",
+        ):
+        make("-C", directory)
  
     def install(self, spec, prefix):
         # Upstream "make install" is broken, so install the executables directly.
