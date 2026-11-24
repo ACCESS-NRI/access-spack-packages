@@ -6,7 +6,7 @@ from spack_repo.builtin.build_systems.bundle import BundlePackage
 from spack.package import *
 
 
-class CoastriEms(BundlePackage):
+class CsiroCemEms(BundlePackage):
     """Bundle for the CSIRO Environmental Modelling Suite."""
 
     homepage = "https://github.com/csiro-coasts/EMS"
