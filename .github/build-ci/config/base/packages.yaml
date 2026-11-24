@@ -13,7 +13,7 @@ packages:
 
   # Common base compiler versions
   gcc:
-    # FIXME: Once intel-oneapi-compilers depends on %gcc@13.2.0, make this a hard requirement
+    # NOTE: We use prefer because packages need to be built with both gcc@8.5.0 and later gccs
     prefer:
     - '@15.1.0'
   intel-oneapi-compilers-classic:
@@ -21,4 +21,4 @@ packages:
     - '@2021.10.0'
   intel-oneapi-compilers:
     require:
-    - '@2025.2.0'
+    - '@2025.3.2'
