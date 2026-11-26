@@ -19,7 +19,8 @@ class AccessCice(CMakePackage):
 
     license("BSD-3-Clause", checked_by="anton-seaice")
 
-    version("stable", branch="CICE6.6.3-x", preferred=True)  # need to update branch for new major versions
+    version("stable", branch="CICE6.6.3-2026.11-x", preferred=True)  # need to update branch for new major versions
+    version("CICE6.6.3-2026.11.0", tag="CICE6.6.3-2026.11.0", commit="683db3aa599bf70ed807995d7e1296aee378dec5")
     version("CICE6.6.3-2", tag="CICE6.6.3-2", commit="2b267226f6c2a67a0e6bafcd4a1c0bd772850611")
     version("CICE6.6.3-1", tag="CICE6.6.3-1", commit="1a6ffaaf34de370ed1d58205feb0fb7a5f63ff43")
     version("CICE6.6.3-0", tag="CICE6.6.3-0", commit="e6f2bc4842fa8e1ad78cbe3542c1c84a3e673a83")
