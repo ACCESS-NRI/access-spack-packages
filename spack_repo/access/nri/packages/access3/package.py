@@ -79,6 +79,10 @@ class Access3(CMakePackage):
     for conf in KNOWN_CONF:
         if "CICE6" in conf:
             depends_on("access-cice@CICE6.6.0-1: +access3", when=f"configurations={conf}")
+            # Interprocedural optimisation improves CICE inlining.
+            # See https://github.com/ACCESS-NRI/ACCESS-OM3/issues/291
+            depends_on("access-cice+ipo", when=f"+ipo configurations={conf}")
+            depends_on("access-cice~ipo", when=f"~ipo configurations={conf}")
         if "MOM6" in conf:
             depends_on("access-mom6@2025.02.000: +access3", when=f"configurations={conf}")
         if "WW3" in conf:
