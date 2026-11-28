@@ -20,6 +20,8 @@ class Ems(MakefilePackage):
 
     version("1.5.3", tag="v1.5.3", commit="a0f8eb016cebb64470c01407d1362d5ecba61343")
 
+    variant("openmp", default=True, sticky=True, description="Enable OpenMP")
+
     depends_on("c", type="build")
     depends_on("cxx", type="build")
     depends_on("netcdf-c")
@@ -95,7 +97,13 @@ class Ems(MakefilePackage):
             string=True,
         )
         configure = Executable("./conf/configure")
-        configure("--prefix={0}".format(prefix), "--with-metis={0}".format(spec["metis"].prefix))
+        configure_args = [
+            "--prefix={0}".format(prefix),
+            "--with-metis={0}".format(spec["metis"].prefix),
+        ]
+        if spec.satisfies("+openmp"):
+            configure_args.append("--enable-omp")
+        configure(*configure_args)
 
         # Link COMPAS against Spack's JIGSAW rather than the bundled copy.
         makefile = FileFilter("model/hd-us/makefile")
