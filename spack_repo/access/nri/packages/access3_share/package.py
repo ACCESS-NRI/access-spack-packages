@@ -105,6 +105,24 @@ class Access3Share(CMakePackage):
     patch("cdeps-routehandle-cache.patch", working_dir="CDEPS/CDEPS", when="@2026.03.000:")
     patch("cdeps-routehandle-cache.patch", working_dir="CDEPS/CDEPS", when="@stable")
 
+    # Opt-in: keep the decomposition of component meshes in the mediator. CMEPS
+    # rebalances every mesh it accepts (ESMF_DistGridCreate with balanceflag), which on
+    # ACCESS-OM3 8 km leaves almost no mediator PET holding the elements of its own CICE
+    # PET, so MED-TO-ICE and ICE-TO-MED move nearly all the ice data between ranks on
+    # every coupling step (50 s and 23 s mean per 10 model days, against 5.8 s and 4.1 s
+    # on PET 0, the only PET that stays local). With keep_component_decomp = .true.
+    # under MED_attributes:: in nuopc.runconfig, a component mesh that already has one
+    # DE per mediator PET (CICE, DATM and DROF on the mediator's PETs) keeps its
+    # decomposition, so those connectors become rank-local copies; MOM6's mesh is
+    # rebalanced as before. The default (.false.) is the current behaviour. Answers are
+    # bitwise identical either way (coupled test on @2026.03.002); only the mediator
+    # budget table can differ in the last printed digit.
+    # MUST be listed AFTER all the other CMEPS patches: it applies on top of them.
+    # Verified against the CMEPS commits pinned by @2026.03.001 through @2026.03.004
+    # (and @stable at 792d55c): applies with no offset or fuzz, and compiles. Their
+    # med.F90 is identical. Same version range as cmeps-iodesc-cache.patch.
+    patch("cmeps-keep-component-decomp.patch", working_dir="CMEPS/CMEPS", when="@2026.03.001:")
+    patch("cmeps-keep-component-decomp.patch", working_dir="CMEPS/CMEPS", when="@stable")
 
     def cmake_args(self):
         args = [

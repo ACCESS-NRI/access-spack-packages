@@ -1,0 +1,91 @@
+diff --git a/mediator/med.F90 b/mediator/med.F90
+index a34e91b..e72b9da 100644
+--- a/mediator/med.F90
++++ b/mediator/med.F90
+@@ -1072,7 +1072,8 @@ contains
+
+     use ESMF , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+     use ESMF , only : ESMF_GRIDCOMP, ESMF_CLOCK, ESMF_STATE
+-    use ESMF , only : ESMF_StateIsCreated
++    use ESMF , only : ESMF_StateIsCreated, ESMF_VM, ESMF_VMGet, ESMF_GridCompGet
++    use NUOPC, only : NUOPC_CompAttributeGet
+
+     ! input/output variables
+     type(ESMF_GridComp)  :: gcomp
+@@ -1083,6 +1084,12 @@ contains
+     ! local variables
+     type(InternalState) :: is_local
+     integer :: n1
++    type(ESMF_VM)       :: vm
++    integer             :: medPetCount             ! number of mediator PETs
++    logical             :: keep_component_decomp   ! keep a component's mesh decomposition if it
++                                                   ! already has exactly one DE per mediator PET
++    logical             :: isPresent, isSet
++    character(len=CL)   :: cvalue
+     character(len=*), parameter :: subname = '('//__FILE__//':ModifyDecompofMesh)'
+     !-----------------------------------------------------------
+
+@@ -1095,6 +1102,22 @@ contains
+     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
+     if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
++    ! By default every transferred mesh is rebalanced over the mediator PETs (one DE per PET,
++    ! element order kept).  With keep_component_decomp = .true., a mesh whose decomposition
++    ! already has exactly one DE per mediator PET (e.g. a component running on the mediator
++    ! PETs, such as CICE, DATM or DROF) keeps that decomposition, so the connectors between
++    ! the component and the mediator become local copies.
++    call NUOPC_CompAttributeGet(gcomp, name="keep_component_decomp", value=cvalue, &
++         isPresent=isPresent, isSet=isSet, rc=rc)
++    if (ChkErr(rc,__LINE__,u_FILE_u)) return
++    keep_component_decomp = .false.
++    if (isPresent .and. isSet) read(cvalue,*) keep_component_decomp
++    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
++    if (ChkErr(rc,__LINE__,u_FILE_u)) return
++    call ESMF_VMGet(vm, petCount=medPetCount, rc=rc)
++    if (ChkErr(rc,__LINE__,u_FILE_u)) return
++    if (maintask) write(logunit,'(a,l2)') trim(subname)//': keep_component_decomp =', keep_component_decomp
++
+     !------------------
+     ! Receive Grids
+     !------------------
+@@ -1127,6 +1150,7 @@ contains
+       use ESMF , only : ESMF_LogMsg_Warning
+       use ESMF , only : ESMF_FieldStatus_Empty, ESMF_FieldStatus_Complete, ESMF_FieldStatus_GridSet
+       use ESMF , only : ESMF_GeomType_Mesh, ESMF_MeshGet, ESMF_Mesh, ESMF_MeshEmptyCreate
++      use ESMF , only : ESMF_DELayout, ESMF_DELayoutGet
+
+       ! input/output variables
+       type(ESMF_State)   , intent(inout) :: State
+@@ -1139,6 +1163,8 @@ contains
+       type(ESMF_Mesh)               :: mesh, newmesh
+       type(ESMF_DistGrid)           :: distgrid
+       type(ESMF_DistGrid)           :: elemdistgrid, newelemdistgrid
++      type(ESMF_DELayout)           :: delayout
++      integer                       :: deCount
+       integer                       :: arbDimCount
+       integer                       :: dimCount, tileCount
+       integer                       :: connectionCount
+@@ -1319,8 +1345,22 @@ contains
+                if (ChkErr(rc,__LINE__,u_FILE_u)) return
+                call ESMF_MeshGet(mesh, elementDistGrid=elemDistGrid, rc=rc)
+                if (ChkErr(rc,__LINE__,u_FILE_u)) return
+-               newelemDistGrid = ESMF_DistGridCreate(elemDistGrid, balanceflag=.true., rc=rc)
++               call ESMF_DistGridGet(elemDistGrid, delayout=delayout, rc=rc)
+                if (ChkErr(rc,__LINE__,u_FILE_u)) return
++               call ESMF_DELayoutGet(delayout, deCount=deCount, rc=rc)
++               if (ChkErr(rc,__LINE__,u_FILE_u)) return
++               if (keep_component_decomp .and. deCount == medPetCount) then
++                  ! keep the component's decomposition (one DE per PET already)
++                  newelemDistGrid = ESMF_DistGridCreate(elemDistGrid, vm=vm, rc=rc)
++                  if (ChkErr(rc,__LINE__,u_FILE_u)) return
++                  call ESMF_LogWrite(trim(subname)//trim(string)//": keeping component mesh decomposition", &
++                       ESMF_LOGMSG_INFO)
++               else
++                  newelemDistGrid = ESMF_DistGridCreate(elemDistGrid, balanceflag=.true., rc=rc)
++                  if (ChkErr(rc,__LINE__,u_FILE_u)) return
++               end if
++               if (maintask) write(logunit,'(a,i8,a,l2)') trim(subname)//' '//trim(string)// &
++                    ': component mesh DEs =', deCount, ', kept =', (keep_component_decomp .and. deCount == medPetCount)
+                newmesh = ESMF_MeshEmptyCreate(elementDistGrid=newelemDistGrid, rc=rc)
+                if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
