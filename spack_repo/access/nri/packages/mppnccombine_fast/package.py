@@ -28,6 +28,6 @@ class MppnccombineFast(CMakePackage):
     depends_on("cxx", type="build")
 
     depends_on("cmake@3.10:", type="build")
-    depends_on("mpi")
+    depends_on("mpi", type=("build", "link", "run"))
     depends_on("hdf5")
     depends_on("netcdf-c")

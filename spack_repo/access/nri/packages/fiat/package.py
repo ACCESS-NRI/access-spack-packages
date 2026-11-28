@@ -45,7 +45,7 @@ class Fiat(CMakePackage):
 
     depends_on("cmake@3.12:", type=("build"))
     depends_on("ecbuild", type=("build"))
-    depends_on("mpi", when="+mpi")
+    depends_on("mpi", when="+mpi", type=("build", "link", "run"))
     depends_on("eckit", when="+fckit")
     depends_on("fckit", when="+fckit")
 

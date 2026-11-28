@@ -36,7 +36,7 @@ class AccessWw3(CMakePackage):
 
     depends_on("access3-share", when="+access3")
     depends_on("cmake@3.18:", type="build")
-    depends_on("mpi")
+    depends_on("mpi", type=("build", "link", "run"))
     depends_on("netcdf-fortran@4.6.0:")
 
     def cmake_args(self):

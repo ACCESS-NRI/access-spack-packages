@@ -39,8 +39,7 @@ class Oasis3Mct(MakefilePackage):
     depends_on("fortran", type="build")
 
     depends_on("netcdf-fortran@4.5.2:")
-    # Depend on virtual package "mpi".
-    depends_on("mpi")
+    depends_on("mpi", type=("build", "link", "run"))
 
     # NOTE: lib/scrip/src/Makefile may have a bug not allowing parallelism:
     # [oasis3-mct]/spack-src/lib/scrip/src/iounits.f(41): error #7002: Error in opening the compiled module file.  Check INCLUDE paths.   [MOD_OASIS_FLUSH]

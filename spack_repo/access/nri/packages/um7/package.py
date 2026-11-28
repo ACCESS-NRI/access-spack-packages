@@ -95,7 +95,7 @@ class Um7(Package):
     depends_on("fcm", type="build")
     depends_on("dummygrib", type=("build", "link"))
     depends_on("gcom4+mpi", type=("build", "link"))
-    depends_on("openmpi", type=("build", "run"))
+    depends_on("openmpi", type=("build", "link", "run"))
     depends_on("netcdf-fortran@4.5.2:", type=("build", "link"))
     depends_on("oasis3-mct", type=("build", "link"))
     depends_on(
